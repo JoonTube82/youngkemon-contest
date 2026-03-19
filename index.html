@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>서영이의 단어 마법 RPG (Multi-User)</title>
+    <title>6학년 영단어 마법 RPG (Multi-User)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Global Firebase Config (Environment Provided)
         const firebaseConfig = JSON.parse(__firebase_config);
@@ -18,7 +18,119 @@
         const db = getFirestore(app);
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-        window.firebase = { auth, db, appId, doc, setDoc, getDoc, collection, onSnapshot, updateDoc };
+        // 전역 함수로 노출 (버튼 클릭 등에서 사용 가능하게 함)
+        window.handleLogin = async () => {
+            const id = document.getElementById('user-id').value.trim();
+            const pw = document.getElementById('user-pw').value.trim();
+            
+            if (!id || !pw) {
+                alert("아이디와 비밀번호를 모두 입력해 주세요!");
+                return;
+            }
+
+            // 4자리 숫자 비밀번호 체크
+            if (!/^\d{4}$/.test(pw)) {
+                alert("비밀번호는 반드시 숫자 4자리여야 합니다!");
+                return;
+            }
+
+            // 허용된 학생 명단 체크 (선생님이 아래 리스트를 수정하시면 됩니다)
+            const STUDENT_LIST = ["서영", "단엘", "라희", "민지", "정훈", "문경", "소윤", "하율", "현수", "시율", "은영", "이담", "훈태", "테스트"]; // 여기에 학생들 이름을 넣으세요
+            if (!STUDENT_LIST.includes(id)) {
+                alert("등록되지 않은 학생입니다. 선생님께 이름을 확인하세요!");
+                return;
+            }
+
+            try {
+                // 1. 익명 인증 먼저 수행
+                await signInAnonymously(auth);
+                
+                // 2. 사용자 문서 확인
+                const userDocRef = doc(db, 'artifacts', appId, 'users', id, 'data', 'profile');
+                const userDoc = await getDoc(userDocRef);
+
+                if (userDoc.exists()) {
+                    if (userDoc.data().password !== pw) {
+                        alert("비밀번호가 틀렸습니다!");
+                        return;
+                    }
+                    window.gameData = userDoc.data().gameStats || { level: 1, exp: 0, count: 0 };
+                } else {
+                    // 첫 로그인 시 데이터 생성
+                    window.gameData = { level: 1, exp: 0, count: 0 };
+                    await setDoc(userDocRef, { 
+                        id, 
+                        password: pw, 
+                        gameStats: window.gameData,
+                        createdAt: new Date().toISOString()
+                    });
+                }
+
+                window.currentUser = id;
+                document.getElementById('player-name-display').innerText = id;
+                document.getElementById('login-view').classList.add('hidden');
+                document.getElementById('game-view').classList.remove('hidden');
+                
+                initGame();
+            } catch (error) {
+                console.error("Login Error:", error);
+                alert("로그인 중 오류가 발생했습니다. 잠시 후 다시 시도하세요.");
+            }
+        };
+
+        window.addWord = async () => {
+            const word = document.getElementById('new-word').value.trim();
+            const meaning = document.getElementById('new-meaning').value.trim();
+            if (!word || !meaning) return;
+
+            try {
+                const wordId = word.toLowerCase().replace(/\s+/g, '_');
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'wordList', wordId), { word, meaning });
+                document.getElementById('new-word').value = '';
+                document.getElementById('new-meaning').value = '';
+            } catch (e) {
+                console.error("Add Word Error:", e);
+            }
+        };
+
+        window.deleteWord = async (id) => {
+            if(!confirm("이 단어를 도감에서 삭제할까요?")) return;
+            try {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'wordList', id));
+            } catch (e) {
+                console.error("Delete Word Error:", e);
+            }
+        };
+
+        window.saveDataToCloud = async () => {
+            if (!window.currentUser) return;
+            try {
+                const userDocRef = doc(db, 'artifacts', appId, 'users', window.currentUser, 'data', 'profile');
+                await updateDoc(userDocRef, { gameStats: window.gameData });
+            } catch (e) {
+                console.error("Save Data Error:", e);
+            }
+        };
+
+        function initGame() {
+            // 공용 단어장 실시간 감시
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'wordList'), (snapshot) => {
+                window.publicQuizzes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                nextQuiz();
+                renderWordList();
+            }, (error) => {
+                console.error("Snapshot Error:", error);
+            });
+
+            updateUI();
+            animate();
+        }
+
+        // 전역 변수 초기화
+        window.gameData = { level: 1, exp: 0, count: 0 };
+        window.publicQuizzes = [];
+        window.currentUser = null;
+        window.firebase = { db, appId }; // 필요한 경우를 위해 보관
     </script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
@@ -26,24 +138,26 @@
         .game-container { max-width: 500px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
         .spell-input { border: 4px solid #e2e8f0; border-radius: 1.5rem; padding: 1.2rem; width: 100%; text-align: center; font-size: 1.8rem; outline: none; transition: all 0.2s; background: white; }
         .spell-input:focus { border-color: #6366f1; box-shadow: 0 0 20px rgba(99, 102, 241, 0.2); }
-        .btn-primary { background: linear-gradient(135deg, #6366f1, #a855f7); color: white; border-radius: 1.5rem; padding: 1rem; font-size: 1.4rem; font-weight: bold; width: 100%; box-shadow: 0 5px 0 #4338ca; transition: all 0.1s; }
+        .btn-primary { background: linear-gradient(135deg, #6366f1, #a855f7); color: white; border-radius: 1.5rem; padding: 1rem; font-size: 1.4rem; font-weight: bold; width: 100%; box-shadow: 0 5px 0 #4338ca; transition: all 0.1s; cursor: pointer; }
         .btn-primary:active { transform: translateY(4px); box-shadow: 0 1px 0 #4338ca; }
         canvas { filter: drop-shadow(0 15px 30px rgba(99, 102, 241, 0.2)); image-rendering: pixelated; }
         .hidden { display: none; }
-        .login-input { border: 2px solid #e2e8f0; border-radius: 1rem; padding: 0.8rem; width: 100%; margin-bottom: 1rem; }
+        .login-input { border: 2px solid #e2e8f0; border-radius: 1rem; padding: 0.8rem; width: 100%; margin-bottom: 1rem; outline: none; }
+        .login-input:focus { border-color: #6366f1; }
     </style>
 </head>
 <body class="p-4">
     <div class="game-container">
         
         <!-- 1. 로그인 화면 -->
-        <div id="login-view" class="flex flex-col items-center justify-center min-height-[80vh] mt-20">
+        <div id="login-view" class="flex flex-col items-center justify-center min-h-[80vh] mt-10">
             <div class="bg-white p-8 rounded-[3rem] shadow-2xl w-full border-4 border-indigo-50">
-                <h1 class="text-4xl text-center text-indigo-600 mb-8">🧙‍♀️ 마법 학교<br><span class="text-2xl text-slate-400 font-normal">로그인</span></h1>
-                <input type="text" id="user-id" class="login-input" placeholder="학생 아이디 (영문/숫자)">
-                <input type="password" id="user-pw" class="login-input" placeholder="비밀번호">
+                <h1 class="text-4xl text-center text-indigo-600 mb-2">🧙‍♀️ 마법 학교</h1>
+                <p class="text-center text-slate-400 mb-8 font-normal">학생 전용 로그인</p>
+                <input type="text" id="user-id" class="login-input" placeholder="이름 (아이디)">
+                <input type="password" id="user-pw" class="login-input" placeholder="비밀번호 (숫자 4자리)" maxlength="4">
                 <button onclick="handleLogin()" class="btn-primary mb-4">입장하기</button>
-                <p class="text-center text-slate-400 text-sm">처음인가요? 아이디를 쓰고 입장하면 자동으로 생성됩니다.</p>
+                <p class="text-center text-slate-400 text-xs">선생님이 알려준 이름과 비밀번호를 입력하세요.</p>
             </div>
         </div>
 
@@ -55,7 +169,7 @@
                         <span id="stage-tag" class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-600 font-bold block w-fit">초보 마법사</span>
                         <button onclick="switchView('admin')" class="text-slate-300 hover:text-indigo-500 transition-colors">⚙️ 관리자</button>
                     </div>
-                    <h2 class="text-3xl text-slate-800"><span id="player-name-display">서영</span> <span class="text-indigo-500 font-normal text-xl">Lv.<span id="level-display">1</span></span></h2>
+                    <h2 class="text-3xl text-slate-800"><span id="player-name-display">학생</span> <span class="text-indigo-500 font-normal text-xl">Lv.<span id="level-display">1</span></span></h2>
                 </div>
                 <div class="text-right">
                     <span class="text-slate-400 text-sm">마법 성공</span>
@@ -76,12 +190,12 @@
                     <h3 id="quiz-meaning" class="text-5xl text-indigo-600 font-bold mt-2">로딩 중...</h3>
                 </div>
                 <div class="flex flex-col gap-2">
-                    <input type="text" id="spell-input" class="spell-input" placeholder="영단어를 타이핑하세요" autocomplete="off" onkeyup="if(window.event.keyCode==13){checkAnswer()}">
+                    <input type="text" id="spell-input" class="spell-input" placeholder="영단어를 타이핑하세요" autocomplete="off" onkeyup="if(event.key === 'Enter'){checkAnswer()}">
                     <button onclick="checkAnswer()" class="btn-primary">✨ 주문 외우기 (공격!)</button>
                 </div>
                 <p id="game-hint" class="text-center text-slate-400 text-xs mt-4 italic font-normal">정답을 맞혀야 몬스터를 물리칠 수 있어요!</p>
             </div>
-            <button onclick="logout()" class="mt-8 text-center w-full text-slate-300 text-sm">로그아웃</button>
+            <button onclick="location.reload()" class="mt-8 text-center w-full text-slate-300 text-sm hover:text-red-400">로그아웃</button>
         </div>
 
         <!-- 3. 관리자 화면 -->
@@ -89,17 +203,17 @@
             <div class="bg-white rounded-3xl p-6 shadow-xl border-2 border-slate-100">
                 <div class="flex justify-between items-center mb-6 border-b pb-4">
                     <h2 class="text-2xl text-slate-800 font-bold">🛠️ 공용 마법 도감 관리</h2>
-                    <button onclick="switchView('game')" class="bg-indigo-100 px-4 py-2 rounded-xl text-sm font-bold text-indigo-600">게임으로 돌아가기</button>
+                    <button onclick="switchView('game')" class="bg-indigo-100 px-4 py-2 rounded-xl text-sm font-bold text-indigo-600">닫기</button>
                 </div>
                 <div class="space-y-4 mb-8 bg-slate-50 p-4 rounded-2xl">
                     <div class="grid grid-cols-2 gap-2">
                         <input type="text" id="new-word" class="p-3 border rounded-xl" placeholder="영단어">
                         <input type="text" id="new-meaning" class="p-3 border rounded-xl" placeholder="뜻">
                     </div>
-                    <button onclick="addWord()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold">도감에 추가하기</button>
+                    <button onclick="addWord()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold shadow-lg active:scale-95 transition-all">도감에 추가하기</button>
                 </div>
                 <div class="max-h-[300px] overflow-y-auto">
-                    <table class="w-full text-left">
+                    <table class="w-full text-left text-sm">
                         <tbody id="word-list-table"></tbody>
                     </table>
                 </div>
@@ -113,19 +227,16 @@
             <h1 class="text-7xl mb-4">🎊</h1>
             <h2 class="text-4xl text-slate-800 mb-2 font-bold">LEVEL UP!</h2>
             <div id="modal-desc" class="text-xl text-indigo-500 mb-8">성장했습니다!</div>
-            <button onclick="closeModal()" class="bg-indigo-600 text-white px-12 py-4 rounded-2xl font-bold text-xl">확인</button>
+            <button onclick="closeModal()" class="bg-indigo-600 text-white px-12 py-4 rounded-2xl font-bold text-xl active:scale-95">확인</button>
         </div>
     </div>
 
     <script>
-        // 변수 및 초기화
-        let currentUser = null;
-        let gameData = { level: 1, exp: 0, count: 0 };
-        let publicQuizzes = [];
-        
+        // 게임 관련 상수 및 이미지
         const charImg = new Image();
         charImg.src = 'image_355059.jpg';
-        charImg.onerror = () => { charImg.src = getCharacterSVG(gameData.level); };
+        charImg.onload = () => { console.log("Character Image Loaded"); };
+        charImg.onerror = () => { charImg.src = getCharacterSVG(1); };
 
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
@@ -133,87 +244,13 @@
         let shake = 0;
         let monster = { hp: 100, maxHp: 100, color: "#4ade80", name: "슬라임", shake: 0 };
 
-        // 1. 로그인 처리
-        async function handleLogin() {
-            const id = document.getElementById('user-id').value.trim();
-            const pw = document.getElementById('user-pw').value.trim();
-            
-            if (!id || !pw) {
-                alert("아이디와 비밀번호를 모두 입력해 주세요!");
-                return;
-            }
-
-            const { auth, db, appId, doc, getDoc, setDoc } = window.firebase;
-            
-            // 보안망 환경을 고려하여 익명 인증 후 Firestore를 사용한 사용자 관리
-            await signInAnonymously(auth);
-            
-            const userDocRef = doc(db, 'artifacts', appId, 'users', id, 'data', 'profile');
-            const userDoc = await getDoc(userDocRef);
-
-            if (userDoc.exists()) {
-                if (userDoc.data().password !== pw) {
-                    alert("비밀번호가 틀렸습니다!");
-                    return;
-                }
-                gameData = userDoc.data().gameStats || { level: 1, exp: 0, count: 0 };
-            } else {
-                // 신규 생성
-                gameData = { level: 1, exp: 0, count: 0 };
-                await setDoc(userDocRef, { 
-                    id, 
-                    password: pw, 
-                    gameStats: gameData,
-                    createdAt: new Date().toISOString()
-                });
-            }
-
-            currentUser = id;
-            document.getElementById('player-name-display').innerText = id;
-            document.getElementById('login-view').classList.add('hidden');
-            document.getElementById('game-view').classList.remove('hidden');
-            
-            initGame();
-        }
-
-        // 2. 게임 초기화 및 데이터 연동
-        function initGame() {
-            const { db, appId, collection, onSnapshot } = window.firebase;
-            
-            // 공용 단어장 실시간 감시 (Public Path)
-            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'wordList'), (snapshot) => {
-                publicQuizzes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                nextQuiz();
-                renderWordList();
-            });
-
-            saveData(); // UI 업데이트
-            animate();
-        }
-
-        async function saveData() {
-            if (!currentUser) return;
-            
-            const { db, appId, doc, updateDoc } = window.firebase;
-            
-            // UI 업데이트
-            document.getElementById('level-display').innerText = gameData.level;
-            document.getElementById('count-display').innerText = gameData.count;
-            document.getElementById('exp-bar').style.width = (gameData.exp / 100 * 100) + "%";
-            document.getElementById('stage-tag').innerText = gameData.level >= 10 ? "전설의 대마법사" : (gameData.level >= 5 ? "중급 마법사" : "초보 마법사");
-
-            // 클라우드 저장
-            const userDocRef = doc(db, 'artifacts', appId, 'users', currentUser, 'data', 'profile');
-            await updateDoc(userDocRef, { gameStats: gameData });
-        }
-
-        // 3. 퀴즈 및 전투 로직
+        // 퀴즈 시스템
         function nextQuiz() {
             const input = document.getElementById('spell-input');
             const meaningDisplay = document.getElementById('quiz-meaning');
             
-            if (publicQuizzes.length === 0) {
-                meaningDisplay.innerText = "단어장 비었음";
+            if (!window.publicQuizzes || window.publicQuizzes.length === 0) {
+                meaningDisplay.innerText = "도감 비었음";
                 input.disabled = true;
                 return;
             }
@@ -222,12 +259,13 @@
             input.value = '';
             input.focus();
             
-            const quiz = publicQuizzes[Math.floor(Math.random() * publicQuizzes.length)];
+            const quiz = window.publicQuizzes[Math.floor(Math.random() * window.publicQuizzes.length)];
             window.currentQuiz = quiz;
             meaningDisplay.innerText = quiz.meaning;
         }
 
         function checkAnswer() {
+            if (!window.currentQuiz) return;
             const typed = document.getElementById('spell-input').value.trim().toLowerCase();
             const answer = window.currentQuiz.word.toLowerCase();
 
@@ -236,34 +274,36 @@
                 nextQuiz();
             } else {
                 shake = 15;
-                document.getElementById('game-hint').innerText = "틀렸어요! (힌트: " + window.currentQuiz.word[0] + "...)";
-                document.getElementById('game-hint').className = "text-center text-red-500 text-xs mt-4 italic font-bold";
+                const hint = document.getElementById('game-hint');
+                hint.innerText = "틀렸어요! (힌트: " + window.currentQuiz.word[0] + "...)";
+                hint.classList.add('text-red-500', 'font-bold');
                 setTimeout(() => {
-                    document.getElementById('game-hint').innerText = "단어 스펠링을 정확히 입력해야 공격할 수 있어요!";
-                    document.getElementById('game-hint').className = "text-center text-slate-400 text-xs mt-4 italic font-normal";
+                    hint.innerText = "정답을 맞혀야 몬스터를 물리칠 수 있어요!";
+                    hint.classList.remove('text-red-500', 'font-bold');
                 }, 1500);
             }
         }
 
         function handleAttack() {
-            gameData.count++;
+            window.gameData.count++;
             monster.hp -= 34;
             monster.shake = 25;
             createParticles(280, 220);
 
             if (monster.hp <= 0) {
-                gameData.exp += 40;
+                window.gameData.exp += 40;
                 spawnMonster();
             } else {
-                gameData.exp += 10;
+                window.gameData.exp += 10;
             }
 
-            if (gameData.exp >= 100) {
-                gameData.exp = 0;
-                gameData.level++;
+            if (window.gameData.exp >= 100) {
+                window.gameData.exp = 0;
+                window.gameData.level++;
                 document.getElementById('modal').classList.remove('hidden');
             }
-            saveData();
+            updateUI();
+            window.saveDataToCloud();
         }
 
         function spawnMonster() {
@@ -272,27 +312,23 @@
             monster.color = colors[Math.floor(Math.random() * colors.length)];
         }
 
-        // 4. 관리자 단어장 추가 (Public Path)
-        async function addWord() {
-            const word = document.getElementById('new-word').value.trim();
-            const meaning = document.getElementById('new-meaning').value.trim();
-            if (!word || !meaning) return;
-
-            const { db, appId, collection, setDoc, doc } = window.firebase;
-            const wordId = word.toLowerCase();
-            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'wordList', wordId), { word, meaning });
+        function updateUI() {
+            document.getElementById('level-display').innerText = window.gameData.level;
+            document.getElementById('count-display').innerText = window.gameData.count;
+            document.getElementById('exp-bar').style.width = (window.gameData.exp) + "%";
+            document.getElementById('stage-tag').innerText = window.gameData.level >= 10 ? "전설의 대마법사" : (window.gameData.level >= 5 ? "중급 마법사" : "초보 마법사");
             
-            document.getElementById('new-word').value = '';
-            document.getElementById('new-meaning').value = '';
+            // 이미지 업데이트 (진화 단계)
+            if (window.gameData.level >= 5) {
+                charImg.src = getCharacterSVG(window.gameData.level);
+            }
         }
 
-        // 5. 기타 유틸리티
         function switchView(view) {
             document.getElementById('game-view').style.display = view === 'game' ? 'block' : 'none';
             document.getElementById('admin-view').style.display = view === 'admin' ? 'block' : 'none';
         }
 
-        function logout() { location.reload(); }
         function closeModal() { document.getElementById('modal').classList.add('hidden'); }
         
         function getCharacterSVG(level) {
@@ -346,7 +382,14 @@
 
         function renderWordList() {
             const table = document.getElementById('word-list-table');
-            table.innerHTML = publicQuizzes.map(q => `<tr class="border-b"><td class="py-2 font-bold">${q.word}</td><td>${q.meaning}</td></tr>`).join('');
+            table.innerHTML = window.publicQuizzes.map(q => `
+                <tr class="border-b">
+                    <td class="py-2 font-bold text-indigo-500">${q.word}</td>
+                    <td class="py-2">${q.meaning}</td>
+                    <td class="py-2 text-right">
+                        <button onclick="deleteWord('${q.id}')" class="text-red-400 text-xs">삭제</button>
+                    </td>
+                </tr>`).join('');
         }
     </script>
 </body>
