@@ -30,11 +30,12 @@
             monster: { hp: 100, color: "#4ade80", shake: 0 }
         };
 
-        const charImg = new Image();
-        charImg.src = 'image_355059.jpg';
-        charImg.onerror = () => { 
+        // 이미지 객체 전역 선언 (다른 스크립트에서도 접근 가능하도록 window에 부착)
+        window.charImg = new Image();
+        window.charImg.src = 'image_355059.jpg';
+        window.charImg.onerror = () => { 
             const lvl = (window.state && window.state.gameData) ? window.state.gameData.level : 1;
-            charImg.src = getEvoSVG(lvl); 
+            window.charImg.src = getEvoSVG(lvl); 
         };
 
         // --- 커스텀 알림/확인창 로직 (팝업 차단 방지) ---
@@ -72,8 +73,10 @@
 
         // --- 로그인 및 인증 로직 ---
         window.handleLogin = async () => {
-            const id = document.getElementById('user-id').value.trim();
-            const pw = document.getElementById('user-pw').value.trim();
+            const idInput = document.getElementById('user-id');
+            const pwInput = document.getElementById('user-pw');
+            const id = idInput.value.trim();
+            const pw = pwInput.value.trim();
             const btn = document.getElementById('login-btn');
 
             if (!id || !pw) return window.showCustomAlert("이름과 비밀번호를 입력하세요!");
@@ -108,7 +111,6 @@
                     }
                     window.state.gameData = userDoc.data().gameStats || { level: 1, exp: 0, count: 0 };
                 } else {
-                    // confirm() 대신 커스텀 모달 사용
                     const isConfirmed = await window.showCustomConfirm(`'${id}' 학생님, 처음 오셨군요!\n지금 입력하신 비밀번호를 '마법 비밀번호'로 정할까요?`);
                     
                     if (isConfirmed) {
@@ -356,15 +358,20 @@
         }
 
         window.updateUI = () => {
-            document.getElementById('lvl-txt').innerText = window.state.gameData.level;
-            document.getElementById('cnt-txt').innerText = window.state.gameData.count;
-            document.getElementById('exp-bar').style.width = window.state.gameData.exp + "%";
-            document.getElementById('rank-badge').innerText = window.state.gameData.level >= 10 ? "전설의 대마법사" : (window.state.gameData.level >= 5 ? "중급 마법사" : "초보 마법사");
+            const lvlTxt = document.getElementById('lvl-txt');
+            const cntTxt = document.getElementById('cnt-txt');
+            const expBar = document.getElementById('exp-bar');
+            const rankBadge = document.getElementById('rank-badge');
+            
+            if (lvlTxt) lvlTxt.innerText = window.state.gameData.level;
+            if (cntTxt) cntTxt.innerText = window.state.gameData.count;
+            if (expBar) expBar.style.width = window.state.gameData.exp + "%";
+            if (rankBadge) rankBadge.innerText = window.state.gameData.level >= 10 ? "전설의 대마법사" : (window.state.gameData.level >= 5 ? "중급 마법사" : "초보 마법사");
             
             if (window.state.gameData.level >= 5) {
-                charImg.src = getEvoSVG(window.state.gameData.level);
+                window.charImg.src = getEvoSVG(window.state.gameData.level);
             } else {
-                charImg.src = 'image_355059.jpg';
+                window.charImg.src = 'image_355059.jpg';
             }
         };
 
@@ -376,7 +383,7 @@
             if (window.state.shake > 0) window.state.shake *= 0.8;
             
             ctx.save(); ctx.translate(100 + ms, 200 + float);
-            if (charImg.complete) ctx.drawImage(charImg, -75, -75, 150, 150);
+            if (window.charImg.complete) ctx.drawImage(window.charImg, -75, -75, 150, 150);
             ctx.restore();
 
             const mons = (Math.random()-0.5) * window.state.monster.shake;
