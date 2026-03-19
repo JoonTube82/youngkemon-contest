@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>6학년 영단어 마법 RPG (Multi-User)</title>
+    <title>서영이의 단어 마법 RPG (Multi-User)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Firebase SDK -->
     <script type="module">
@@ -18,8 +18,15 @@
         const db = getFirestore(app);
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-        // 전역 함수로 노출 (버튼 클릭 등에서 사용 가능하게 함)
-        window.handleLogin = async () => {
+        // 전역 변수 설정
+        window.gameData = { level: 1, exp: 0, count: 0 };
+        window.publicQuizzes = [];
+        window.currentUser = null;
+
+        // --- 로그인 및 회원가입 로직 ---
+        const loginBtn = document.getElementById('login-btn');
+        
+        async function handleLogin() {
             const id = document.getElementById('user-id').value.trim();
             const pw = document.getElementById('user-pw').value.trim();
             
@@ -28,44 +35,54 @@
                 return;
             }
 
-            // 4자리 숫자 비밀번호 체크
-            if (!/^\d{4}$/.test(pw)) {
-                alert("비밀번호는 반드시 숫자 4자리여야 합니다!");
+            // 학생 명단 (선생님, 여기에 학생들 이름을 추가하시면 됩니다)
+            const STUDENT_LIST = ["서영", "민준", "지우", "하윤", "도윤", "예준", "테스트"]; 
+            
+            if (!STUDENT_LIST.includes(id)) {
+                alert("등록되지 않은 학생입니다. 선생님께 이름을 확인하세요! (입력한 이름: " + id + ")");
                 return;
             }
 
-            // 허용된 학생 명단 체크 (선생님이 아래 리스트를 수정하시면 됩니다)
-            const STUDENT_LIST = ["서영", "단엘", "라희", "민지", "정훈", "문경", "소윤", "하율", "현수", "시율", "은영", "이담", "훈태", "테스트"]; // 여기에 학생들 이름을 넣으세요
-            if (!STUDENT_LIST.includes(id)) {
-                alert("등록되지 않은 학생입니다. 선생님께 이름을 확인하세요!");
-                return;
-            }
+            // 버튼 로딩 상태
+            const originalText = loginBtn.innerText;
+            loginBtn.innerText = "마법 학교 접속 중...";
+            loginBtn.disabled = true;
 
             try {
-                // 1. 익명 인증 먼저 수행
+                // RULE 3: Auth Before Queries
                 await signInAnonymously(auth);
                 
-                // 2. 사용자 문서 확인
+                // RULE 1: Strict Paths
                 const userDocRef = doc(db, 'artifacts', appId, 'users', id, 'data', 'profile');
                 const userDoc = await getDoc(userDocRef);
 
                 if (userDoc.exists()) {
+                    // 이미 등록된 학생인 경우: 비밀번호 확인
                     if (userDoc.data().password !== pw) {
-                        alert("비밀번호가 틀렸습니다!");
+                        alert("비밀번호가 틀렸습니다! 처음 로그인할 때 정한 비밀번호를 입력하세요.");
+                        loginBtn.innerText = originalText;
+                        loginBtn.disabled = false;
                         return;
                     }
                     window.gameData = userDoc.data().gameStats || { level: 1, exp: 0, count: 0 };
                 } else {
-                    // 첫 로그인 시 데이터 생성
-                    window.gameData = { level: 1, exp: 0, count: 0 };
-                    await setDoc(userDocRef, { 
-                        id, 
-                        password: pw, 
-                        gameStats: window.gameData,
-                        createdAt: new Date().toISOString()
-                    });
+                    // 처음 로그인하는 학생인 경우: 현재 입력한 비번을 영구 비번으로 설정
+                    if (confirm(id + " 학생님, 처음 오셨군요!\n지금 입력하신 비밀번호를 앞으로 계속 사용하게 됩니다. 맞습니까?")) {
+                        window.gameData = { level: 1, exp: 0, count: 0 };
+                        await setDoc(userDocRef, { 
+                            id, 
+                            password: pw, 
+                            gameStats: window.gameData,
+                            createdAt: new Date().toISOString()
+                        });
+                    } else {
+                        loginBtn.innerText = originalText;
+                        loginBtn.disabled = false;
+                        return;
+                    }
                 }
 
+                // 로그인 성공 처리
                 window.currentUser = id;
                 document.getElementById('player-name-display').innerText = id;
                 document.getElementById('login-view').classList.add('hidden');
@@ -74,10 +91,16 @@
                 initGame();
             } catch (error) {
                 console.error("Login Error:", error);
-                alert("로그인 중 오류가 발생했습니다. 잠시 후 다시 시도하세요.");
+                alert("접속 오류가 발생했습니다. 잠시 후 다시 시도하세요.");
+                loginBtn.innerText = originalText;
+                loginBtn.disabled = false;
             }
-        };
+        }
 
+        // 버튼 클릭 이벤트 리스너 연결 (더 안정적인 방식)
+        loginBtn.addEventListener('click', handleLogin);
+
+        // --- 단어장 및 데이터 관리 ---
         window.addWord = async () => {
             const word = document.getElementById('new-word').value.trim();
             const meaning = document.getElementById('new-meaning').value.trim();
@@ -88,18 +111,14 @@
                 await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'wordList', wordId), { word, meaning });
                 document.getElementById('new-word').value = '';
                 document.getElementById('new-meaning').value = '';
-            } catch (e) {
-                console.error("Add Word Error:", e);
-            }
+            } catch (e) { console.error("Add Word Error:", e); }
         };
 
         window.deleteWord = async (id) => {
             if(!confirm("이 단어를 도감에서 삭제할까요?")) return;
             try {
                 await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'wordList', id));
-            } catch (e) {
-                console.error("Delete Word Error:", e);
-            }
+            } catch (e) { console.error("Delete Word Error:", e); }
         };
 
         window.saveDataToCloud = async () => {
@@ -107,30 +126,27 @@
             try {
                 const userDocRef = doc(db, 'artifacts', appId, 'users', window.currentUser, 'data', 'profile');
                 await updateDoc(userDocRef, { gameStats: window.gameData });
-            } catch (e) {
-                console.error("Save Data Error:", e);
-            }
+            } catch (e) { console.error("Save Data Error:", e); }
         };
 
         function initGame() {
-            // 공용 단어장 실시간 감시
+            // RULE 1: Public data path
             onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'wordList'), (snapshot) => {
                 window.publicQuizzes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 nextQuiz();
                 renderWordList();
-            }, (error) => {
-                console.error("Snapshot Error:", error);
-            });
+            }, (error) => { console.error("Snapshot Error:", error); });
 
             updateUI();
             animate();
         }
 
-        // 전역 변수 초기화
-        window.gameData = { level: 1, exp: 0, count: 0 };
-        window.publicQuizzes = [];
-        window.currentUser = null;
-        window.firebase = { db, appId }; // 필요한 경우를 위해 보관
+        // --- 뷰 전환 ---
+        window.switchView = (view) => {
+            document.getElementById('game-view').style.display = view === 'game' ? 'block' : 'none';
+            document.getElementById('admin-view').style.display = view === 'admin' ? 'block' : 'none';
+        };
+
     </script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
@@ -140,6 +156,7 @@
         .spell-input:focus { border-color: #6366f1; box-shadow: 0 0 20px rgba(99, 102, 241, 0.2); }
         .btn-primary { background: linear-gradient(135deg, #6366f1, #a855f7); color: white; border-radius: 1.5rem; padding: 1rem; font-size: 1.4rem; font-weight: bold; width: 100%; box-shadow: 0 5px 0 #4338ca; transition: all 0.1s; cursor: pointer; }
         .btn-primary:active { transform: translateY(4px); box-shadow: 0 1px 0 #4338ca; }
+        .btn-primary:disabled { opacity: 0.7; cursor: not-allowed; transform: none; box-shadow: none; }
         canvas { filter: drop-shadow(0 15px 30px rgba(99, 102, 241, 0.2)); image-rendering: pixelated; }
         .hidden { display: none; }
         .login-input { border: 2px solid #e2e8f0; border-radius: 1rem; padding: 0.8rem; width: 100%; margin-bottom: 1rem; outline: none; }
@@ -155,9 +172,9 @@
                 <h1 class="text-4xl text-center text-indigo-600 mb-2">🧙‍♀️ 마법 학교</h1>
                 <p class="text-center text-slate-400 mb-8 font-normal">학생 전용 로그인</p>
                 <input type="text" id="user-id" class="login-input" placeholder="이름 (아이디)">
-                <input type="password" id="user-pw" class="login-input" placeholder="비밀번호 (숫자 4자리)" maxlength="4">
-                <button onclick="handleLogin()" class="btn-primary mb-4">입장하기</button>
-                <p class="text-center text-slate-400 text-xs">선생님이 알려준 이름과 비밀번호를 입력하세요.</p>
+                <input type="password" id="user-pw" class="login-input" placeholder="비밀번호">
+                <button id="login-btn" class="btn-primary mb-4">입장하기</button>
+                <p class="text-center text-slate-400 text-xs italic">선생님이 알려준 이름을 입력하고,<br>본인만의 비밀번호를 처음으로 정해보세요!</p>
             </div>
         </div>
 
@@ -212,8 +229,8 @@
                     </div>
                     <button onclick="addWord()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold shadow-lg active:scale-95 transition-all">도감에 추가하기</button>
                 </div>
-                <div class="max-h-[300px] overflow-y-auto">
-                    <table class="w-full text-left text-sm">
+                <div class="max-h-[300px] overflow-y-auto text-sm">
+                    <table class="w-full text-left">
                         <tbody id="word-list-table"></tbody>
                     </table>
                 </div>
@@ -232,10 +249,9 @@
     </div>
 
     <script>
-        // 게임 관련 상수 및 이미지
+        // 게임 캔버스 제어 로직
         const charImg = new Image();
         charImg.src = 'image_355059.jpg';
-        charImg.onload = () => { console.log("Character Image Loaded"); };
         charImg.onerror = () => { charImg.src = getCharacterSVG(1); };
 
         const canvas = document.getElementById('gameCanvas');
@@ -244,31 +260,26 @@
         let shake = 0;
         let monster = { hp: 100, maxHp: 100, color: "#4ade80", name: "슬라임", shake: 0 };
 
-        // 퀴즈 시스템
         function nextQuiz() {
             const input = document.getElementById('spell-input');
             const meaningDisplay = document.getElementById('quiz-meaning');
-            
             if (!window.publicQuizzes || window.publicQuizzes.length === 0) {
                 meaningDisplay.innerText = "도감 비었음";
                 input.disabled = true;
                 return;
             }
-            
             input.disabled = false;
             input.value = '';
             input.focus();
-            
             const quiz = window.publicQuizzes[Math.floor(Math.random() * window.publicQuizzes.length)];
             window.currentQuiz = quiz;
             meaningDisplay.innerText = quiz.meaning;
         }
 
-        function checkAnswer() {
+        window.checkAnswer = () => {
             if (!window.currentQuiz) return;
             const typed = document.getElementById('spell-input').value.trim().toLowerCase();
             const answer = window.currentQuiz.word.toLowerCase();
-
             if (typed === answer) {
                 handleAttack();
                 nextQuiz();
@@ -282,21 +293,17 @@
                     hint.classList.remove('text-red-500', 'font-bold');
                 }, 1500);
             }
-        }
+        };
 
         function handleAttack() {
             window.gameData.count++;
             monster.hp -= 34;
             monster.shake = 25;
             createParticles(280, 220);
-
             if (monster.hp <= 0) {
                 window.gameData.exp += 40;
                 spawnMonster();
-            } else {
-                window.gameData.exp += 10;
-            }
-
+            } else { window.gameData.exp += 10; }
             if (window.gameData.exp >= 100) {
                 window.gameData.exp = 0;
                 window.gameData.level++;
@@ -313,27 +320,21 @@
         }
 
         function updateUI() {
-            document.getElementById('level-display').innerText = window.gameData.level;
-            document.getElementById('count-display').innerText = window.gameData.count;
-            document.getElementById('exp-bar').style.width = (window.gameData.exp) + "%";
-            document.getElementById('stage-tag').innerText = window.gameData.level >= 10 ? "전설의 대마법사" : (window.gameData.level >= 5 ? "중급 마법사" : "초보 마법사");
-            
-            // 이미지 업데이트 (진화 단계)
-            if (window.gameData.level >= 5) {
-                charImg.src = getCharacterSVG(window.gameData.level);
-            }
-        }
-
-        function switchView(view) {
-            document.getElementById('game-view').style.display = view === 'game' ? 'block' : 'none';
-            document.getElementById('admin-view').style.display = view === 'admin' ? 'block' : 'none';
+            const lvl = document.getElementById('level-display');
+            const cnt = document.getElementById('count-display');
+            const bar = document.getElementById('exp-bar');
+            const tag = document.getElementById('stage-tag');
+            if(lvl) lvl.innerText = window.gameData.level;
+            if(cnt) cnt.innerText = window.gameData.count;
+            if(bar) bar.style.width = (window.gameData.exp) + "%";
+            if(tag) tag.innerText = window.gameData.level >= 10 ? "전설의 대마법사" : (window.gameData.level >= 5 ? "중급 마법사" : "초보 마법사");
+            if (window.gameData.level >= 5) { charImg.src = getCharacterSVG(window.gameData.level); }
         }
 
         function closeModal() { document.getElementById('modal').classList.add('hidden'); }
-        
         function getCharacterSVG(level) {
             let color = level >= 10 ? "#1e1b4b" : (level >= 5 ? "#7c3aed" : "#8b5cf6");
-            const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M30,40 L50,10 L70,40 Z" fill="${color}" /><rect x="25" y="40" width="50" height="5" fill="${color}" /><rect x="35" y="45" width="30" height="20" fill="#ffedd5" /><rect x="42" y="52" width="2" height="2" fill="#334155" /><rect x="56" y="52" width="2" height="2" fill="#334155" /><path d="M30,65 L70,65 L75,90 L25,90 Z" fill="${color}" opacity="0.8" /></svg>`;
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M30,40 L50,10 L70,40 Z" fill="${color}" /><rect x="25" y="40" width="50" height="5" fill="${color}" /><rect x="35" y="45" width="30" height="20" fill="#ffedd5" /><rect x="42" y="52" width="2" height="2" fill="#334155" /><rect x="55" y="52" width="2" height="2" fill="#334155" /><path d="M47,50 Q50,53 53,50" fill="none" stroke="#334155" stroke-width="1" /><path d="M30,65 L70,65 L75,90 L25,90 Z" fill="${color}" opacity="0.8" /></svg>`;
             return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
         }
 
@@ -347,18 +348,13 @@
             ctx.clearRect(0, 0, 400, 350);
             ctx.fillStyle = "#f8fafc";
             ctx.fillRect(0, 0, 400, 350);
-
             const float = Math.sin(Date.now() / 500) * 10;
             const ms = (Math.random()-0.5) * shake;
             if (shake > 0) shake *= 0.8;
-
-            // 캐릭터
             ctx.save();
             ctx.translate(100 + ms, 200 + float);
             if (charImg.complete) ctx.drawImage(charImg, -70, -70, 140, 140);
             ctx.restore();
-
-            // 몬스터
             if (monster.hp > 0) {
                 const mons = (Math.random()-0.5) * monster.shake;
                 if (monster.shake > 0) monster.shake *= 0.8;
@@ -370,7 +366,6 @@
                 ctx.fillStyle = "#ef4444"; ctx.fillRect(-30, -50, 60 * (monster.hp/100), 5);
                 ctx.restore();
             }
-
             particles.forEach((p, i) => {
                 p.x += p.vx; p.y += p.vy; p.life -= 0.03;
                 ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 4, 4);
@@ -382,6 +377,7 @@
 
         function renderWordList() {
             const table = document.getElementById('word-list-table');
+            if(!table) return;
             table.innerHTML = window.publicQuizzes.map(q => `
                 <tr class="border-b">
                     <td class="py-2 font-bold text-indigo-500">${q.word}</td>
