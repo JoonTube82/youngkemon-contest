@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>서영이의 단어 마법 RPG</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
+        body { font-family: 'Jua', sans-serif; background-color: #f8fafc; overflow-x: hidden; }
+        .game-container { max-width: 500px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
+        
+        /* 주문 입력창 스타일 */
+        .spell-input {
+            border: 4px solid #e2e8f0;
+            border-radius: 1.5rem;
+            padding: 1.2rem;
+            width: 100%;
+            text-align: center;
+            font-size: 1.8rem;
+            outline: none;
+            transition: all 0.2s;
+            background: white;
+        }
+        .spell-input:focus { 
+            border-color: #6366f1; 
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.2); 
+        }
+        
+        /* 공격 버튼 스타일 */
+        .attack-submit-btn {
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            color: white;
+            border-radius: 1.5rem;
+            padding: 1rem;
+            font-size: 1.4rem;
+            font-weight: bold;
+            width: 100%;
+            margin-top: 1rem;
+            box-shadow: 0 5px 0 #4338ca;
+            transition: all 0.1s;
+        }
+        .attack-submit-btn:active { 
+            transform: translateY(4px); 
+            box-shadow: 0 1px 0 #4338ca;
+        }
+        
+        .admin-input { border: 2px solid #e2e8f0; border-radius: 0.75rem; padding: 0.5rem 1rem; width: 100%; }
+        
+        canvas { 
+            filter: drop-shadow(0 15px 30px rgba(99, 102, 241, 0.2));
+            image-rendering: pixelated;
+        }
+        .view-transition { transition: opacity 0.3s ease-in-out; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body class="p-4">
+    <div class="game-container">
+        
+        <!-- 메인 게임 화면 -->
+        <div id="game-view" class="view-transition">
+            <!-- 상태바 -->
+            <div class="bg-white rounded-3xl p-5 mb-4 shadow-xl border-2 border-indigo-50 flex justify-between items-center">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span id="stage-tag" class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-600 font-bold block w-fit">초보 마법사</span>
+                        <button onclick="switchView('admin')" class="text-slate-300 hover:text-indigo-500 transition-colors">⚙️ 관리자</button>
+                    </div>
+                    <h2 class="text-3xl text-slate-800">서영 <span class="text-indigo-500 font-normal text-xl">Lv.<span id="level-display">1</span></span></h2>
+                </div>
+                <div class="text-right">
+                    <span class="text-slate-400 text-sm">마법 성공</span>
+                    <p id="count-display" class="text-2xl text-slate-700 font-bold">0</p>
+                </div>
+            </div>
+
+            <!-- 전투 화면 (캔버스) -->
+            <div class="relative bg-white rounded-[2.5rem] shadow-2xl border-4 border-white mb-6 overflow-hidden">
+                <canvas id="gameCanvas" width="400" height="350"></canvas>
+                
+                <!-- 경험치 바 -->
+                <div class="absolute bottom-4 left-6 right-6 bg-slate-100 h-6 rounded-2xl overflow-hidden border-2 border-white shadow-inner">
+                    <div id="exp-bar" class="h-full bg-gradient-to-r from-indigo-400 to-purple-400 transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- 주문 입력 퀴즈 영역 -->
+            <div id="quiz-area" class="bg-indigo-50 rounded-[2.5rem] p-8 shadow-inner border-2 border-indigo-100">
+                <div class="text-center mb-6">
+                    <span class="text-indigo-400 text-sm tracking-widest uppercase font-bold">마법 주문(뜻)</span>
+                    <h3 id="quiz-meaning" class="text-5xl text-indigo-600 font-bold mt-2">사과</h3>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <input type="text" id="spell-input" class="spell-input" placeholder="영단어를 타이핑하세요" autocomplete="off" onkeyup="if(window.event.keyCode==13){checkAnswer()}">
+                    <button onclick="checkAnswer()" class="attack-submit-btn">✨ 주문 외우기 (공격!)</button>
+                </div>
+                <p id="game-hint" class="text-center text-slate-400 text-xs mt-4 italic font-normal">정답을 맞혀야 몬스터를 물리칠 수 있어요!</p>
+            </div>
+        </div>
+
+        <!-- 관리자 단어장 설정 화면 -->
+        <div id="admin-view" class="view-transition hidden">
+            <div class="bg-white rounded-3xl p-6 shadow-xl border-2 border-slate-100">
+                <div class="flex justify-between items-center mb-6 border-b pb-4">
+                    <h2 class="text-2xl text-slate-800 font-bold">🛠️ 단어 마법 도감 관리</h2>
+                    <button onclick="switchView('game')" class="bg-indigo-100 px-4 py-2 rounded-xl text-sm font-bold text-indigo-600">게임으로 돌아가기</button>
+                </div>
+
+                <div class="space-y-4 mb-8 bg-slate-50 p-4 rounded-2xl">
+                    <p class="text-xs text-slate-400 mb-2">새로운 마법 주문(단어)을 추가하세요.</p>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="text" id="new-word" class="admin-input" placeholder="영단어 (예: School)">
+                        <input type="text" id="new-meaning" class="admin-input" placeholder="뜻 (예: 학교)">
+                    </div>
+                    <button onclick="addWord()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold shadow-lg">마법 추가하기</button>
+                </div>
+
+                <div class="max-h-[300px] overflow-y-auto px-2">
+                    <table class="w-full text-left">
+                        <thead class="text-slate-400 text-xs uppercase sticky top-0 bg-white">
+                            <tr>
+                                <th class="pb-2">영단어</th>
+                                <th class="pb-2">뜻</th>
+                                <th class="pb-2 text-right">삭제</th>
+                            </tr>
+                        </thead>
+                        <tbody id="word-list-table" class="text-slate-600">
+                            <!-- 단어 목록 동적 생성 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="mt-8 text-center">
+                <button onclick="resetGame()" class="text-red-300 text-xs underline decoration-dotted">게임 데이터 및 단어장 전체 초기화</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 레벨업 알림 모달 -->
+    <div id="modal" class="fixed inset-0 bg-indigo-900/80 hidden flex items-center justify-center z-50 p-6 backdrop-blur-md">
+        <div class="bg-white rounded-[3rem] p-10 text-center shadow-2xl scale-110 transition-transform">
+            <h1 id="modal-icon" class="text-7xl mb-4">🎊</h1>
+            <h2 id="modal-title" class="text-4xl text-slate-800 mb-2 font-bold">LEVEL UP!</h2>
+            <div id="modal-desc" class="text-xl text-indigo-500 mb-8 font-medium">성장했습니다!</div>
+            <button onclick="closeModal()" class="bg-indigo-600 text-white px-12 py-4 rounded-2xl font-bold text-xl shadow-lg active:scale-95 transition-all">다음 모험으로</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 전역 요소 참조
+        const stageTag = document.getElementById('stage-tag');
+        const levelDisplay = document.getElementById('level-display');
+        const countDisplay = document.getElementById('count-display');
+        const expBar = document.getElementById('exp-bar');
+        const spellInput = document.getElementById('spell-input');
+        
+        // 게임 상태 관리
+        let state = {
+            level: parseInt(localStorage.getItem('sy_level_v4')) || 1,
+            exp: parseInt(localStorage.getItem('sy_exp_v4')) || 0,
+            count: parseInt(localStorage.getItem('sy_count_v4')) || 0,
+            maxExp: 100,
+            shake: 0,
+            particles: [],
+            floatOffset: 0,
+            quizzes: JSON.parse(localStorage.getItem('sy_quizzes_v4')) || [
+                { word: "Apple", meaning: "사과" },
+                { word: "Book", meaning: "책" },
+                { word: "School", meaning: "학교" },
+                { word: "Magic", meaning: "마법" },
+                { word: "English", meaning: "영어" }
+            ],
+            currentQuiz: null,
+            monster: { hp: 100, maxHp: 100, color: "#4ade80", name: "슬라임", shake: 0, alive: true }
+        };
+
+        // 이미지 로딩 및 대체 캐릭터 시스템
+        let charImg = new Image();
+        charImg.src = 'image_355059.jpg'; // 업로드하신 이미지 파일명
+        charImg.onerror = () => { charImg.src = getCharacterSVG(state.level); };
+
+        function getCharacterSVG(level) {
+            let color = level >= 10 ? "#1e1b4b" : (level >= 5 ? "#7c3aed" : "#8b5cf6");
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M30,40 L50,10 L70,40 Z" fill="${color}" /><rect x="25" y="40" width="50" height="5" fill="${color}" /><rect x="35" y="45" width="30" height="20" fill="#ffedd5" /><rect x="42" y="52" width="2" height="2" fill="#334155" /><rect x="56" y="52" width="2" height="2" fill="#334155" /><path d="M30,65 L70,65 L75,90 L25,90 Z" fill="${color}" opacity="0.8" /></svg>`;
+            return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
+        }
+
+        // 화면 전환
+        function switchView(view) {
+            const game = document.getElementById('game-view');
+            const admin = document.getElementById('admin-view');
+            if (view === 'admin') {
+                game.classList.add('hidden');
+                admin.classList.remove('hidden');
+                renderWordList();
+            } else {
+                admin.classList.add('hidden');
+                game.classList.remove('hidden');
+                nextQuiz();
+            }
+        }
+
+        // 퀴즈 로직
+        function nextQuiz() {
+            if (state.quizzes.length === 0) {
+                document.getElementById('quiz-meaning').innerText = "단어장 비었음";
+                spellInput.placeholder = "관리자 페이지에서 단어를 넣어주세요!";
+                spellInput.disabled = true;
+                return;
+            }
+            
+            spellInput.disabled = false;
+            spellInput.value = '';
+            spellInput.focus();
+            
+            const randomIdx = Math.floor(Math.random() * state.quizzes.length);
+            state.currentQuiz = state.quizzes[randomIdx];
+            document.getElementById('quiz-meaning').innerText = state.currentQuiz.meaning;
+        }
+
+        function checkAnswer() {
+            if (!state.currentQuiz) return;
+            const userTyped = spellInput.value.trim().toLowerCase();
+            const answer = state.currentQuiz.word.toLowerCase();
+
+            if (userTyped === answer) {
+                handleAttack();
+                nextQuiz();
+            } else {
+                state.shake = 15;
+                const hint = document.getElementById('game-hint');
+                hint.innerText = `스펠링이 틀렸어요! (힌트: ${state.currentQuiz.word[0]}...)`;
+                hint.className = "text-center text-red-500 text-xs mt-4 italic font-bold";
+                spellInput.classList.add('border-red-400');
+                setTimeout(() => {
+                    hint.innerText = "단어 스펠링을 정확히 입력해야 공격할 수 있어요!";
+                    hint.className = "text-center text-slate-400 text-xs mt-4 italic font-normal";
+                    spellInput.classList.remove('border-red-400');
+                }, 1500);
+                spellInput.select();
+            }
+        }
+
+        // 공격 및 보상
+        function handleAttack() {
+            if (!state.monster.alive) return;
+            state.count++;
+            state.monster.hp -= 34; // 약 3방
+            state.monster.shake = 25;
+            createParticles(280, 220);
+
+            if (state.monster.hp <= 0) {
+                state.monster.alive = false;
+                state.exp += 40; // 몬스터 처치 경험치
+                setTimeout(spawnMonster, 1000);
+            } else {
+                state.exp += 10; // 공격 시 경험치
+            }
+
+            if (state.exp >= state.maxExp) {
+                state.exp = 0;
+                state.level++;
+                charImg.src = (state.level < 5) ? 'image_355059.jpg' : getCharacterSVG(state.level);
+                showModal();
+            }
+            saveData();
+        }
+
+        function spawnMonster() {
+            state.monster.alive = true;
+            state.monster.maxHp = 100 + (state.level * 10);
+            state.monster.hp = state.monster.maxHp;
+            const colors = ["#4ade80", "#fb923c", "#f87171", "#60a5fa", "#a78bfa"];
+            const names = ["포도 슬라임", "화난 구름", "작은 불꽃", "푸른 물방울", "어둠의 조각"];
+            const idx = Math.floor(Math.random() * colors.length);
+            state.monster.color = colors[idx];
+            state.monster.name = names[idx];
+        }
+
+        // 단어장 관리
+        function addWord() {
+            const word = document.getElementById('new-word').value.trim();
+            const meaning = document.getElementById('new-meaning').value.trim();
+            if (word && meaning) {
+                state.quizzes.push({ word, meaning });
+                localStorage.setItem('sy_quizzes_v4', JSON.stringify(state.quizzes));
+                document.getElementById('new-word').value = '';
+                document.getElementById('new-meaning').value = '';
+                renderWordList();
+            }
+        }
+
+        function deleteWord(idx) {
+            state.quizzes.splice(idx, 1);
+            localStorage.setItem('sy_quizzes_v4', JSON.stringify(state.quizzes));
+            renderWordList();
+        }
+
+        function renderWordList() {
+            const tbody = document.getElementById('word-list-table');
+            tbody.innerHTML = '';
+            state.quizzes.forEach((q, i) => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-slate-50";
+                tr.innerHTML = `<td class="py-3 font-bold text-indigo-500">${q.word}</td><td class="py-3">${q.meaning}</td><td class="py-3 text-right"><button onclick="deleteWord(${i})" class="text-red-300 hover:text-red-500 transition-colors">삭제</button></td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // 공통 유틸리티
+        function saveData() {
+            if (levelDisplay) levelDisplay.innerText = state.level;
+            if (countDisplay) countDisplay.innerText = state.count;
+            if (expBar) expBar.style.width = (state.exp/state.maxExp*100) + "%";
+            if (stageTag) {
+                stageTag.innerText = state.level >= 10 ? "전설의 대마법사" : (state.level >= 5 ? "중급 마법사" : "초보 마법사");
+            }
+            localStorage.setItem('sy_level_v4', state.level);
+            localStorage.setItem('sy_exp_v4', state.exp);
+            localStorage.setItem('sy_count_v4', state.count);
+        }
+
+        function createParticles(x, y) {
+            for (let i = 0; i < 15; i++) {
+                state.particles.push({
+                    x, y, vx: (Math.random()-0.5)*18, vy: (Math.random()-0.5)*18,
+                    life: 1.0, size: Math.random()*6+2, color: state.monster.color
+                });
+            }
+        }
+
+        function showModal() {
+            const modal = document.getElementById('modal');
+            const desc = document.getElementById('modal-desc');
+            desc.innerHTML = `레벨 <span class="text-indigo-600 font-bold">${state.level}</span>(으)로 성장했습니다!`;
+            if (state.level === 5 || state.level === 10) {
+                document.getElementById('modal-title').innerText = "진화 완료!";
+                document.getElementById('modal-icon').innerText = "🌟";
+            }
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+
+        function resetGame() {
+            if(confirm("모든 단어장과 기록을 초기화할까요?")) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
+        // 드로잉 루프
+        function drawMonster(x, y, size, color, shake) {
+            if (!state.monster.alive) return;
+            const sx = (Math.random() - 0.5) * shake;
+            ctx.save();
+            ctx.translate(x + sx, y);
+            
+            // 몬스터 바디
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(0, 0, size/2, Math.PI, 0);
+            ctx.fillRect(-size/2, 0, size, size/3);
+            ctx.fill();
+            
+            // 몬스터 눈
+            ctx.fillStyle = "white";
+            ctx.fillRect(-size/4, -size/6, size/10, size/10);
+            ctx.fillRect(size/10, -size/6, size/10, size/10);
+            
+            // 몬스터 체력바
+            ctx.fillStyle = "#f1f5f9";
+            ctx.fillRect(-30, -size/1.2, 60, 6);
+            ctx.fillStyle = "#ef4444";
+            ctx.fillRect(-30, -size/1.2, 60 * (state.monster.hp/state.monster.maxHp), 6);
+            
+            ctx.restore();
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, 400, 350);
+            ctx.fillStyle = "#f8fafc";
+            ctx.fillRect(0, 0, 400, 350);
+
+            let sx = (Math.random() - 0.5) * state.shake;
+            if (state.shake > 0) state.shake *= 0.8;
+
+            state.floatOffset = Math.sin(Date.now() / 500) * 12;
+
+            // 서영이 캐릭터 그리기
+            ctx.save();
+            ctx.translate(100 + sx, 200 + state.floatOffset);
+            if (charImg.complete) {
+                ctx.drawImage(charImg, -70, -70, 140, 140);
+            }
+            ctx.restore();
+
+            // 몬스터 그리기
+            drawMonster(280, 220, 90, state.monster.color, state.monster.shake);
+            if (state.monster.shake > 0) state.monster.shake *= 0.85;
+
+            // 이펙트 파티클
+            state.particles.forEach((p, i) => {
+                p.x += p.vx; p.y += p.vy; p.life -= 0.03;
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+                if (p.life <= 0) state.particles.splice(i, 1);
+            });
+            ctx.globalAlpha = 1.0;
+            requestAnimationFrame(animate);
+        }
+
+        window.onload = () => {
+            saveData();
+            nextQuiz();
+            animate();
+        };
+    </script>
+</body>
+</html>
