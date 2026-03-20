@@ -5,18 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>6학년 영어 RPG</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+    
+    <!-- Firebase SDK (가장 안정적인 Compat 버전 사용) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
+    <script>
         // --- [선생님 설정 구역] ---
-        // 1. 학생 명단 (작업하신 그대로 유지합니다)
+        // 1. 학생 명단 (작업하신 내용을 그대로 유지합니다)
         const STUDENT_LIST = ["서영", "단엘", "라희", "민지", "정훈", "문경", "소윤", "하율", "현수", "시율", "은영", "이담", "훈태", "마스터", "테스트", "선생님"];
 
-        // 2. 선생님의 Firebase 설정 정보 (공백 방지를 위해 .trim() 추가)
+        // 2. 선생님의 Firebase 설정 정보
         const firebaseConfig = {
-            apiKey: "AIzaSyCxfI0Zh4mxby13WigsFLNLDmA3ikkAIjE".trim(),
+            apiKey: "AIzaSyCxfI0Zh4mxby13WigsFLNLDmA3ikkAIjE",
             authDomain: "grade6-english-rpg.firebaseapp.com",
             projectId: "grade6-english-rpg",
             storageBucket: "grade6-english-rpg.firebasestorage.app",
@@ -26,10 +28,10 @@
         };
         // -----------------------
 
-        // Firebase 초기화
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+        // Firebase 초기화 (Compat 방식)
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
 
         // 전역 상태 관리
         window.state = {
@@ -50,7 +52,7 @@
             window.charImg.src = getEvoSVG(lvl); 
         };
 
-        // --- 커스텀 모달 로직 (팝업 차단 방지) ---
+        // --- 커스텀 모달 로직 ---
         let confirmResolve = null;
         window.showCustomAlert = (msg) => {
             document.getElementById('alert-msg').innerText = msg;
@@ -77,7 +79,7 @@
             }
         };
 
-        // --- 로그인 및 인증 로직 ---
+        // --- 로그인 및 인증 로직 (Firebase 연동) ---
         window.handleLogin = async () => {
             const idInput = document.getElementById('user-id');
             const pwInput = document.getElementById('user-pw');
@@ -89,34 +91,34 @@
             if (!STUDENT_LIST.includes(id)) return window.showCustomAlert(`'${id}' 학생은 명단에 없습니다.`);
 
             btn.disabled = true;
-            setStatus("서버에 접속하는 중...");
+            setStatus("Firebase 서버에 접속 중...");
 
             try {
-                // 1. 파이어베이스 익명 인증
-                await signInAnonymously(auth);
-                setStatus("학생 기록을 찾는 중...");
+                // 1. Firebase 익명 로그인
+                await auth.signInAnonymously();
+                setStatus("마법사 기록 조회 중...");
 
-                // 2. 학생 데이터 조회 (단순화된 경로)
-                const userDocRef = doc(db, 'students', id);
-                const userDoc = await getDoc(userDocRef);
+                // 2. Firestore 데이터 조회
+                const userDocRef = db.collection('students').doc(id);
+                const doc = await userDocRef.get();
 
-                if (userDoc.exists()) {
-                    if (userDoc.data().password !== pw) {
+                if (doc.exists) {
+                    if (doc.data().password !== pw) {
                         btn.disabled = false;
-                        setStatus("비밀번호가 틀렸습니다.", true);
+                        setStatus("비밀번호 오류", true);
                         return window.showCustomAlert("비밀번호가 틀렸습니다!");
                     }
-                    window.state.gameData = userDoc.data().gameStats || { level: 1, exp: 0, count: 0 };
+                    window.state.gameData = doc.data().gameStats || { level: 1, exp: 0, count: 0 };
                 } else {
-                    const isConfirmed = await window.showCustomConfirm(`'${id}' 학생님, 처음 오셨군요!\n지금 입력하신 비밀번호를 '영구 비밀번호'로 정할까요?`);
+                    const isConfirmed = await window.showCustomConfirm(`'${id}' 학생님, 반가워요!\n지금 입력하신 비밀번호를 '영구 비밀번호'로 정할까요?`);
                     if (isConfirmed) {
-                        await setDoc(userDocRef, { 
+                        await userDocRef.set({ 
                             id, password: pw, gameStats: window.state.gameData, createdAt: new Date().toISOString()
                         });
-                        setStatus("등록 완료!");
+                        setStatus("신규 등록 성공!");
                     } else {
                         btn.disabled = false;
-                        setStatus("로그인을 취소했습니다.", true);
+                        setStatus("취소되었습니다.", true);
                         return;
                     }
                 }
@@ -129,26 +131,28 @@
                 
                 startMagicRPG();
             } catch (error) {
-                console.error("Login Error:", error);
+                console.error("Firebase Error:", error);
                 setStatus("접속 오류 발생", true);
                 btn.disabled = false;
-                window.showCustomAlert(`오류 발생: ${error.message}\nFirebase 콘솔에서 '익명 로그인'이 활성화되었는지 다시 한번 확인해 보세요.`);
+                window.showCustomAlert(`오류: ${error.message}\nFirebase 콘솔의 '익명 로그인' 설정과 'Firestore 규칙'을 다시 확인해 주세요.`);
             }
         };
 
         function startMagicRPG() {
-            const wordCol = collection(db, 'wordList');
-            onSnapshot(wordCol, (snapshot) => {
+            // 단어장 실시간 동기화
+            db.collection('wordList').onSnapshot((snapshot) => {
                 window.state.quizzes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 window.refreshQuiz();
                 window.updateAdminList();
             });
 
+            // 데이터 클라우드 저장
             window.saveProgress = async () => {
                 if (!window.state.user) return;
                 try {
-                    const ref = doc(db, 'students', window.state.user);
-                    await setDoc(ref, { gameStats: window.state.gameData }, { merge: true });
+                    await db.collection('students').doc(window.state.user).update({
+                        gameStats: window.state.gameData
+                    });
                 } catch (e) { console.error("Save Error:", e); }
             };
 
@@ -161,15 +165,110 @@
             const m = document.getElementById('new-m').value.trim();
             if (!w || !m) return;
             const wordId = w.toLowerCase().replace(/\s+/g, '_');
-            await setDoc(doc(db, 'wordList', wordId), { word: w, meaning: m });
+            await db.collection('wordList').doc(wordId).set({ word: w, meaning: m });
             document.getElementById('new-w').value = ''; document.getElementById('new-m').value = '';
         };
 
         window.delWord = async (id) => {
             if (await window.showCustomConfirm("이 단어를 도감에서 삭제할까요?")) {
-                await deleteDoc(doc(db, 'wordList', id));
+                await db.collection('wordList').doc(id).delete();
             }
         };
+
+        // --- 게임 로직 및 UI (기존 내용 유지) ---
+        window.refreshQuiz = () => {
+            const input = document.getElementById('spell-in');
+            const txt = document.getElementById('quiz-txt');
+            if (!window.state.quizzes || window.state.quizzes.length === 0) {
+                if (txt) txt.innerText = "도감이 비어있습니다";
+                if(input) input.disabled = true; return;
+            }
+            if(input) { input.disabled = false; input.value = ''; input.focus(); }
+            window.state.currentQuiz = window.state.quizzes[Math.floor(Math.random() * window.state.quizzes.length)];
+            if (txt) txt.innerText = window.state.currentQuiz.meaning;
+        };
+
+        window.checkMagic = () => {
+            if (!window.state.currentQuiz) return;
+            const input = document.getElementById('spell-in');
+            const typed = input.value.trim().toLowerCase();
+            const answer = window.state.currentQuiz.word.toLowerCase();
+            if (typed === answer) { handleAttack(); window.refreshQuiz(); }
+            else {
+                window.state.shake = 15;
+                const hint = document.getElementById('hint-msg');
+                hint.innerText = `틀렸어요! (힌트: ${window.state.currentQuiz.word[0]}...)`;
+                hint.className = "text-red-500 text-[10px] mt-4 font-bold animate-bounce";
+                setTimeout(() => {
+                    hint.innerText = "정답을 써야 마법 공격이 나갑니다!";
+                    hint.className = "text-slate-400 text-[10px] mt-4 font-normal italic";
+                }, 1500);
+            }
+        };
+
+        function handleAttack() {
+            window.state.gameData.count++; window.state.monster.hp -= 34; window.state.monster.shake = 25;
+            for (let i = 0; i < 15; i++) {
+                window.state.particles.push({ x: 280, y: 220, vx: (Math.random()-0.5)*15, vy: (Math.random()-0.5)*15, life: 1.0, color: window.state.monster.color });
+            }
+            if (window.state.monster.hp <= 0) {
+                window.state.gameData.exp += 40; window.state.monster.hp = 100;
+                const colors = ["#4ade80", "#fb923c", "#f87171", "#60a5fa", "#a78bfa"];
+                window.state.monster.color = colors[Math.floor(Math.random() * colors.length)];
+            } else { window.state.gameData.exp += 10; }
+            if (window.state.gameData.exp >= 100) {
+                window.state.gameData.exp = 0; window.state.gameData.level++;
+                document.getElementById('modal').style.display = 'flex';
+                document.getElementById('modal-desc').innerText = `레벨 ${window.state.gameData.level}(으)로 성장했습니다!`;
+            }
+            window.updateUI(); window.saveProgress();
+        }
+
+        window.updateUI = () => {
+            const lvlTxt = document.getElementById('lvl-txt'); const cntTxt = document.getElementById('cnt-txt');
+            const expBar = document.getElementById('exp-bar'); const rankBadge = document.getElementById('rank-badge');
+            if (lvlTxt) lvlTxt.innerText = window.state.gameData.level;
+            if (cntTxt) cntTxt.innerText = window.state.gameData.count;
+            if (expBar) expBar.style.width = window.state.gameData.exp + "%";
+            if (rankBadge) rankBadge.innerText = window.state.gameData.level >= 10 ? "전설의 대마법사" : (window.state.gameData.level >= 5 ? "중급 마법사" : "초보 마법사");
+            if (window.state.gameData.level >= 5) window.charImg.src = getEvoSVG(window.state.gameData.level);
+            else window.charImg.src = 'image_355059.jpg';
+        };
+
+        function gameLoop() {
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, 400, 350); ctx.fillStyle = "#f8fafc"; ctx.fillRect(0, 0, 400, 350);
+            const float = Math.sin(Date.now() / 500) * 10;
+            const ms = (Math.random()-0.5) * window.state.shake; if (window.state.shake > 0) window.state.shake *= 0.8;
+            ctx.save(); ctx.translate(100 + ms, 200 + float);
+            if (window.charImg.complete) ctx.drawImage(window.charImg, -75, -75, 150, 150);
+            ctx.restore();
+            const mns = (Math.random()-0.5) * window.state.monster.shake; if (window.state.monster.shake > 0) window.state.monster.shake *= 0.8;
+            ctx.save(); ctx.translate(280 + mns, 220); ctx.fillStyle = window.state.monster.color; ctx.beginPath(); ctx.arc(0, 0, 45, Math.PI, 0); ctx.fillRect(-45, 0, 90, 20); ctx.fill();
+            ctx.fillStyle = "white"; ctx.fillRect(-15, -10, 6, 6); ctx.fillRect(10, -10, 6, 6);
+            ctx.fillStyle = "#ef4444"; ctx.fillRect(-35, -55, 70 * (window.state.monster.hp/100), 6); ctx.restore();
+            window.state.particles.forEach((p, i) => {
+                p.x += p.vx; p.y += p.vy; p.life -= 0.03; ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 5, 5);
+                if (p.life <= 0) window.state.particles.splice(i, 1);
+            });
+            ctx.globalAlpha = 1.0; requestAnimationFrame(gameLoop);
+        }
+
+        window.updateAdminList = () => {
+            const list = document.getElementById('admin-list'); if(!list) return;
+            list.innerHTML = window.state.quizzes.map(q => `
+                <div class="flex justify-between items-center border-b py-2 text-xs">
+                    <div><span class="font-bold text-indigo-600">${q.word}</span>: ${q.meaning}</div>
+                    <button onclick="window.delWord('${q.id}')" class="text-red-400 font-bold">삭제</button>
+                </div>`).join('');
+        };
+
+        function getEvoSVG(level) {
+            let color = level >= 10 ? "#1e1b4b" : "#7c3aed";
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M30,40 L50,10 L70,40 Z" fill="${color}" /><rect x="25" y="40" width="50" height="5" fill="${color}" /><rect x="35" y="45" width="30" height="20" fill="#ffedd5" /><rect x="42" y="52" width="2" height="2" fill="#334155" /><rect x="56" y="52" width="2" height="2" fill="#334155" /><path d="M30,65 L70,65 L75,90 L25,90 Z" fill="${color}" opacity="0.8" /></svg>`;
+            return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
+        }
     </script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
@@ -248,7 +347,6 @@
         </div>
     </div>
 
-    <!-- 모달 -->
     <div id="custom-alert" class="modal-overlay">
         <div class="modal-box">
             <h2 class="text-2xl font-bold mb-4">🧙‍♀️ 마법 안내</h2>
@@ -256,6 +354,7 @@
             <button onclick="window.closeCustomAlert()" class="btn-magic text-sm py-3">확인</button>
         </div>
     </div>
+
     <div id="custom-confirm" class="modal-overlay">
         <div class="modal-box">
             <h2 class="text-2xl font-bold mb-4">✨ 마법 계약</h2>
@@ -266,6 +365,7 @@
             </div>
         </div>
     </div>
+
     <div id="modal" class="fixed inset-0 bg-indigo-900/80 hidden items-center justify-center z-50 p-6 backdrop-blur-md">
         <div class="bg-white rounded-[3rem] p-10 text-center shadow-2xl scale-110">
             <div class="text-7xl mb-4 animate-bounce">🎊</div>
@@ -274,95 +374,5 @@
             <button onclick="document.getElementById('modal').style.display='none';" class="bg-indigo-600 text-white px-12 py-4 rounded-2xl font-bold text-xl active:scale-95 shadow-lg">계속하기</button>
         </div>
     </div>
-
-    <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        window.refreshQuiz = () => {
-            const input = document.getElementById('spell-in');
-            const txt = document.getElementById('quiz-txt');
-            if (!window.state.quizzes || window.state.quizzes.length === 0) {
-                if (txt) txt.innerText = "도감이 비어있습니다";
-                if(input) input.disabled = true; return;
-            }
-            if(input) { input.disabled = false; input.value = ''; input.focus(); }
-            window.state.currentQuiz = window.state.quizzes[Math.floor(Math.random() * window.state.quizzes.length)];
-            if (txt) txt.innerText = window.state.currentQuiz.meaning;
-        };
-        window.checkMagic = () => {
-            if (!window.state.currentQuiz) return;
-            const input = document.getElementById('spell-in');
-            const typed = input.value.trim().toLowerCase();
-            const answer = window.state.currentQuiz.word.toLowerCase();
-            if (typed === answer) { handleAttack(); window.refreshQuiz(); }
-            else {
-                window.state.shake = 15;
-                const hint = document.getElementById('hint-msg');
-                hint.innerText = `틀렸어요! (힌트: ${window.state.currentQuiz.word[0]}...)`;
-                hint.className = "text-red-500 text-[10px] mt-4 font-bold animate-bounce";
-                setTimeout(() => {
-                    hint.innerText = "정답을 써야 마법 공격이 나갑니다!";
-                    hint.className = "text-slate-400 text-[10px] mt-4 font-normal italic";
-                }, 1500);
-            }
-        };
-        function handleAttack() {
-            window.state.gameData.count++; window.state.monster.hp -= 34; window.state.monster.shake = 25;
-            for (let i = 0; i < 15; i++) {
-                window.state.particles.push({ x: 280, y: 220, vx: (Math.random()-0.5)*15, vy: (Math.random()-0.5)*15, life: 1.0, color: window.state.monster.color });
-            }
-            if (window.state.monster.hp <= 0) {
-                window.state.gameData.exp += 40; window.state.monster.hp = 100;
-                const colors = ["#4ade80", "#fb923c", "#f87171", "#60a5fa", "#a78bfa"];
-                window.state.monster.color = colors[Math.floor(Math.random() * colors.length)];
-            } else { window.state.gameData.exp += 10; }
-            if (window.state.gameData.exp >= 100) {
-                window.state.gameData.exp = 0; window.state.gameData.level++;
-                document.getElementById('modal').style.display = 'flex';
-                document.getElementById('modal-desc').innerText = `레벨 ${window.state.gameData.level}(으)로 성장했습니다!`;
-            }
-            window.updateUI(); window.saveProgress();
-        }
-        window.updateUI = () => {
-            const lvlTxt = document.getElementById('lvl-txt'); const cntTxt = document.getElementById('cnt-txt');
-            const expBar = document.getElementById('exp-bar'); const rankBadge = document.getElementById('rank-badge');
-            if (lvlTxt) lvlTxt.innerText = window.state.gameData.level;
-            if (cntTxt) cntTxt.innerText = window.state.gameData.count;
-            if (expBar) expBar.style.width = window.state.gameData.exp + "%";
-            if (rankBadge) rankBadge.innerText = window.state.gameData.level >= 10 ? "전설의 대마법사" : (window.state.gameData.level >= 5 ? "중급 마법사" : "초보 마법사");
-            if (window.state.gameData.level >= 5) window.charImg.src = getEvoSVG(window.state.gameData.level);
-            else window.charImg.src = 'image_355059.jpg';
-        };
-        function gameLoop() {
-            ctx.clearRect(0, 0, 400, 350); ctx.fillStyle = "#f8fafc"; ctx.fillRect(0, 0, 400, 350);
-            const float = Math.sin(Date.now() / 500) * 10;
-            const ms = (Math.random()-0.5) * window.state.shake; if (window.state.shake > 0) window.state.shake *= 0.8;
-            ctx.save(); ctx.translate(100 + ms, 200 + float);
-            if (window.charImg.complete) ctx.drawImage(window.charImg, -75, -75, 150, 150);
-            ctx.restore();
-            const mns = (Math.random()-0.5) * window.state.monster.shake; if (window.state.monster.shake > 0) window.state.monster.shake *= 0.8;
-            ctx.save(); ctx.translate(280 + mns, 220); ctx.fillStyle = window.state.monster.color; ctx.beginPath(); ctx.arc(0, 0, 45, Math.PI, 0); ctx.fillRect(-45, 0, 90, 20); ctx.fill();
-            ctx.fillStyle = "white"; ctx.fillRect(-15, -10, 6, 6); ctx.fillRect(10, -10, 6, 6);
-            ctx.fillStyle = "#ef4444"; ctx.fillRect(-35, -55, 70 * (window.state.monster.hp/100), 6); ctx.restore();
-            window.state.particles.forEach((p, i) => {
-                p.x += p.vx; p.y += p.vy; p.life -= 0.03; ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 5, 5);
-                if (p.life <= 0) window.state.particles.splice(i, 1);
-            });
-            ctx.globalAlpha = 1.0; requestAnimationFrame(gameLoop);
-        }
-        window.updateAdminList = () => {
-            const list = document.getElementById('admin-list'); if(!list) return;
-            list.innerHTML = window.state.quizzes.map(q => `
-                <div class="flex justify-between items-center border-b py-2 text-xs">
-                    <div><span class="font-bold text-indigo-600">${q.word}</span>: ${q.meaning}</div>
-                    <button onclick="window.delWord('${q.id}')" class="text-red-400 font-bold">삭제</button>
-                </div>`).join('');
-        };
-        function getEvoSVG(level) {
-            let color = level >= 10 ? "#1e1b4b" : "#7c3aed";
-            const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M30,40 L50,10 L70,40 Z" fill="${color}" /><rect x="25" y="40" width="50" height="5" fill="${color}" /><rect x="35" y="45" width="30" height="20" fill="#ffedd5" /><rect x="42" y="52" width="2" height="2" fill="#334155" /><rect x="56" y="52" width="2" height="2" fill="#334155" /><path d="M30,65 L70,65 L75,90 L25,90 Z" fill="${color}" opacity="0.8" /></svg>`;
-            return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
-        }
-    </script>
 </body>
 </html>
