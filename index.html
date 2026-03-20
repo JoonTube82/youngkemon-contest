@@ -128,15 +128,22 @@
     <!-- 최신 Firebase SDK (모듈 방식) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, doc, getDoc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- 선생님 설정 명단 ---
         const STUDENT_LIST = ["서영", "단엘", "라희", "민지", "정훈", "문경", "소윤", "하율", "현수", "시율", "은영", "이담", "훈태", "마스터", "테스트", "선생님"];
 
-        // 플랫폼 환경 변수 활용
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        // 사용자 지정 Firebase 설정
+        const firebaseConfig = {
+            apiKey: "AIzaSyCxfI0Zh4mxbY13WigsFlNLDmA3ikkAIjE",
+            authDomain: "grade6-english-rpg.firebaseapp.com",
+            projectId: "grade6-english-rpg",
+            storageBucket: "grade6-english-rpg.firebasestorage.app",
+            messagingSenderId: "98075257077",
+            appId: "1:98075257077:web:af48cfeda2300df967fdbc",
+            measurementId: "G-DCBTPQ5T0N"
+        };
 
         // Firebase 초기화
         let app, auth, db;
@@ -188,20 +195,17 @@
             }
         };
 
-        // 데이터베이스 경로 헬퍼
-        const getStudentsCollection = () => collection(db, 'artifacts', appId, 'public', 'data', 'students');
-        const getStudentDoc = (studentId) => doc(db, 'artifacts', appId, 'public', 'data', 'students', studentId);
-        const getWordListCollection = () => collection(db, 'artifacts', appId, 'public', 'data', 'wordList');
-        const getWordDoc = (wordId) => doc(db, 'artifacts', appId, 'public', 'data', 'wordList', wordId);
+        // 데이터베이스 경로 헬퍼 (자체 DB를 사용하므로 기존 데이터를 위해 루트 컬렉션을 사용합니다)
+        const getStudentsCollection = () => collection(db, 'students');
+        const getStudentDoc = (studentId) => doc(db, 'students', studentId);
+        const getWordListCollection = () => collection(db, 'wordList');
+        const getWordDoc = (wordId) => doc(db, 'wordList', wordId);
 
         // --- 인증 초기화 ---
         const initAuth = async () => {
             try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
+                // 선생님의 자체 DB를 사용하므로 충돌을 막기 위해 플랫폼 토큰 대신 익명 로그인을 기본으로 사용합니다.
+                await signInAnonymously(auth);
             } catch (error) {
                 console.error("Auth Init Error:", error);
                 setStatus("서버 접속 지연 중입니다.", true);
