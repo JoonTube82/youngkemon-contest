@@ -32,7 +32,9 @@
             <h1 class="text-4xl text-indigo-600 mb-2 font-black italic">6학년 영어 RPG</h1>
             <p class="text-slate-400 mb-8 font-normal">이름과 암호를 입력하세요</p>
             <div class="space-y-4">
-                <input type="text" id="user-id" class="spell-input text-xl p-4 border-2" placeholder="이름 (아이디)" autocomplete="off">
+                <select id="user-id" class="spell-input text-xl p-4 border-2 bg-white cursor-pointer appearance-none text-center">
+                    <option value="" disabled selected>이름 선택하기</option>
+                </select>
                 <input type="password" id="user-pw" class="spell-input text-xl p-4 border-2" placeholder="비밀번호" onkeyup="if(event.key==='Enter')window.handleLogin()">
                 <button id="login-btn" onclick="window.handleLogin()" class="btn-magic mt-4">마법 학교 입장하기</button>
             </div>
@@ -72,7 +74,7 @@
                 </div>
                 <p id="hint-msg" class="text-slate-400 text-[10px] mt-4 font-normal italic">정답을 써야 마법 공격이 나갑니다!</p>
             </div>
-            <button onclick="location.reload()" class="w-full text-slate-300 text-[10px] mt-8 hover:text-red-400 font-bold">로그아웃 (새로고침)</button>
+            <button onclick="window.handleLogout()" class="w-full bg-slate-200 text-slate-600 py-4 rounded-2xl font-bold mt-8 hover:bg-slate-300 transition-colors shadow-sm">🚪 로그아웃</button>
         </div>
 
         <!-- 3. 관리자 뷰 -->
@@ -134,6 +136,20 @@
         // --- 선생님 설정 명단 ---
         const STUDENT_LIST = ["서영", "단엘", "라희", "민지", "정훈", "문경", "소윤", "하율", "현수", "시율", "은영", "이담", "훈태", "마스터", "테스트", "선생님"];
 
+        // 명단을 select 박스에 추가하는 함수
+        const initStudentSelect = () => {
+            const selectEl = document.getElementById('user-id');
+            if (selectEl) {
+                STUDENT_LIST.forEach(name => {
+                    const opt = document.createElement('option');
+                    opt.value = name;
+                    opt.innerText = name;
+                    selectEl.appendChild(opt);
+                });
+            }
+        };
+        initStudentSelect();
+
         // 사용자 지정 Firebase 설정
         const firebaseConfig = {
             apiKey: "AIzaSyCxfI0Zh4mxbY13WigsFlNLDmA3ikkAIjE",
@@ -192,6 +208,12 @@
             if (statusEl) {
                 statusEl.innerText = msg;
                 statusEl.className = isError ? "text-red-500 text-xs mt-2 font-bold" : "text-indigo-400 text-xs mt-2 animate-pulse";
+            }
+        };
+
+        window.handleLogout = async () => {
+            if (await window.showCustomConfirm("정말 로그아웃 하시겠습니까?")) {
+                location.reload();
             }
         };
 
