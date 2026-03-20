@@ -11,7 +11,7 @@
         import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
 
         // --- [선생님 설정 구역] ---
-        // 1. 학생 명단
+        // 1. 학생 명단 (작업하신 내용을 그대로 유지합니다)
         const STUDENT_LIST = ["서영", "단엘", "라희", "민지", "정훈", "문경", "소윤", "하율", "현수", "시율", "은영", "이담", "훈태", "마스터", "테스트", "선생님"];
 
         // 2. 선생님의 Firebase 설정 정보 (이미지 정보를 바탕으로 입력됨)
@@ -97,11 +97,11 @@
             setStatus("마법 서버 연결 중...");
 
             try {
-                // 익명 인증
+                // 1. 익명 인증 시도
                 await signInAnonymously(auth);
-                setStatus("학생 기록 조회 중...");
+                setStatus("기록 조회 중...");
 
-                // 경로 단순화
+                // 2. 경로 설정 (선생님의 Rules에 맞게 단순화된 students 경로 사용)
                 const userDocRef = doc(db, 'students', id);
                 const userDoc = await getDoc(userDocRef);
 
@@ -119,10 +119,10 @@
                         await setDoc(userDocRef, { 
                             id, password: pw, gameStats: window.state.gameData, createdAt: new Date().toISOString()
                         });
-                        setStatus("계정 생성 성공!");
+                        setStatus("등록 성공!");
                     } else {
                         btn.disabled = false;
-                        setStatus("로그인 취소", true);
+                        setStatus("로그인 취소됨", true);
                         return;
                     }
                 }
@@ -137,14 +137,14 @@
 
             } catch (error) {
                 console.error("Login Error:", error);
-                setStatus("서버 접속 실패", true);
+                setStatus("접속 오류", true);
                 btn.disabled = false;
-                window.showCustomAlert(`접속 실패: ${error.message}\nFirebase 설정을 다시 확인해 보세요.`);
+                window.showCustomAlert(`오류 발생: ${error.message}\n인증 설정이나 도메인 등록을 다시 확인해 보세요.`);
             }
         };
 
         function startMagicRPG() {
-            // 단어장 동기화
+            // 단어장 동기화 (단순화된 wordList 경로 사용)
             const wordCol = collection(db, 'wordList');
             onSnapshot(wordCol, (snapshot) => {
                 window.state.quizzes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -240,7 +240,7 @@
                 <h3 id="quiz-txt" class="text-4xl text-indigo-600 font-bold mt-1 mb-6 leading-tight">...</h3>
                 <input type="text" id="spell-in" class="spell-input mb-4" placeholder="영단어를 입력하세요" autocomplete="off" onkeyup="if(event.key==='Enter')window.checkMagic()">
                 <button onclick="window.checkMagic()" class="btn-magic">✨ 주문 발동!</button>
-                <p id="hint-msg" class="text-slate-400 text-[10px] mt-4 font-normal italic">정확히 입력해야 공격할 수 있어요!</p>
+                <p id="hint-msg" class="text-slate-400 text-[10px] mt-4 font-normal italic">정답을 써야 공격할 수 있어요!</p>
             </div>
             <button onclick="location.reload()" class="w-full text-slate-300 text-[10px] mt-8 hover:text-red-400 font-bold">로그아웃</button>
         </div>
