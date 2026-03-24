@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>6학년 영어 RPG</title>
+    <title>6학년 영켓몬</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
@@ -40,16 +40,16 @@
         <!-- 1. 로그인 뷰 -->
         <div id="login-view" class="login-view-container magic-card p-10 text-center">
             <div class="text-6xl mb-4">🧙‍♀️</div>
-            <h1 class="text-4xl text-indigo-600 mb-2 font-black italic">6학년 영어 RPG</h1>
+            <h1 class="text-4xl text-indigo-600 mb-2 font-black italic">6학년 영켓몬</h1>
             <p class="text-slate-400 mb-8 font-normal">이름과 암호를 입력하세요</p>
             <div class="space-y-4">
                 <select id="user-id" class="spell-input text-xl p-4 border-2 bg-white cursor-pointer appearance-none text-center">
                     <option value="" disabled selected>이름 선택하기</option>
                 </select>
                 <input type="password" id="user-pw" class="spell-input text-xl p-4 border-2" placeholder="비밀번호" onkeyup="if(event.key==='Enter')window.handleLogin()">
-                <button id="login-btn" onclick="window.handleLogin()" class="btn-magic mt-4">마법 학교 입장하기</button>
+                <button id="login-btn" onclick="window.handleLogin()" class="btn-magic mt-4">영켓몬 월드 입장하기</button>
             </div>
-            <p id="login-status" class="text-slate-300 text-xs mt-4 min-h-[1rem]">마법 서버와 연결 중...</p>
+            <p id="login-status" class="text-slate-300 text-xs mt-4 min-h-[1rem]">영켓몬 서버와 연결 중...</p>
         </div>
 
         <!-- 2. 게임 뷰 -->
@@ -98,9 +98,9 @@
                         
                         <div class="flex flex-col gap-3 relative">
                             <input type="text" id="spell-in" class="spell-input" placeholder="영단어를 입력하세요" autocomplete="off" onkeyup="if(event.key==='Enter')window.checkMagic()">
-                            <button onclick="window.checkMagic()" class="btn-magic">✨ 주문 발동!</button>
+                            <button onclick="window.checkMagic()" class="btn-magic">✨ 몬스터 잡기!</button>
                         </div>
-                        <p id="hint-msg" class="text-slate-400 text-[10px] mt-4 font-normal italic">정답을 써야 마법 공격이 나갑니다!</p>
+                        <p id="hint-msg" class="text-slate-400 text-[10px] mt-4 font-normal italic">정답을 써야 몬스터를 잡습니다!</p>
                     </div>
                 </div>
             </div>
@@ -142,7 +142,7 @@
         <div id="admin-view" class="admin-view-container">
             <div class="magic-card p-8 border-4 border-white shadow-2xl">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-xl font-bold text-indigo-600">🛠️ 마법 도감 관리</h2>
+                    <h2 class="text-xl font-bold text-indigo-600">🛠️ 단어 도감 관리</h2>
                     <button onclick="window.toggleAdmin()" class="bg-slate-100 px-4 py-2 rounded-xl text-xs font-bold text-indigo-600 hover:bg-slate-200">닫기</button>
                 </div>
                 
@@ -164,14 +164,14 @@
     <!-- 모달 창들 -->
     <div id="custom-alert" class="modal-overlay">
         <div class="modal-box">
-            <h2 class="text-2xl font-bold mb-4 text-slate-800">🧙‍♀️ 마법 안내</h2>
+            <h2 class="text-2xl font-bold mb-4 text-slate-800">🧙‍♀️ 단어 안내</h2>
             <p id="alert-msg" class="text-slate-600 mb-8 whitespace-pre-line"></p>
             <button onclick="window.closeCustomAlert()" class="btn-magic text-sm py-3">확인</button>
         </div>
     </div>
     <div id="custom-confirm" class="modal-overlay">
         <div class="modal-box">
-            <h2 class="text-2xl font-bold mb-4 text-slate-800">✨ 마법 계약</h2>
+            <h2 class="text-2xl font-bold mb-4 text-slate-800">✨ 계약</h2>
             <p id="confirm-msg" class="text-slate-600 mb-8 font-bold whitespace-pre-line"></p>
             <div class="flex gap-2">
                 <button onclick="window.handleConfirmAction(true)" class="btn-magic text-sm py-3 flex-1">네!</button>
@@ -472,7 +472,7 @@
                 if (input) input.disabled = true; return;
             }
             if(input) { input.disabled = false; input.value = ''; setTimeout(() => input.focus(), 50); }
-            hint.innerText = "정답을 써야 마법 공격이 나갑니다!"; hint.className = "text-slate-400 text-[10px] mt-4 font-normal italic";
+            hint.innerText = "정답을 써야 몬스터를 포획합니다!"; hint.className = "text-slate-400 text-[10px] mt-4 font-normal italic";
 
             window.state.currentQuiz = window.state.quizzes[Math.floor(Math.random() * window.state.quizzes.length)];
             if (txt) txt.innerText = window.state.currentQuiz.meaning;
