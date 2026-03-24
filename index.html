@@ -1,1032 +1,132 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>6학년 영어 RPG</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
-        body { font-family: 'Jua', sans-serif; background-color: #f8fafc; color: #334155; }
-        .magic-card { background: white; border-radius: 2.5rem; box-shadow: 0 20px 50px rgba(99, 102, 241, 0.1); border: 4px solid #fff; }
-        .spell-input { border: 3px solid #e2e8f0; border-radius: 1.5rem; padding: 1.2rem; width: 100%; text-align: center; font-size: 1.8rem; outline: none; transition: all 0.2s; }
-        .spell-input:focus { border-color: #6366f1; box-shadow: 0 0 20px rgba(99, 102, 241, 0.1); }
-        .btn-magic { background: linear-gradient(135deg, #6366f1, #a855f7); color: white; border-radius: 1.5rem; padding: 1.2rem; font-size: 1.4rem; font-weight: bold; width: 100%; box-shadow: 0 6px 0 #4338ca; transition: all 0.1s; cursor: pointer; border: none; }
-        .btn-magic:active { transform: translateY(4px); box-shadow: 0 2px 0 #4338ca; }
-        .btn-magic:disabled { opacity: 0.6; cursor: wait; }
-        canvas { image-rendering: pixelated; border-radius: 2rem; width: 100%; }
-        .modal-overlay { position: fixed; inset: 0; background: rgba(30, 27, 75, 0.85); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 999; padding: 20px; }
-        .modal-box { background: white; padding: 40px; border-radius: 2.5rem; text-align: center; max-width: 400px; width: 100%; border: 6px solid #fff; box-shadow: 0 25px 50px rgba(0,0,0,0.3); }
-        
-        /* 레이아웃 조정을 위한 추가 스타일 */
-        .admin-view-container { display: none; }
-        .game-view-container { display: none; }
-        .login-view-container { display: block; }
-
-        /* 탭 뷰 컨트롤용 신규 스타일 */
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        .tab-btn { transition: all 0.2s; }
-        .tab-btn.active { background-color: #6366f1; color: white; }
-    </style>
-</head>
-<body class="p-4 flex items-center justify-center min-h-screen">
-    <div id="app-wrapper" class="w-full max-w-[480px] mx-auto transition-all duration-500">
-        <!-- 1. 로그인 뷰 -->
-        <div id="login-view" class="login-view-container magic-card p-10 text-center">
-            <div class="text-6xl mb-4">🧙‍♀️</div>
-            <h1 class="text-4xl text-indigo-600 mb-2 font-black italic">6학년 영어 RPG</h1>
-            <p class="text-slate-400 mb-8 font-normal">이름과 암호를 입력하세요</p>
-            <div class="space-y-4">
-                <select id="user-id" class="spell-input text-xl p-4 border-2 bg-white cursor-pointer appearance-none text-center">
-                    <option value="" disabled selected>이름 선택하기</option>
-                </select>
-                <input type="password" id="user-pw" class="spell-input text-xl p-4 border-2" placeholder="비밀번호" onkeyup="if(event.key==='Enter')window.handleLogin()">
-                <button id="login-btn" onclick="window.handleLogin()" class="btn-magic mt-4">마법 학교 입장하기</button>
-            </div>
-            <p id="login-status" class="text-slate-300 text-xs mt-4 min-h-[1rem]">마법 서버와 연결 중...</p>
-        </div>
-
-        <!-- 2. 게임 뷰 -->
-        <div id="game-view" class="game-view-container">
-            <div class="bg-white rounded-3xl p-5 mb-4 shadow-lg flex justify-between items-start border-b-4 border-indigo-100">
-                <div>
-                    <div class="flex items-center gap-2 mb-1">
-                        <span id="rank-badge" class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-600 font-bold uppercase tracking-wider">ROOKIE</span>
-                        <button id="admin-btn" onclick="window.toggleAdmin()" class="text-slate-300 text-xs hover:text-indigo-500 font-bold hidden">⚙️ 관리자</button>
-                    </div>
-                    <h2 class="text-3xl font-bold text-slate-800 mt-1"><span id="player-name">학생</span> <span class="text-indigo-500 font-normal text-lg ml-1">Lv.<span id="lvl-txt">1</span></span></h2>
-                </div>
-                <div class="text-right flex flex-col items-end">
-                    <button onclick="window.handleLogout()" class="text-slate-300 hover:text-red-400 mb-1 transition-colors" title="로그아웃">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
-                        </svg>
-                    </button>
-                    <span class="text-slate-400 text-[10px] font-bold uppercase leading-none block mt-1">포획한 단어 수</span>
-                    <p id="cnt-txt" class="text-2xl font-bold text-slate-700 leading-none mt-1">0</p>
-                </div>
-            </div>
-
-            <!-- 신규 추가: 탭 네비게이션 -->
-            <div class="flex gap-2 mb-4 bg-white p-2 rounded-2xl shadow-sm">
-                <button onclick="window.switchTab('hunt')" id="tab-hunt" class="tab-btn active flex-1 py-3 text-sm rounded-xl font-bold bg-slate-100 text-slate-500 hover:bg-indigo-50">🗡️ 사냥터</button>
-                <button onclick="window.switchTab('dex')" id="tab-dex" class="tab-btn flex-1 py-3 text-sm rounded-xl font-bold bg-slate-100 text-slate-500 hover:bg-indigo-50">📖 내 도감</button>
-                <button onclick="window.switchTab('arena')" id="tab-arena" class="tab-btn flex-1 py-3 text-sm rounded-xl font-bold bg-slate-100 text-slate-500 hover:bg-indigo-50">⚔️ 투기장</button>
-            </div>
-            
-            <!-- 탭 1: 사냥터 (기존 캔버스와 퀴즈 영역) -->
-            <div id="content-hunt" class="tab-content active">
-                <!-- 레이아웃을 flex로 묶어 좌(캔버스) 우(입력창)로 배치합니다. -->
-                <div class="flex flex-col md:flex-row gap-4">
-                    <!-- 좌측 캔버스 영역 -->
-                    <div class="magic-card relative overflow-hidden shadow-xl flex-1 shrink-0">
-                        <canvas id="gameCanvas" width="400" height="350"></canvas>
-                        <div class="absolute bottom-4 left-6 right-6 bg-slate-100 h-4 rounded-full overflow-hidden border-2 border-white shadow-inner">
-                            <div id="exp-bar" class="h-full bg-gradient-to-r from-indigo-400 to-pink-400 transition-all duration-500" style="width: 0%"></div>
-                        </div>
-                    </div>
-                    
-                    <!-- 우측 단어 입력 영역 -->
-                    <div class="bg-indigo-50 rounded-[2.5rem] p-8 shadow-inner border-2 border-indigo-100 text-center flex-1 flex flex-col justify-center">
-                        <span class="text-indigo-400 text-xs uppercase tracking-widest font-bold">Spell Meaning</span>
-                        <h3 id="quiz-txt" class="text-3xl text-indigo-600 font-bold mt-1 mb-6 leading-tight break-keep">단어장을 불러오는 중...</h3>
-                        
-                        <div class="flex flex-col gap-3 relative">
-                            <input type="text" id="spell-in" class="spell-input" placeholder="영단어를 입력하세요" autocomplete="off" onkeyup="if(event.key==='Enter')window.checkMagic()">
-                            <button onclick="window.checkMagic()" class="btn-magic">✨ 주문 발동!</button>
-                        </div>
-                        <p id="hint-msg" class="text-slate-400 text-[10px] mt-4 font-normal italic">정답을 써야 마법 공격이 나갑니다!</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 탭 2: 내 도감 -->
-            <div id="content-dex" class="tab-content">
-                <div class="magic-card p-6 shadow-xl min-h-[400px]">
-                    <h3 class="text-xl font-bold text-indigo-600 mb-4 flex justify-between items-center">
-                        <span>내 몬스터 도감</span>
-                        <span class="text-sm bg-indigo-100 text-indigo-600 px-3 py-1 rounded-full"><span id="dex-total">0</span>마리 보유</span>
-                    </h3>
-                    <!-- space-y-3 클래스를 제거하고 내부에서 grid를 쓰도록 변경 -->
-                    <div id="dex-list" class="max-h-[400px] overflow-y-auto pr-2 pb-4 custom-scrollbar">
-                        <!-- 도감 아이템들이 여기에 들어갑니다 -->
-                        <p class="text-center text-slate-400 py-10 text-sm">아직 포획한 단어가 없습니다.<br>사냥터에서 단어를 잡아보세요!</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 탭 3: 투기장 -->
-            <div id="content-arena" class="tab-content">
-                <div class="magic-card p-6 shadow-xl min-h-[400px]">
-                    <div class="text-center mb-6">
-                        <h3 class="text-xl font-bold text-red-500 mb-1">몬스터 투기장</h3>
-                        <p class="text-xs text-slate-400">가장 많이 포획하여 성장한 Top 3 몬스터가 출전합니다.<br>친구들 또는 체육관 관장에게 도전해보세요!</p>
-                        <div class="mt-3 inline-block bg-red-50 px-4 py-2 rounded-xl border border-red-100">
-                            <span class="text-sm font-bold text-slate-600">내 주력 부대 전투력: </span>
-                            <span id="my-power" class="text-lg font-black text-red-500">0</span>
-                        </div>
-                    </div>
-                    <div id="arena-list" class="space-y-3 max-h-[300px] overflow-y-auto pr-2">
-                        <!-- 배틀 상대 목록이 여기에 들어갑니다 -->
-                        <p class="text-center text-slate-400 py-10 text-sm">도전할 상대를 찾고 있습니다...</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 3. 관리자 뷰 -->
-        <div id="admin-view" class="admin-view-container">
-            <div class="magic-card p-8 border-4 border-white shadow-2xl">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-xl font-bold text-indigo-600">🛠️ 마법 도감 관리</h2>
-                    <button onclick="window.toggleAdmin()" class="bg-slate-100 px-4 py-2 rounded-xl text-xs font-bold text-indigo-600 hover:bg-slate-200">닫기</button>
-                </div>
-                
-                <div class="space-y-3 mb-6 bg-slate-50 p-4 rounded-2xl border">
-                    <div class="grid grid-cols-2 gap-2">
-                        <input type="text" id="new-w" class="p-3 border rounded-xl outline-none text-sm focus:border-indigo-400" placeholder="영단어" autocomplete="off">
-                        <input type="text" id="new-m" class="p-3 border rounded-xl outline-none text-sm focus:border-indigo-400" placeholder="뜻" autocomplete="off" onkeyup="if(event.key==='Enter')window.addWord()">
-                    </div>
-                    <button onclick="window.addWord()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold text-sm shadow-lg active:scale-95 transition-transform hover:bg-indigo-700">도감에 추가</button>
-                </div>
-                
-                <div class="max-h-[300px] overflow-y-auto pr-2 space-y-2" id="admin-list">
-                    <p class="text-center text-sm text-slate-400 py-4">저장된 단어가 없습니다.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 모달 창들 -->
-    <div id="custom-alert" class="modal-overlay">
-        <div class="modal-box">
-            <h2 class="text-2xl font-bold mb-4 text-slate-800">🧙‍♀️ 마법 안내</h2>
-            <p id="alert-msg" class="text-slate-600 mb-8 whitespace-pre-line"></p>
-            <button onclick="window.closeCustomAlert()" class="btn-magic text-sm py-3">확인</button>
-        </div>
-    </div>
-    <div id="custom-confirm" class="modal-overlay">
-        <div class="modal-box">
-            <h2 class="text-2xl font-bold mb-4 text-slate-800">✨ 마법 계약</h2>
-            <p id="confirm-msg" class="text-slate-600 mb-8 font-bold whitespace-pre-line"></p>
-            <div class="flex gap-2">
-                <button onclick="window.handleConfirmAction(true)" class="btn-magic text-sm py-3 flex-1">네!</button>
-                <button onclick="window.handleConfirmAction(false)" class="bg-slate-100 text-slate-500 rounded-2xl flex-1 font-bold hover:bg-slate-200">아니요</button>
-            </div>
-        </div>
-    </div>
-    <div id="modal" class="fixed inset-0 bg-indigo-900/80 hidden items-center justify-center z-50 p-6 backdrop-blur-md">
-        <div class="bg-white rounded-[3rem] p-10 text-center shadow-2xl scale-110">
-            <div class="text-7xl mb-4 animate-bounce">🎊</div>
-            <h2 class="text-4xl font-bold text-indigo-600 mb-2 font-black">LEVEL UP!</h2>
-            <p id="modal-desc" class="text-lg text-slate-500 mb-8 font-bold">성장했습니다!</p>
-            <button onclick="document.getElementById('modal').style.display='none';" class="bg-indigo-600 hover:bg-indigo-700 text-white px-12 py-4 rounded-2xl font-bold text-xl active:scale-95 shadow-lg transition-colors">계속하기</button>
-        </div>
-    </div>
-
-    <!-- 최신 Firebase SDK (모듈 방식) -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        // getDocs가 투기장 상대방 목록을 불러오기 위해 추가되었습니다.
-        import { getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // --- 선생님 설정 명단 (원래 목록 그대로 유지) ---
-        const STUDENT_LIST = ["0.서영", "1.단엘", "2.라희", "3.민지", "4.정훈", "5.문경", "6.소윤", "7.하율", "8.현수", "9.시율", "10.은영", "11.이담", "12.훈태", "마스터", "테스트", "선생님"];
-
-        // 명단을 select 박스에 추가하는 함수
-        const initStudentSelect = () => {
-            const selectEl = document.getElementById('user-id');
-            if (selectEl) {
-                STUDENT_LIST.forEach(name => {
-                    const opt = document.createElement('option');
-                    opt.value = name;
-                    opt.innerText = name;
-                    selectEl.appendChild(opt);
-                });
-            }
-        };
-        initStudentSelect();
-
-        // 사용자 지정 Firebase 설정
-        const firebaseConfig = {
-            apiKey: "AIzaSyCxfI0Zh4mxbY13WigsFlNLDmA3ikkAIjE",
-            authDomain: "grade6-english-rpg.firebaseapp.com",
-            projectId: "grade6-english-rpg",
-            storageBucket: "grade6-english-rpg.firebasestorage.app",
-            messagingSenderId: "98075257077",
-            appId: "1:98075257077:web:af48cfeda2300df967fdbc",
-            measurementId: "G-DCBTPQ5T0N"
-        };
-
-        // Firebase 초기화
-        let app, auth, db;
-        try {
-            app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            db = getFirestore(app);
-        } catch (e) {
-            console.error("Firebase Init Error:", e);
-        }
-
-        // 전역 상태 (caughtWords 객체 추가)
-        window.state = {
-            user: null, // 학생 이름
-            authUid: null,
-            gameData: { level: 1, exp: 0, count: 0, caughtWords: {} },
-            quizzes: [],
-            currentQuiz: null,
-            shake: 0,
-            particles: [],
-            monster: { hp: 100, color: "#4ade80", shake: 0, tier: 1, name: "???" }
-        };
-
-        // UI 헬퍼 함수
-        let confirmResolve = null;
-        window.showCustomAlert = (msg) => {
-            document.getElementById('alert-msg').innerText = msg;
-            document.getElementById('custom-alert').style.display = 'flex';
-        };
-        window.closeCustomAlert = () => { document.getElementById('custom-alert').style.display = 'none'; };
-        
-        window.showCustomConfirm = (msg) => {
-            return new Promise((resolve) => {
-                document.getElementById('confirm-msg').innerText = msg;
-                document.getElementById('custom-confirm').style.display = 'flex';
-                confirmResolve = resolve;
-            });
-        };
-        window.handleConfirmAction = (result) => {
-            document.getElementById('custom-confirm').style.display = 'none';
-            if (confirmResolve) confirmResolve(result);
-        };
-
-        const setStatus = (msg, isError = false) => {
-            const statusEl = document.getElementById('login-status');
-            if (statusEl) {
-                statusEl.innerText = msg;
-                statusEl.className = isError ? "text-red-500 text-xs mt-2 font-bold" : "text-indigo-400 text-xs mt-2 animate-pulse";
-            }
-        };
-
-        window.handleLogout = async () => {
-            if (await window.showCustomConfirm("정말 로그아웃 하시겠습니까?")) {
-                location.reload();
-            }
-        };
-
-        // 데이터베이스 경로 헬퍼
-        const getStudentsCollection = () => collection(db, 'students');
-        const getStudentDoc = (studentId) => doc(db, 'students', studentId);
-        const getWordListCollection = () => collection(db, 'wordList');
-        const getWordDoc = (wordId) => doc(db, 'wordList', wordId);
-
-        // --- 인증 초기화 ---
-        const initAuth = async () => {
-            try {
-                await signInAnonymously(auth);
-            } catch (error) {
-                console.error("Auth Init Error:", error);
-                setStatus("서버 접속 지연 중입니다.", true);
-            }
-        };
-
-        // 앱 시작 시 인증 실행
-        initAuth();
-
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                window.state.authUid = user.uid;
-                setStatus("마법 서버 준비 완료! 이름을 입력하세요.");
-                document.getElementById('login-btn').disabled = false;
-            } else {
-                window.state.authUid = null;
-                document.getElementById('login-btn').disabled = true;
-            }
-        });
-
-        // --- 로그인 프로세스 ---
-        window.handleLogin = async () => {
-            if (!window.state.authUid) return window.showCustomAlert("서버와 아직 연결되지 않았습니다. 잠시만 기다려주세요.");
-
-            const idInput = document.getElementById('user-id').value.trim();
-            const pwInput = document.getElementById('user-pw').value.trim();
-            const btn = document.getElementById('login-btn');
-
-            if (!idInput || !pwInput) return window.showCustomAlert("이름과 비밀번호를 모두 입력하세요!");
-            if (!STUDENT_LIST.includes(idInput)) return window.showCustomAlert(`'${idInput}' 학생은 명단에 없습니다.`);
-
-            btn.disabled = true;
-            setStatus("마법 기록 조회 중...");
-
-            try {
-                const docRef = getStudentDoc(idInput);
-                const docSnap = await getDoc(docRef);
-
-                if (docSnap.exists()) {
-                    // 기존 유저
-                    const data = docSnap.data();
-                    if (data.password !== pwInput) {
-                        btn.disabled = false;
-                        setStatus("비밀번호 오류", true);
-                        return window.showCustomAlert("비밀번호가 틀렸습니다!");
-                    }
-                    window.state.gameData = data.gameStats || { level: 1, exp: 0, count: 0, caughtWords: {} };
-                    
-                    // 과거 데이터 호환성 (도감 데이터가 없는 경우 생성)
-                    if (!window.state.gameData.caughtWords) {
-                        window.state.gameData.caughtWords = {};
-                    }
-
-                    setStatus("접속 성공!");
-                    enterGame(idInput);
-                } else {
-                    // 신규 유저 등록
-                    const isConfirmed = await window.showCustomConfirm(`'${idInput}' 학생님, 반가워요!\n입력하신 비밀번호[${pwInput}]를 계속 사용하시겠습니까?`);
-                    if (isConfirmed) {
-                        await setDoc(docRef, { 
-                            id: idInput, 
-                            password: pwInput, 
-                            gameStats: window.state.gameData, 
-                            createdAt: new Date().toISOString()
-                        });
-                        setStatus("신입 마법사 등록 완료!");
-                        enterGame(idInput);
-                    } else {
-                        btn.disabled = false;
-                        setStatus("비밀번호 변경을 위해 취소됨", true);
-                        document.getElementById('user-pw').value = '';
-                        document.getElementById('user-pw').focus();
-                    }
-                }
-            } catch (error) {
-                console.error("Login Check Error:", error);
-                btn.disabled = false;
-                setStatus("데이터 조회 실패", true);
-                window.showCustomAlert("서버 통신 중 문제가 발생했습니다.");
-            }
-        };
-
-        function enterGame(id) {
-            window.state.user = id;
-            document.getElementById('player-name').innerText = id;
-            
-            // 화면 너비 넓히기 (전투화면과 퀴즈를 좌우로 배치하기 위함)
-            document.getElementById('app-wrapper').classList.replace('max-w-[480px]', 'max-w-[850px]');
-            
-            const adminBtn = document.getElementById('admin-btn');
-            if (id === '마스터' || id === '선생님') {
-                adminBtn.style.display = 'inline-block';
-            } else {
-                adminBtn.style.display = 'none';
-            }
-            
-            document.getElementById('login-view').style.display = 'none';
-            document.getElementById('game-view').style.display = 'block';
-            
-            startMagicRPG();
-        }
-
-        // --- 탭 컨트롤 시스템 (신규) ---
-        window.switchTab = (tabName) => {
-            // 버튼 스타일 초기화
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('active', 'bg-indigo-500', 'text-white');
-                btn.classList.add('bg-slate-100', 'text-slate-500');
-            });
-            // 뷰 숨기기
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.remove('active');
-            });
-
-            // 선택된 탭 활성화
-            const activeBtn = document.getElementById(`tab-${tabName}`);
-            activeBtn.classList.remove('bg-slate-100', 'text-slate-500');
-            activeBtn.classList.add('active', 'bg-indigo-500', 'text-white');
-            document.getElementById(`content-${tabName}`).classList.add('active');
-
-            // 탭에 따른 데이터 렌더링
-            if (tabName === 'dex') renderDex();
-            if (tabName === 'arena') loadArena();
-        };
-
-        // --- 게임 시작 및 실시간 데이터 연동 ---
-        let unsubscribeWords = null;
-
-        function startMagicRPG() {
-            // 단어장 실시간 감시
-            unsubscribeWords = onSnapshot(getWordListCollection(), 
-                (snapshot) => {
-                    window.state.quizzes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    window.refreshQuiz();
-                    window.updateAdminList();
-                },
-                (error) => {
-                    console.error("Snapshot Error:", error);
-                    document.getElementById('quiz-txt').innerText = "단어장을 불러올 수 없습니다.";
-                }
-            );
-
-            // 캐릭터 이미지 로드 (SVG 활용)
-            window.charImg = new Image();
-            window.charImg.src = getEvoSVG(window.state.gameData.level);
-
-            window.updateUI();
-            requestAnimationFrame(gameLoop);
-        }
-
-        // --- 클라우드 진행상황 저장 ---
-        window.saveProgress = async () => {
-            if (!window.state.user) return;
-            try {
-                await setDoc(getStudentDoc(window.state.user), {
-                    gameStats: window.state.gameData
-                }, { merge: true });
-            } catch (e) { 
-                console.error("Cloud Save Error:", e); 
-            }
-        };
-
-        // --- 단어장 관리 (관리자 기능) ---
-        window.toggleAdmin = () => {
-            const adminView = document.getElementById('admin-view');
-            const gameView = document.getElementById('game-view');
-            
-            if (adminView.style.display === 'block') {
-                adminView.style.display = 'none';
-                gameView.style.display = 'block';
-            } else {
-                adminView.style.display = 'block';
-                gameView.style.display = 'none';
-            }
-        };
-
-        window.addWord = async () => {
-            const wInput = document.getElementById('new-w');
-            const mInput = document.getElementById('new-m');
-            const w = wInput.value.trim();
-            const m = mInput.value.trim();
-            
-            if (!w || !m) {
-                return window.showCustomAlert("영단어와 뜻을 모두 입력해주세요.");
-            }
-            
-            try {
-                // 단어는 소문자로 변환하여 ID로 사용
-                const wordId = w.toLowerCase().replace(/\s+/g, '_');
-                await setDoc(getWordDoc(wordId), { word: w, meaning: m, createdAt: Date.now() });
-                wInput.value = ''; 
-                mInput.value = '';
-                wInput.focus();
-            } catch (error) {
-                console.error("Add Word Error:", error);
-                window.showCustomAlert("단어 저장에 실패했습니다.");
-            }
-        };
-
-        window.delWord = async (id) => {
-            if (await window.showCustomConfirm("이 단어를 도감에서 삭제할까요?")) {
-                try {
-                    await deleteDoc(getWordDoc(id));
-                } catch(error) {
-                    console.error("Delete Word Error:", error);
-                }
-            }
-        };
-
-        window.updateAdminList = () => {
-            const list = document.getElementById('admin-list');
-            if(!list) return;
-            
-            if (window.state.quizzes.length === 0) {
-                list.innerHTML = `<p class="text-center text-sm text-slate-400 py-4">저장된 단어가 없습니다.</p>`;
-                return;
-            }
-
-            // 최신순 정렬
-            const sorted = [...window.state.quizzes].sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
-            
-            list.innerHTML = sorted.map(q => `
-                <div class="flex justify-between items-center bg-white p-3 rounded-xl shadow-sm border border-slate-100 mb-2">
-                    <div class="truncate">
-                        <span class="font-black text-indigo-600 text-lg mr-2">${q.word}</span>
-                        <span class="text-slate-600 text-sm">${q.meaning}</span>
-                    </div>
-                    <button onclick="window.delWord('${q.id}')" class="text-red-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg font-bold text-xs ml-2 shrink-0 transition-colors">삭제</button>
-                </div>
-            `).join('');
-        };
-
-        // --- 게임 로직 ---
-        window.refreshQuiz = () => {
-            const input = document.getElementById('spell-in');
-            const txt = document.getElementById('quiz-txt');
-            const hint = document.getElementById('hint-msg');
-            
-            if (!window.state.quizzes || window.state.quizzes.length === 0) {
-                if (txt) txt.innerText = "단어 도감이 비어있습니다";
-                if (input) input.disabled = true; 
-                return;
-            }
-            
-            if(input) { 
-                input.disabled = false; 
-                input.value = ''; 
-                setTimeout(() => input.focus(), 50); 
-            }
-            
-            hint.innerText = "정답을 써야 마법 공격이 나갑니다!";
-            hint.className = "text-slate-400 text-[10px] mt-4 font-normal italic";
-
-            // 랜덤 단어 선택
-            window.state.currentQuiz = window.state.quizzes[Math.floor(Math.random() * window.state.quizzes.length)];
-            if (txt) txt.innerText = window.state.currentQuiz.meaning;
-
-            // [신규] 선택된 단어의 몬스터 이미지 및 진화 단계 갱신
-            const word = window.state.currentQuiz.word;
-            const catchCount = (window.state.gameData.caughtWords && window.state.gameData.caughtWords[word]) ? window.state.gameData.caughtWords[word] : 0;
-            
-            window.state.monster.name = word;
-            window.state.monster.tier = catchCount >= 5 ? 3 : (catchCount >= 2 ? 2 : 1);
-            window.state.monster.hp = 100; // 등장 시 체력 리셋
-            
-            window.monsterImg = new Image();
-            window.monsterImg.src = getMonsterSVG(word, catchCount);
-        };
-
-        window.checkMagic = () => {
-            if (!window.state.currentQuiz) return;
-            
-            const input = document.getElementById('spell-in');
-            const typed = input.value.trim().toLowerCase();
-            const answer = window.state.currentQuiz.word.toLowerCase();
-            
-            if (typed === answer) { 
-                handleAttack(); 
-                window.refreshQuiz(); 
-            } else {
-                window.state.shake = 15;
-                const hint = document.getElementById('hint-msg');
-                const firstLetter = window.state.currentQuiz.word.charAt(0);
-                hint.innerText = `틀렸어요! (정답 힌트: ${firstLetter}...)`;
-                hint.className = "text-red-500 text-[12px] mt-4 font-bold animate-bounce";
-                input.value = ''; // 틀리면 입력창 비우기
-                input.focus();
-            }
-        };
-
-        function handleAttack() {
-            // [신규 기능] 도감에 단어 추가
-            const currentWord = window.state.currentQuiz.word;
-            if (!window.state.gameData.caughtWords) window.state.gameData.caughtWords = {};
-            
-            // 기존에 잡은 적이 있으면 +1, 처음 잡으면 1로 저장
-            window.state.gameData.caughtWords[currentWord] = (window.state.gameData.caughtWords[currentWord] || 0) + 1;
-
-            window.state.gameData.count++; 
-            window.state.monster.hp -= 34; 
-            window.state.monster.shake = 25;
-            
-            // 파티클 생성
-            for (let i = 0; i < 20; i++) {
-                window.state.particles.push({ 
-                    x: 280, 
-                    y: 220, 
-                    vx: (Math.random()-0.5)*20, 
-                    vy: (Math.random()-0.5)*20, 
-                    life: 1.0, 
-                    color: "white" // 파티클 색상 고정
-                });
-            }
-
-            // 몬스터 처치
-            if (window.state.monster.hp <= 0) {
-                window.state.gameData.exp += 40; 
-                window.state.monster.hp = 100;
-            } else { 
-                window.state.gameData.exp += 15; 
-            }
-
-            // 레벨업 체크
-            if (window.state.gameData.exp >= 100) {
-                window.state.gameData.exp = window.state.gameData.exp - 100; 
-                window.state.gameData.level++;
-                
-                document.getElementById('modal').style.display = 'flex';
-                document.getElementById('modal-desc').innerText = `레벨 ${window.state.gameData.level}(으)로 성장했습니다!`;
-                
-                // 캐릭터 이미지 업데이트
-                window.charImg.src = getEvoSVG(window.state.gameData.level);
-            }
-            
-            window.updateUI(); 
-            window.saveProgress();
-        }
-
-        window.updateUI = () => {
-            const lvlTxt = document.getElementById('lvl-txt'); 
-            const cntTxt = document.getElementById('cnt-txt');
-            const expBar = document.getElementById('exp-bar'); 
-            const rankBadge = document.getElementById('rank-badge');
-            
-            const lvl = window.state.gameData.level;
-            
-            if (lvlTxt) lvlTxt.innerText = lvl;
-            // 총 시도 횟수 대신 도감에 수집된 서로 다른 단어의 개수를 보여주도록 변경 (선택사항)
-            // if (cntTxt) cntTxt.innerText = window.state.gameData.caughtWords ? Object.keys(window.state.gameData.caughtWords).length : 0;
-            if (cntTxt) cntTxt.innerText = window.state.gameData.count; // 기존 방식 유지
-
-            if (expBar) expBar.style.width = window.state.gameData.exp + "%";
-            
-            if (rankBadge) {
-                if (lvl >= 15) { rankBadge.innerText = "MASTER MAGE"; rankBadge.className = "text-[10px] px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-600 font-bold uppercase tracking-wider"; }
-                else if (lvl >= 10) { rankBadge.innerText = "HIGH MAGE"; rankBadge.className = "text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-600 font-bold uppercase tracking-wider"; }
-                else if (lvl >= 5) { rankBadge.innerText = "MAGE"; rankBadge.className = "text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-600 font-bold uppercase tracking-wider"; }
-                else { rankBadge.innerText = "ROOKIE"; rankBadge.className = "text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-600 font-bold uppercase tracking-wider"; }
-            }
-        };
-
-        // --- 도감(Word-Dex) 렌더링 (신규) ---
-        window.renderDex = () => {
-            const dexList = document.getElementById('dex-list');
-            const caughtWords = window.state.gameData.caughtWords || {};
-            const keys = Object.keys(caughtWords);
-            
-            document.getElementById('dex-total').innerText = keys.length;
-            
-            if (keys.length === 0) {
-                dexList.innerHTML = `<p class="text-center text-slate-400 py-10 text-sm">아직 포획한 단어가 없습니다.<br>사냥터에서 단어를 잡아보세요!</p>`;
-                return;
-            }
-
-            // 포켓몬고 스타일의 격자(Grid) 레이아웃 시작
-            let html = '<div class="grid grid-cols-2 sm:grid-cols-3 gap-3">';
-            
-            // 가장 많이 포획한 순서(내림차순)로 정렬
-            keys.sort((a, b) => caughtWords[b] - caughtWords[a]).forEach(word => {
-                const count = caughtWords[word];
-                // 서버 단어장에서 뜻 가져오기
-                const quizData = window.state.quizzes.find(q => q.word.toLowerCase() === word.toLowerCase());
-                const meaning = quizData ? quizData.meaning : "알 수 없음";
-                
-                // 몬스터 진화 단계 계산 및 SVG 이미지 생성
-                const tier = count >= 5 ? 3 : (count >= 2 ? 2 : 1);
-                const imgSrc = getMonsterSVG(word, count);
-                
-                html += `
-                <div class="flex flex-col items-center justify-center p-3 bg-white rounded-2xl border-2 border-slate-100 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all relative group cursor-pointer">
-                    <!-- 상단: 몬스터 레벨(CP 느낌) 및 포획 횟수 -->
-                    <div class="w-full flex justify-between items-center mb-1 px-1">
-                        <span class="text-[10px] text-slate-400 font-bold tracking-tighter">LV <span class="text-slate-700 text-xs">${tier}</span></span>
-                        <span class="text-[10px] bg-indigo-50 text-indigo-500 px-1.5 py-0.5 rounded-md font-bold">★ ${count}</span>
-                    </div>
-                    
-                    <!-- 중단: 몬스터 이미지 -->
-                    <div class="h-20 w-20 flex items-center justify-center my-1 relative">
-                        <img src="${imgSrc}" class="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-300 drop-shadow-md" alt="${word}" />
-                    </div>
-                    
-                    <!-- 하단: 단어 및 뜻 -->
-                    <div class="w-full text-center border-t-2 border-slate-50 pt-2 mt-1">
-                        <div class="font-black text-slate-700 text-[13px] capitalize truncate w-full tracking-wide" title="${word}">${word}</div>
-                        <div class="text-slate-400 text-[10px] truncate w-full mt-0.5 font-bold" title="${meaning}">${meaning}</div>
-                    </div>
-                </div>`;
-            });
-            
-            html += '</div>';
-            dexList.innerHTML = html;
-        };
-
-        // --- [신규] 전투력 계산 헬퍼 함수 ---
-        window.getTopTeam = (caughtWords) => {
-            if (!caughtWords) return { power: 0, team: [] };
-            // 포획 횟수 기준으로 내림차순 정렬
-            const sorted = Object.entries(caughtWords).sort((a, b) => b[1] - a[1]);
-            // 상위 3마리 출전
-            const top3 = sorted.slice(0, 3);
-            let power = 0;
-            // 전투력 공식: 포획 횟수 * 10
-            top3.forEach(w => power += (w[1] * 10)); 
-            return { power, team: top3 };
-        };
-
-        // --- 투기장(Arena) 로드 및 배틀 (수정됨) ---
-        window.loadArena = async () => {
-            const listEl = document.getElementById('arena-list');
-            listEl.innerHTML = '<p class="text-center text-slate-400 py-10 text-sm animate-pulse">상대를 찾고 있습니다...</p>';
-            
-            // 내 주력 몬스터 Top 3 전투력 계산
-            const myTeamInfo = window.getTopTeam(window.state.gameData.caughtWords);
-            document.getElementById('my-power').innerText = myTeamInfo.power;
-
-            try {
-                // 파이어베이스에서 모든 학생 데이터 불러오기
-                const snapshot = await getDocs(getStudentsCollection());
-                let html = '';
-                
-                snapshot.forEach(doc => {
-                    // 본인, 테스트 계정은 제외 (선생님/마스터는 체육관 관장으로 등장)
-                    if(doc.id === window.state.user || doc.id === '테스트') return; 
-                    
-                    const data = doc.data();
-                    const stats = data.gameStats || {};
-                    
-                    // 체육관 관장 설정
-                    const isGymLeader = (doc.id === '선생님' || doc.id === '마스터');
-                    const title = isGymLeader ? '👑 체육관 관장' : `레벨 ${stats.level || 1} 마법사`;
-                    const bgColor = isGymLeader ? 'bg-yellow-50 border-yellow-300' : 'bg-white border-slate-100';
-                    const icon = isGymLeader ? '🧙‍♂️' : '👤';
-                    
-                    html += `
-                    <div class="flex justify-between items-center ${bgColor} p-4 rounded-2xl shadow-sm border mb-3 hover:border-red-200 transition-colors">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-xl">${icon}</div>
-                            <div>
-                                <div class="font-bold text-slate-700">${doc.id}</div>
-                                <div class="text-[10px] ${isGymLeader ? 'text-yellow-600 font-bold' : 'text-slate-400'}">${title}</div>
-                            </div>
-                        </div>
-                        <button onclick="window.startBattle('${doc.id}')" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-md active:scale-95 transition-all">도전하기</button>
-                    </div>`;
-                });
-                
-                listEl.innerHTML = html || '<p class="text-center text-slate-400 py-10 text-sm">도전할 상대가 없습니다.</p>';
-            } catch(e) {
-                console.error("Arena Load Error:", e);
-                listEl.innerHTML = '<p class="text-center text-red-400 py-10 text-sm">서버 통신에 실패했습니다.</p>';
-            }
-        };
-
-        // 배틀 로직 처리 (수정됨)
-        window.startBattle = async (opponentId) => {
-            try {
-                // 실시간으로 상대방의 최신 데이터를 불러옴
-                const docSnap = await getDoc(getStudentDoc(opponentId));
-                if (!docSnap.exists()) return window.showCustomAlert("상대방 정보를 찾을 수 없습니다.");
-                
-                const opponentStats = docSnap.data().gameStats || {};
-                
-                const myTeamInfo = window.getTopTeam(window.state.gameData.caughtWords);
-                const oppTeamInfo = window.getTopTeam(opponentStats.caughtWords);
-
-                if (myTeamInfo.team.length === 0) {
-                    return window.showCustomAlert("전투에 내보낼 몬스터가 없습니다!\n사냥터에서 단어를 먼저 포획하세요.");
-                }
-
-                // 출전 몬스터 텍스트 포맷팅 함수 (Lv1~3 표기)
-                const formatTeam = (team) => team.map(t => {
-                    const tier = t[1] >= 5 ? 3 : (t[1] >= 2 ? 2 : 1);
-                    return `${t[0]}(Lv.${tier})`;
-                }).join(', ') || '없음';
-
-                const myTeamStr = formatTeam(myTeamInfo.team);
-                const oppTeamStr = formatTeam(oppTeamInfo.team);
-
-                let battleMsg = `⚔️ ${opponentId}와의 배틀 ⚔️\n\n`;
-                battleMsg += `[나의 정예 몬스터 3마리]\n${myTeamStr}\n(전투력: ${myTeamInfo.power})\n\n`;
-                battleMsg += `[상대방 몬스터 3마리]\n${oppTeamStr}\n(전투력: ${oppTeamInfo.power})\n\n`;
-                
-                if (myTeamInfo.power > oppTeamInfo.power) {
-                    battleMsg += `🎉 승리했습니다! 전리품으로 경험치 50을 획득!`;
-                    window.showCustomAlert(battleMsg);
-                    window.state.gameData.exp += 50;
-                    
-                    if (window.state.gameData.exp >= 100) { 
-                        window.state.gameData.exp -= 100; 
-                        window.state.gameData.level++;
-                        document.getElementById('modal').style.display = 'flex';
-                        document.getElementById('modal-desc').innerText = `레벨 ${window.state.gameData.level}(으)로 성장했습니다!`;
-                        window.charImg.src = getEvoSVG(window.state.gameData.level);
-                    }
-                    
-                    window.updateUI();
-                    window.saveProgress();
-
-                } else if (myTeamInfo.power < oppTeamInfo.power) {
-                    battleMsg += `💥 패배...\n동일한 단어를 반복해서 잡아 몬스터를 더 진화시키세요!`;
-                    window.showCustomAlert(battleMsg);
-                } else {
-                    battleMsg += `🤝 무승부!\n팽팽한 접전이었습니다. 몬스터 하나만 더 진화시키고 오세요!`;
-                    window.showCustomAlert(battleMsg);
-                }
-            } catch (e) {
-                console.error("Battle Error:", e);
-                window.showCustomAlert("전투 중 오류가 발생했습니다.");
-            }
-        };
-
-        // --- 캔버스 렌더링 루프 ---
-        function gameLoop() {
-            const canvas = document.getElementById('gameCanvas');
-            // 사냥터 탭이 켜져 있을 때만 캔버스를 그립니다 (성능 최적화)
-            if (!canvas || window.getComputedStyle(document.getElementById('content-hunt')).display === 'none') {
-                requestAnimationFrame(gameLoop);
-                return;
-            }
-            
-            const ctx = canvas.getContext('2d');
-            
-            // 배경
-            ctx.clearRect(0, 0, 400, 350); 
-            ctx.fillStyle = "#f8fafc"; 
-            ctx.fillRect(0, 0, 400, 350);
-            
-            // 플레이어 흔들림 (틀렸을 때)
-            const float = Math.sin(Date.now() / 500) * 10;
-            const ms = (Math.random()-0.5) * window.state.shake; 
-            if (window.state.shake > 0) window.state.shake *= 0.8;
-            
-            // 플레이어 그리기
-            ctx.save(); 
-            ctx.translate(100 + ms, 200 + float);
-            if (window.charImg && window.charImg.complete) {
-                ctx.drawImage(window.charImg, -75, -75, 150, 150);
-            }
-            ctx.restore();
-            
-            // 몬스터 흔들림 (맞았을 때)
-            const mns = (Math.random()-0.5) * window.state.monster.shake; 
-            if (window.state.monster.shake > 0) window.state.monster.shake *= 0.8;
-            
-            // [신규] 진화형 몬스터 그리기
-            ctx.save(); 
-            ctx.translate(280 + mns, 220); 
-            
-            if (window.monsterImg && window.monsterImg.complete) {
-                // 진화 단계에 따라 몬스터 크기를 다르게 출력 (Lv1: 작음, Lv2: 중간, Lv3: 큼)
-                const scale = 1 + (window.state.monster.tier * 0.15);
-                const w = 80 * scale;
-                const h = 80 * scale;
-                ctx.drawImage(window.monsterImg, -w/2, -h/2 - 10, w, h);
-            }
-
-            // 몬스터 이름과 레벨(진화 단계) 표시
-            ctx.fillStyle = "#64748b";
-            ctx.font = "bold 10px sans-serif";
-            ctx.textAlign = "center";
-            ctx.fillText(`Lv.${window.state.monster.tier} 야생 몬스터`, 0, -65 - (window.state.monster.tier * 10));
-
-            // 몬스터 체력바
-            ctx.fillStyle = "#e2e8f0";
-            ctx.fillRect(-35, -55, 70, 6);
-            ctx.fillStyle = "#ef4444"; 
-            ctx.fillRect(-35, -55, 70 * (Math.max(0, window.state.monster.hp)/100), 6); 
-            ctx.restore();
-            
-            // 타격 이펙트 파티클
-            window.state.particles.forEach((p, i) => {
-                p.x += p.vx; 
-                p.y += p.vy; 
-                p.life -= 0.05; 
-                ctx.globalAlpha = Math.max(0, p.life); 
-                ctx.fillStyle = p.color; 
-                ctx.fillRect(p.x, p.y, 6, 6);
-                if (p.life <= 0) window.state.particles.splice(i, 1);
-            });
-            ctx.globalAlpha = 1.0; 
-            
-            requestAnimationFrame(gameLoop);
-        }
-
-        // SVG 캐릭터 생성 함수 (레벨에 따라 색상과 형태가 약간 변화)
-        function getEvoSVG(level) {
-            // 레벨별 색상 테마
-            let color = "#7c3aed"; // 기본 보라색
-            let hatColor = "#4c1d95";
-            let staffColor = "#b45309";
-            let orbColor = "#fde047";
-
-            if (level >= 15) { color = "#be123c"; hatColor = "#881337"; orbColor = "#67e8f9"; } // 전설
-            else if (level >= 10) { color = "#1d4ed8"; hatColor = "#1e3a8a"; orbColor = "#fca5a5"; } // 고급
-            else if (level >= 5) { color = "#047857"; hatColor = "#064e3b"; orbColor = "#fde047"; } // 중급
-            
-            const svg = `
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-                <!-- 망토 -->
-                <path d="M25,50 Q10,90 20,95 L80,95 Q90,90 75,50 Z" fill="${color}" opacity="0.9"/>
-                <!-- 몸통 -->
-                <rect x="35" y="45" width="30" height="40" rx="10" fill="#ffedd5" />
-                <path d="M35,45 Q50,60 65,45 Z" fill="${hatColor}" opacity="0.3" />
-                <!-- 마법사 모자 -->
-                <path d="M20,45 Q50,40 80,45 L50,5 Z" fill="${hatColor}" />
-                <!-- 모자 챙 -->
-                <ellipse cx="50" cy="45" rx="35" ry="5" fill="${color}" />
-                <!-- 눈 -->
-                <circle cx="43" cy="55" r="3" fill="#1e293b" />
-                <circle cx="57" cy="55" r="3" fill="#1e293b" />
-                <!-- 볼터치 -->
-                <ellipse cx="38" cy="60" rx="4" ry="2" fill="#fda4af" opacity="0.6"/>
-                <ellipse cx="62" cy="60" rx="4" ry="2" fill="#fda4af" opacity="0.6"/>
-                <!-- 마법 지팡이 -->
-                <rect x="75" y="30" width="4" height="60" rx="2" fill="${staffColor}" transform="rotate(15 75 30)" />
-                <!-- 지팡이 구슬 -->
-                <circle cx="70" cy="25" r="8" fill="${orbColor}" opacity="0.9" />
-                <circle cx="68" cy="23" r="3" fill="#ffffff" opacity="0.8" />
-            </svg>`;
-            return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
-        }
-
-// [이모지 스타일 업그레이드] 단어별 고유한 "곤충/동물/새/물고기" 이모지 SVG 생성 함수
-        function getMonsterSVG(word, count) {
+return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
+}
+
+        // [신규] 단어의 문자열을 분석하여 고유한 몬스터 SVG를 생성하는 함수
+     // [업그레이드] 단어별 고유한 "포켓몬 스타일" SVG 몬스터 생성 함수
+function getMonsterSVG(word, count) {
+            // 단어의 스펠링으로 고유 번호(Hash) 생성 (항상 같은 단어는 같은 몬스터)
             // 단어의 문자열을 분석하여 고유 번호(Hash) 생성 (항상 같은 단어는 같은 몬스터)
-            let hash = 0;
-            for (let i = 0; i < word.length; i++) {
-                hash = word.charCodeAt(i) + ((hash << 5) - hash);
-            }
-            hash = Math.abs(hash);
+let hash = 0;
+for (let i = 0; i < word.length; i++) {
+hash = word.charCodeAt(i) + ((hash << 5) - hash);
+}
+hash = Math.abs(hash);
 
-            const hue = hash % 360; // 0~360 색상값 (단어마다 다름)
-            const type = hash % 4;  // 0:곤충, 1:동물(육지), 2:새, 3:물고기 (카테고리)
-            const tier = count >= 5 ? 3 : (count >= 2 ? 2 : 1); // 포획 횟수에 따른 진화(1~3)
+const hue = hash % 360; // 0~360 색상값 (단어마다 다름)
+            const type = hash % 3;  // 0: 슬라임형, 1: 네모골렘형, 2: 유령형
+            const type = hash % 4;  // 0:불/드래곤, 1:물/비버, 2:풀/식물, 3:전기/쥐 (포켓몬 속성 스타일)
+const tier = count >= 5 ? 3 : (count >= 2 ? 2 : 1); // 포획 횟수에 따른 진화(1~3)
 
-            // 이모지 특유의 밝고 선명한 색감 설정
-            let mainColor = `hsl(${hue}, 90%, 65%)`; // 메인 컬러
-            let darkColor = `hsl(${hue}, 100%, 30%)`; // 짙은 테두리/디테일용
-            
+            let color = `hsl(${hue}, 75%, 60%)`;
+            let darkColor = `hsl(${hue}, 80%, 35%)`;
+            let mainColor = `hsl(${hue}, 85%, 65%)`; // 밝고 선명한 메인 컬러
+            let darkColor = `hsl(${hue}, 90%, 40%)`; // 짙은 테두리용
+            let eyeColor = "#1e293b"; // 눈 색상
+
+            // 레벨 3일때 빛나는 오라 효과
+            let glow = tier === 3 ? `<circle cx="50" cy="50" r="45" fill="${color}" opacity="0.3" filter="blur(4px)"/>` : '';
             // 진화 단계에 따른 크기 보정값 (위에서 그릴 때 크기 조절을 위해 사용됨)
             const sizeBonus = (tier - 1) * 5; 
-            const yOffset = -sizeBonus; // 진화할수록 위로 조금씩 이동
 
+            // 1. 몸통 형태 결정
             // SVG 내부 컴포넌트 초기화
-            let body = '';
-            let face = '';
-            let details = ''; // 뿔, 날개, 지느러미 등 카테고리별 특징
-
-            // --- 1. 타입별 이모지 몸통 및 특징 설계 ---
-            if (type === 0) { // 🐞 곤충 스타일 (무당벌레/딱정벌레 느낌)
-                body = `<circle cx="50" cy="${65 + yOffset}" r="${30 + sizeBonus}" fill="${mainColor}" stroke="${darkColor}" stroke-width="2"/>
-                        <ellipse cx="50" cy="${40 + yOffset}" rx="${18 + sizeBonus/2}" ry="${15 + sizeBonus/2}" fill="#1e293b" />`; // 머리
-                details = `<path d="M 50 ${40 + yOffset} L 50 ${95 + yOffset}" stroke="${darkColor}" stroke-width="2" />`; // 날개 갈라짐
-                if (tier >= 2) { // Lv2: 점박이 무늬 발생
-                    details += `<circle cx="35" cy="${60 + yOffset}" r="5" fill="#1e293b"/><circle cx="65" cy="${60 + yOffset}" r="5" fill="#1e293b"/>
-                                <circle cx="50" cy="${75 + yOffset}" r="5" fill="#1e293b"/><circle cx="35" cy="${85 + yOffset}" r="3" fill="#1e293b"/><circle cx="65" cy="${85 + yOffset}" r="3" fill="#1e293b"/>`;
-                }
-                if (tier === 3) { // Lv3: 더듬이 및 다리 발생
-                    details += `<path d="M 40 ${30 + yOffset} Q 30 10 20 20 M 60 ${30 + yOffset} Q 70 10 80 20" stroke="#1e293b" stroke-width="2.5" fill="none"/>
-                                <path d="M 25 55 L 10 50 M 25 70 L 5 70 M 25 85 L 10 90 M 75 55 L 90 50 M 75 70 L 95 70 M 75 85 L 90 90" stroke="#1e293b" stroke-width="2" />`;
-                }
-
-            } else if (type === 1) { // 🐱 동물(육지) 스타일 (둥글둥글한 고양이/곰 느낌)
-                body = `<ellipse cx="50" cy="${65 + yOffset}" rx="${30 + sizeBonus}" ry="${28 + sizeBonus}" fill="${mainColor}" stroke="${darkColor}" stroke-width="2"/>
-                        <circle cx="50" cy="${80 + yOffset}" r="${18 + sizeBonus/2}" fill="#fff" opacity="0.6"/>`; // 배 무늬
-                // 귀
-                details = `<circle cx="28" cy="${45 + yOffset}" r="${10 + sizeBonus/2}" fill="${mainColor}" stroke="${darkColor}" stroke-width="2"/>
-                           <circle cx="72" cy="${45 + yOffset}" r="${10 + sizeBonus/2}" fill="${mainColor}" stroke="${darkColor}" stroke-width="2"/>`; 
-                face = `<ellipse cx="38" cy="${70 + yOffset}" rx="4" ry="2" fill="#fda4af" opacity="0.6"/><ellipse cx="62" cy="${70 + yOffset}" rx="4" ry="2" fill="#fda4af" opacity="0.6"/>`; // 볼터치
-                if (tier >= 2) details += `<path d="M 50 ${60 + yOffset} Q 45 60 40 65 Q 45 65 50 60 Q 55 65 60 65 Q 55 60 50 60" fill="#1e293b"/>`; // Lv2: 고양이 수염/입
-                if (tier === 3) details += `<path d="M 20 90 Q 5 105 15 110 L 85 110 Q 95 105 80 90 Z" fill="${darkColor}"/>`; // Lv3: 풍성한 꼬리/깃털
-
-            } else if (type === 2) { // 🐦 새 스타일 (둥글둥글한 몸통)
-                body = `<ellipse cx="50" cy="${65 + yOffset}" rx="${32 + sizeBonus}" ry="${25 + sizeBonus}" fill="${mainColor}" stroke="${darkColor}" stroke-width="2"/>
-                        <ellipse cx="65" cy="${60 + yOffset}" rx="15" ry="10" fill="#fff" opacity="0.5"/>`; // 날개 무늬
-                details = `<polygon points="35,60 15,50 35,70" fill="#fbbf24" stroke="#b45309" stroke-width="1.5"/>`; // 부리
-                if (tier >= 2) details += `<polygon points="75,65 95,55 95,75" fill="${mainColor}" stroke="${darkColor}" stroke-width="1.5"/>`; // Lv2: 꼬리 깃털 발생
-                if (tier === 3) details += `<path d="M 30 40 Q 15 10 30 25 M 70 40 Q 85 10 70 25" stroke="${darkColor}" stroke-width="2" fill="none"/>
-                                             <path d="M 40 90 L 40 100 L 35 105 M 40 100 L 45 105 M 60 90 L 60 100 L 55 105 M 60 100 L 65 105" stroke="#fbbf24" stroke-width="1.5"/>`; // Lv3: 머리 깃털 및 다리 발생
-
-            } else { // 🐟 물고기 스타일 (옆모습)
-                body = `<ellipse cx="50" cy="${65 + yOffset}" rx="${35 + sizeBonus}" ry="${22 + sizeBonus}" fill="${mainColor}" stroke="${darkColor}" stroke-width="2"/>`;
-                details = `<polygon points="85,65 100,50 100,80" fill="${mainColor}" stroke="${darkColor}" stroke-width="1.5"/>
-                           <path d="M 50 60 Q 60 70 50 80" stroke="${darkColor}" stroke-width="1.5" fill="none" opacity="0.7"/>`; // 지느러미 갈라짐
-                if (tier >= 2) details += `<path d="M 20 65 Q 15 65 10 60 M 20 70 Q 15 70 10 75" stroke="${darkColor}" stroke-width="2" fill="none"/>`; // Lv2: 물고기 입/수염 발생
-                if (tier === 3) details += `<circle cx="40" cy="55" r="1" fill="${darkColor}"/><circle cx="45" cy="65" r="1" fill="${darkColor}"/><circle cx="50" cy="55" r="1" fill="${darkColor}"/><circle cx="55" cy="75" r="1" fill="${darkColor}"/><circle cx="60" cy="65" r="1" fill="${darkColor}"/><circle cx="65" cy="55" r="1" fill="${darkColor}"/>
-                                             <circle cx="50" cy="${65 + yOffset}" r="45" fill="${mainColor}" opacity="0.1" stroke="${mainColor}" stroke-width="1"/>`; // Lv3: 비늘 무늬 및 물방울 오라 발생
+let body = '';
+            if (type === 0) { // 원형 (슬라임)
+                body = `<ellipse cx="50" cy="${60 - tier*2}" rx="${30 + tier*3}" ry="${25 + tier*4}" fill="${color}" stroke="${darkColor}" stroke-width="3"/>`;
+            } else if (type === 1) { // 사각형 (골렘)
+                body = `<rect x="${20 - tier*2}" y="${35 - tier*4}" width="${60 + tier*4}" height="${50 + tier*4}" rx="${10 - tier}" fill="${color}" stroke="${darkColor}" stroke-width="3"/>`;
+            } else { // 뾰족/둥근 유령형
+                body = `<path d="M ${25 - tier*3} 85 Q 50 ${15 - tier*8} ${75 + tier*3} 85 Q 60 90 50 80 Q 40 90 ${25 - tier*3} 85" fill="${color}" stroke="${darkColor}" stroke-width="3"/>`;
             }
+            let face = '';
+            let extraParts = ''; // 뿔, 날개, 나뭇잎 등
+            let aura = ''; // 레벨 3일 때 빛나는 효과
 
-            // --- 2. 진화 단계에 따른 눈매 및 표정 변화 ---
-            let eyes = '';
-            // 이모지 스타일은 기본적으로 귀여운 점눈 형태
-            eyes = `<circle cx="40" cy="${60 + yOffset}" r="4" fill="#1e293b"/><circle cx="60" cy="${60 + yOffset}" r="4" fill="#1e293b"/>`;
-
-            if (tier === 1) { // Lv1: 초롱초롱한 눈망울 (하이라이트)
-                eyes += `<circle cx="38" cy="${58 + yOffset}" r="1.5" fill="white"/><circle cx="58" cy="${58 + yOffset}" r="1.5" fill="white"/>`;
-                if (type !== 2) face += `<path d="M 46 72 Q 50 75 54 72" stroke="#1e293b" stroke-width="1.5" fill="none"/>`; // 🐥 물고기/동물은 입
-
-            } else if (tier === 2) { // Lv2: 하이라이트 없음 (약간 진지)
-                if (type !== 2) face += `<path d="M 45 75 L 55 75" stroke="#1e293b" stroke-width="2" fill="none"/>`; // 일자 입
-
-            } else { // Lv3: 강력함/분노 (붉은 눈빛 및 이펙트)
-                eyes = `<path d="M 33 ${57 + yOffset} L 47 ${60 + yOffset} L 38 ${63 + yOffset} Z" fill="#ef4444"/><path d="M 67 ${57 + yOffset} L 53 ${60 + yOffset} L 62 ${63 + yOffset} Z" fill="#ef4444"/>
-                        <circle cx="42" cy="${60 + yOffset}" r="1" fill="white"/><circle cx="58" cy="${60 + yOffset}" r="1" fill="white"/>`; // 화난 눈
-                if (type !== 2) face += `<path d="M 43 78 Q 50 70 57 78" stroke="#ef4444" stroke-width="2.5" fill="none"/>`; // 화난 입
-                // Lv3 전용 반짝이는 오라 효과
-                face += `<circle cx="50" cy="${65 + yOffset}" r="45" fill="${mainColor}" opacity="0.2">
+            // 2. 진화 단계에 따른 파츠 추가 (뿔, 날개 등)
+            let accessories = '';
+            if (tier >= 2) {
+                // 레벨 2: 양쪽에 작은 뿔이나 돌기 발생
+                accessories += `<polygon points="30,35 15,15 40,25" fill="${darkColor}"/><polygon points="70,35 85,15 60,25" fill="${darkColor}"/>`;
+            }
+            // --- 0. 레벨 3 (최종 진화) 전용 오라 효과 ---
+if (tier === 3) {
+                // 레벨 3: 이마에 황금 뿔 또는 왕관 발생
+                accessories += `<polygon points="40,20 50,0 60,20" fill="#fbbf24" stroke="#b45309" stroke-width="2"/>`;
+                aura = `<circle cx="50" cy="50" r="45" fill="${mainColor}" opacity="0.2">
                           <animate attributeName="r" values="40;48;40" dur="1.5s" repeatCount="indefinite" />
                           <animate attributeName="opacity" values="0.2;0.05;0.2" dur="1.5s" repeatCount="indefinite" />
                         </circle>`;
+}
+
+            // 3. 진화 단계에 따른 눈매 변화 (성장할수록 날카로워짐)
+            // --- 1. 타입별 몸통 및 특징 설계 ---
+            if (type === 0) { // 불/드래곤 스타일 (약간 공룡 느낌)
+                body = `<path d="M 30 ${75-sizeBonus} Q 50 ${10-sizeBonus*2} 70 ${75-sizeBonus} L 60 90 L 40 90 Z" fill="${mainColor}" stroke="${darkColor}" stroke-width="2.5"/>
+                        <path d="M 50 ${15-sizeBonus*2} L 40 30 L 60 30 Z" fill="${darkColor}"/>`; // 머리 뿔
+                if (tier >= 2) extraParts += `<path d="M 30 50 Q 10 40 25 30 Z M 70 50 Q 90 40 75 30 Z" fill="#f87171" stroke="${darkColor}" stroke-width="1.5"/>`; // 레벨2부터 날개
+                if (tier === 3) extraParts += `<circle cx="50" cy="90" r="8" fill="#fbbf24" opacity="0.8"/>`; // 레벨3 꼬리불꽃
+
+            } else if (type === 1) { // 물/비버 스타일 (둥글둥글)
+                body = `<ellipse cx="50" cy="${65-sizeBonus}" rx="${30+sizeBonus*2}" ry="${28+sizeBonus*2}" fill="${mainColor}" stroke="${darkColor}" stroke-width="2.5"/>
+                        <ellipse cx="50" cy="${85-sizeBonus}" rx="${15+sizeBonus}" ry="${10+sizeBonus}" fill="#a5f3fc" stroke="${darkColor}" stroke-width="1.5"/>`; // 배 무늬
+                extraParts = `<circle cx="25" cy="${45-sizeBonus}" r="${8+sizeBonus/2}" fill="${mainColor}" stroke="${darkColor}" stroke-width="2"/>
+                              <circle cx="75" cy="${45-sizeBonus}" r="${8+sizeBonus/2}" fill="${mainColor}" stroke="${darkColor}" stroke-width="2"/>`; // 귀
+                if (tier >= 2) extraParts += `<path d="M 20 80 Q 0 95 20 100 L 80 100 Q 100 95 80 80 Z" fill="${darkColor}"/>`; // 레벨2부터 넓은 꼬리
+
+            } else if (type === 2) { // 풀/식물 스타일 (나뭇잎 정령)
+                body = `<path d="M 50 ${20-sizeBonus} Q 80 50 50 90 Q 20 50 50 20 Z" fill="${mainColor}" stroke="${darkColor}" stroke-width="2.5"/>`; // 잎사귀 몸통
+                extraParts = `<path d="M 50 ${20-sizeBonus} L 50 ${5-sizeBonus} M 50 10 L 40 15 M 50 15 L 60 10" stroke="${darkColor}" stroke-width="2"/>`; // 줄기
+                if (tier >= 2) extraParts += `<ellipse cx="30" cy="${70-sizeBonus}" rx="10" ry="15" fill="#a7f3d0" transform="rotate(-30 30 70)"/>
+                                             <ellipse cx="70" cy="${70-sizeBonus}" rx="10" ry="15" fill="#a7f3d0" transform="rotate(30 70 70)"/>`; // 레벨2부터 꽃받침
+                if (tier === 3) mainColor = `hsl(${hue}, 85%, 50%)`; // 레벨3은 더 진한 녹색
+
+            } else { // 전기/쥐 스타일 (피카츄 느낌)
+                body = `<ellipse cx="50" cy="${68-sizeBonus}" rx="${28+sizeBonus}" ry="${25+sizeBonus}" fill="${mainColor}" stroke="${darkColor}" stroke-width="2.5"/>`;
+                extraParts = `<polygon points="25,30 35,50 15,45" fill="${mainColor}" stroke="${darkColor}" stroke-width="2"/>
+                              <polygon points="75,30 65,50 85,45" fill="${mainColor}" stroke="${darkColor}" stroke-width="2"/>`; // 귀
+                face = `<circle cx="35" cy="${70-sizeBonus}" r="4" fill="#ef4444"/>
+                        <circle cx="65" cy="${70-sizeBonus}" r="4" fill="#ef4444"/>`; // 볼터치
+                if (tier >= 2) extraParts += `<path d="M 80 70 L 95 60 L 85 80 L 98 75" stroke="#fbbf24" stroke-width="3" fill="none"/>`; // 레벨2부터 번개꼬리
             }
 
-            // --- 3. 최종 SVG 조립 (이모지 특유의 그림자 효과 추가) ---
+            // --- 2. 진화 단계에 따른 눈매 및 표정 변화 ---
+let eyes = '';
+            if (tier === 1) { // 귀여운 점눈
+                eyes = `<circle cx="40" cy="50" r="4" fill="#1e293b"/><circle cx="60" cy="50" r="4" fill="#1e293b"/>`;
+            } else if (tier === 2) { // 각진 눈
+                eyes = `<path d="M 33 46 L 45 51 L 35 55 Z" fill="#1e293b"/><path d="M 67 46 L 55 51 L 65 55 Z" fill="#1e293b"/>`;
+            } else { // 레벨3: 분노한 붉은 눈빛
+                eyes = `<path d="M 30 43 L 45 52 L 35 56 Z" fill="#ef4444"/><path d="M 70 43 L 55 52 L 65 56 Z" fill="#ef4444"/>
+                        <circle cx="42" cy="50" r="1.5" fill="white"/><circle cx="58" cy="50" r="1.5" fill="white"/>`; 
+            if (tier === 1) { // 귀여운 아기 눈 (초롱초롱)
+                eyes = `<circle cx="40" cy="${ type < 2 ? 50-sizeBonus : 55-sizeBonus}" r="4" fill="${eyeColor}"/>
+                        <circle cx="60" cy="${ type < 2 ? 50-sizeBonus : 55-sizeBonus}" r="4" fill="${eyeColor}"/>
+                        <circle cx="38" cy="${ type < 2 ? 48-sizeBonus : 53-sizeBonus}" r="1.5" fill="white"/>
+                        <circle cx="58" cy="${ type < 2 ? 48-sizeBonus : 53-sizeBonus}" r="1.5" fill="white"/>
+                        <path d="M 46 60 Q 50 63 54 60" stroke="${eyeColor}" stroke-width="1.5" fill="none"/>`; // 입
+            } else if (tier === 2) { // 성장한 눈 (약간 진지)
+                eyes = `<path d="M 35 ${48-sizeBonus} L 45 ${52-sizeBonus} L 38 ${56-sizeBonus} Z" fill="${eyeColor}"/>
+                        <path d="M 65 ${48-sizeBonus} L 55 ${52-sizeBonus} L 62 ${56-sizeBonus} Z" fill="${eyeColor}"/>
+                        <path d="M 44 65 L 56 65" stroke="${eyeColor}" stroke-width="2" fill="none"/>`; // 일자 입
+            } else { // 최종 진화 (강력함, 분노)
+                eyes = `<path d="M 32 ${45-sizeBonus} L 47 ${54-sizeBonus} L 35 ${58-sizeBonus} Z" fill="#ef4444"/>
+                        <path d="M 68 ${45-sizeBonus} L 53 ${54-sizeBonus} L 65 ${58-sizeBonus} Z" fill="#ef4444"/>
+                        <circle cx="40" cy="${52-sizeBonus}" r="1.5" fill="white"/>
+                        <circle cx="60" cy="${52-sizeBonus}" r="1.5" fill="white"/>
+                        <path d="M 42 68 Q 50 60 58 68" stroke="#ef4444" stroke-width="2.5" fill="none"/>`; // 화난 입
+}
+
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">${glow}${accessories}${body}${eyes}</svg>`;
+            // --- 3. 최종 SVG 조립 ---
             const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
                            <defs>
                              <filter id="shadow">
-                               <feDropShadow dx="0" dy="2" stdDeviation="1" flood-color="#1e293b" flood-opacity="0.3"/>
+                               <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="${darkColor}" flood-opacity="0.5"/>
                              </filter>
                            </defs>
                            <g filter="url(#shadow)">
-                             ${details}
+                             ${aura}
+                             ${extraParts}
                              ${body}
                              ${face}
                              ${eyes}
@@ -1034,8 +134,6 @@
                          </svg>`;
             
             // Base64 인코딩하여 이미지 소스로 반환
-            return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
-        }
-    </script>
-</body>
-</html>
+return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
+}
+</script>
