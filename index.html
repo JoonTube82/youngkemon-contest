@@ -928,9 +928,9 @@
             return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
         }
 
-        // [신규] 단어의 문자열을 분석하여 고유한 몬스터 SVG를 생성하는 함수
+     // [업그레이드] 단어별 고유한 "포켓몬 스타일" SVG 몬스터 생성 함수
         function getMonsterSVG(word, count) {
-            // 단어의 스펠링으로 고유 번호(Hash) 생성 (항상 같은 단어는 같은 몬스터)
+            // 단어의 문자열을 분석하여 고유 번호(Hash) 생성 (항상 같은 단어는 같은 몬스터)
             let hash = 0;
             for (let i = 0; i < word.length; i++) {
                 hash = word.charCodeAt(i) + ((hash << 5) - hash);
@@ -938,48 +938,97 @@
             hash = Math.abs(hash);
 
             const hue = hash % 360; // 0~360 색상값 (단어마다 다름)
-            const type = hash % 3;  // 0: 슬라임형, 1: 네모골렘형, 2: 유령형
+            const type = hash % 4;  // 0:불/드래곤, 1:물/비버, 2:풀/식물, 3:전기/쥐 (포켓몬 속성 스타일)
             const tier = count >= 5 ? 3 : (count >= 2 ? 2 : 1); // 포획 횟수에 따른 진화(1~3)
 
-            let color = `hsl(${hue}, 75%, 60%)`;
-            let darkColor = `hsl(${hue}, 80%, 35%)`;
+            let mainColor = `hsl(${hue}, 85%, 65%)`; // 밝고 선명한 메인 컬러
+            let darkColor = `hsl(${hue}, 90%, 40%)`; // 짙은 테두리용
+            let eyeColor = "#1e293b"; // 눈 색상
             
-            // 레벨 3일때 빛나는 오라 효과
-            let glow = tier === 3 ? `<circle cx="50" cy="50" r="45" fill="${color}" opacity="0.3" filter="blur(4px)"/>` : '';
+            // 진화 단계에 따른 크기 보정값 (위에서 그릴 때 크기 조절을 위해 사용됨)
+            const sizeBonus = (tier - 1) * 5; 
 
-            // 1. 몸통 형태 결정
+            // SVG 내부 컴포넌트 초기화
             let body = '';
-            if (type === 0) { // 원형 (슬라임)
-                body = `<ellipse cx="50" cy="${60 - tier*2}" rx="${30 + tier*3}" ry="${25 + tier*4}" fill="${color}" stroke="${darkColor}" stroke-width="3"/>`;
-            } else if (type === 1) { // 사각형 (골렘)
-                body = `<rect x="${20 - tier*2}" y="${35 - tier*4}" width="${60 + tier*4}" height="${50 + tier*4}" rx="${10 - tier}" fill="${color}" stroke="${darkColor}" stroke-width="3"/>`;
-            } else { // 뾰족/둥근 유령형
-                body = `<path d="M ${25 - tier*3} 85 Q 50 ${15 - tier*8} ${75 + tier*3} 85 Q 60 90 50 80 Q 40 90 ${25 - tier*3} 85" fill="${color}" stroke="${darkColor}" stroke-width="3"/>`;
-            }
+            let face = '';
+            let extraParts = ''; // 뿔, 날개, 나뭇잎 등
+            let aura = ''; // 레벨 3일 때 빛나는 효과
 
-            // 2. 진화 단계에 따른 파츠 추가 (뿔, 날개 등)
-            let accessories = '';
-            if (tier >= 2) {
-                // 레벨 2: 양쪽에 작은 뿔이나 돌기 발생
-                accessories += `<polygon points="30,35 15,15 40,25" fill="${darkColor}"/><polygon points="70,35 85,15 60,25" fill="${darkColor}"/>`;
-            }
+            // --- 0. 레벨 3 (최종 진화) 전용 오라 효과 ---
             if (tier === 3) {
-                // 레벨 3: 이마에 황금 뿔 또는 왕관 발생
-                accessories += `<polygon points="40,20 50,0 60,20" fill="#fbbf24" stroke="#b45309" stroke-width="2"/>`;
+                aura = `<circle cx="50" cy="50" r="45" fill="${mainColor}" opacity="0.2">
+                          <animate attributeName="r" values="40;48;40" dur="1.5s" repeatCount="indefinite" />
+                          <animate attributeName="opacity" values="0.2;0.05;0.2" dur="1.5s" repeatCount="indefinite" />
+                        </circle>`;
             }
 
-            // 3. 진화 단계에 따른 눈매 변화 (성장할수록 날카로워짐)
+            // --- 1. 타입별 몸통 및 특징 설계 ---
+            if (type === 0) { // 불/드래곤 스타일 (약간 공룡 느낌)
+                body = `<path d="M 30 ${75-sizeBonus} Q 50 ${10-sizeBonus*2} 70 ${75-sizeBonus} L 60 90 L 40 90 Z" fill="${mainColor}" stroke="${darkColor}" stroke-width="2.5"/>
+                        <path d="M 50 ${15-sizeBonus*2} L 40 30 L 60 30 Z" fill="${darkColor}"/>`; // 머리 뿔
+                if (tier >= 2) extraParts += `<path d="M 30 50 Q 10 40 25 30 Z M 70 50 Q 90 40 75 30 Z" fill="#f87171" stroke="${darkColor}" stroke-width="1.5"/>`; // 레벨2부터 날개
+                if (tier === 3) extraParts += `<circle cx="50" cy="90" r="8" fill="#fbbf24" opacity="0.8"/>`; // 레벨3 꼬리불꽃
+
+            } else if (type === 1) { // 물/비버 스타일 (둥글둥글)
+                body = `<ellipse cx="50" cy="${65-sizeBonus}" rx="${30+sizeBonus*2}" ry="${28+sizeBonus*2}" fill="${mainColor}" stroke="${darkColor}" stroke-width="2.5"/>
+                        <ellipse cx="50" cy="${85-sizeBonus}" rx="${15+sizeBonus}" ry="${10+sizeBonus}" fill="#a5f3fc" stroke="${darkColor}" stroke-width="1.5"/>`; // 배 무늬
+                extraParts = `<circle cx="25" cy="${45-sizeBonus}" r="${8+sizeBonus/2}" fill="${mainColor}" stroke="${darkColor}" stroke-width="2"/>
+                              <circle cx="75" cy="${45-sizeBonus}" r="${8+sizeBonus/2}" fill="${mainColor}" stroke="${darkColor}" stroke-width="2"/>`; // 귀
+                if (tier >= 2) extraParts += `<path d="M 20 80 Q 0 95 20 100 L 80 100 Q 100 95 80 80 Z" fill="${darkColor}"/>`; // 레벨2부터 넓은 꼬리
+
+            } else if (type === 2) { // 풀/식물 스타일 (나뭇잎 정령)
+                body = `<path d="M 50 ${20-sizeBonus} Q 80 50 50 90 Q 20 50 50 20 Z" fill="${mainColor}" stroke="${darkColor}" stroke-width="2.5"/>`; // 잎사귀 몸통
+                extraParts = `<path d="M 50 ${20-sizeBonus} L 50 ${5-sizeBonus} M 50 10 L 40 15 M 50 15 L 60 10" stroke="${darkColor}" stroke-width="2"/>`; // 줄기
+                if (tier >= 2) extraParts += `<ellipse cx="30" cy="${70-sizeBonus}" rx="10" ry="15" fill="#a7f3d0" transform="rotate(-30 30 70)"/>
+                                             <ellipse cx="70" cy="${70-sizeBonus}" rx="10" ry="15" fill="#a7f3d0" transform="rotate(30 70 70)"/>`; // 레벨2부터 꽃받침
+                if (tier === 3) mainColor = `hsl(${hue}, 85%, 50%)`; // 레벨3은 더 진한 녹색
+
+            } else { // 전기/쥐 스타일 (피카츄 느낌)
+                body = `<ellipse cx="50" cy="${68-sizeBonus}" rx="${28+sizeBonus}" ry="${25+sizeBonus}" fill="${mainColor}" stroke="${darkColor}" stroke-width="2.5"/>`;
+                extraParts = `<polygon points="25,30 35,50 15,45" fill="${mainColor}" stroke="${darkColor}" stroke-width="2"/>
+                              <polygon points="75,30 65,50 85,45" fill="${mainColor}" stroke="${darkColor}" stroke-width="2"/>`; // 귀
+                face = `<circle cx="35" cy="${70-sizeBonus}" r="4" fill="#ef4444"/>
+                        <circle cx="65" cy="${70-sizeBonus}" r="4" fill="#ef4444"/>`; // 볼터치
+                if (tier >= 2) extraParts += `<path d="M 80 70 L 95 60 L 85 80 L 98 75" stroke="#fbbf24" stroke-width="3" fill="none"/>`; // 레벨2부터 번개꼬리
+            }
+
+            // --- 2. 진화 단계에 따른 눈매 및 표정 변화 ---
             let eyes = '';
-            if (tier === 1) { // 귀여운 점눈
-                eyes = `<circle cx="40" cy="50" r="4" fill="#1e293b"/><circle cx="60" cy="50" r="4" fill="#1e293b"/>`;
-            } else if (tier === 2) { // 각진 눈
-                eyes = `<path d="M 33 46 L 45 51 L 35 55 Z" fill="#1e293b"/><path d="M 67 46 L 55 51 L 65 55 Z" fill="#1e293b"/>`;
-            } else { // 레벨3: 분노한 붉은 눈빛
-                eyes = `<path d="M 30 43 L 45 52 L 35 56 Z" fill="#ef4444"/><path d="M 70 43 L 55 52 L 65 56 Z" fill="#ef4444"/>
-                        <circle cx="42" cy="50" r="1.5" fill="white"/><circle cx="58" cy="50" r="1.5" fill="white"/>`; 
+            if (tier === 1) { // 귀여운 아기 눈 (초롱초롱)
+                eyes = `<circle cx="40" cy="${ type < 2 ? 50-sizeBonus : 55-sizeBonus}" r="4" fill="${eyeColor}"/>
+                        <circle cx="60" cy="${ type < 2 ? 50-sizeBonus : 55-sizeBonus}" r="4" fill="${eyeColor}"/>
+                        <circle cx="38" cy="${ type < 2 ? 48-sizeBonus : 53-sizeBonus}" r="1.5" fill="white"/>
+                        <circle cx="58" cy="${ type < 2 ? 48-sizeBonus : 53-sizeBonus}" r="1.5" fill="white"/>
+                        <path d="M 46 60 Q 50 63 54 60" stroke="${eyeColor}" stroke-width="1.5" fill="none"/>`; // 입
+            } else if (tier === 2) { // 성장한 눈 (약간 진지)
+                eyes = `<path d="M 35 ${48-sizeBonus} L 45 ${52-sizeBonus} L 38 ${56-sizeBonus} Z" fill="${eyeColor}"/>
+                        <path d="M 65 ${48-sizeBonus} L 55 ${52-sizeBonus} L 62 ${56-sizeBonus} Z" fill="${eyeColor}"/>
+                        <path d="M 44 65 L 56 65" stroke="${eyeColor}" stroke-width="2" fill="none"/>`; // 일자 입
+            } else { // 최종 진화 (강력함, 분노)
+                eyes = `<path d="M 32 ${45-sizeBonus} L 47 ${54-sizeBonus} L 35 ${58-sizeBonus} Z" fill="#ef4444"/>
+                        <path d="M 68 ${45-sizeBonus} L 53 ${54-sizeBonus} L 65 ${58-sizeBonus} Z" fill="#ef4444"/>
+                        <circle cx="40" cy="${52-sizeBonus}" r="1.5" fill="white"/>
+                        <circle cx="60" cy="${52-sizeBonus}" r="1.5" fill="white"/>
+                        <path d="M 42 68 Q 50 60 58 68" stroke="#ef4444" stroke-width="2.5" fill="none"/>`; // 화난 입
             }
 
-            const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">${glow}${accessories}${body}${eyes}</svg>`;
+            // --- 3. 최종 SVG 조립 ---
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+                           <defs>
+                             <filter id="shadow">
+                               <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="${darkColor}" flood-opacity="0.5"/>
+                             </filter>
+                           </defs>
+                           <g filter="url(#shadow)">
+                             ${aura}
+                             ${extraParts}
+                             ${body}
+                             ${face}
+                             ${eyes}
+                           </g>
+                         </svg>`;
+            
+            // Base64 인코딩하여 이미지 소스로 반환
             return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
         }
     </script>
