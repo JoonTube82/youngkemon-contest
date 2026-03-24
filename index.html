@@ -239,7 +239,30 @@
             currentQuiz: null,
             shake: 0,
             particles: [],
-            monster: { hp: 100, color: "#4ade80", shake: 0, tier: 1, name: "???" }
+            monster: { hp: 100, shake: 0, tier: 1, name: "???" }
+        };
+
+        // 포켓몬 데이터 캐싱 및 타입별 고유 색상(배경색) 지정
+        window.pokemonCache = {};
+        const TYPE_COLORS = {
+            normal: { bg: 'bg-[#A8A77A]', name: '노말' },
+            fire: { bg: 'bg-[#EE8130]', name: '불꽃' },
+            water: { bg: 'bg-[#6390F0]', name: '물' },
+            electric: { bg: 'bg-[#F7D02C]', name: '전기' },
+            grass: { bg: 'bg-[#7AC74C]', name: '풀' },
+            ice: { bg: 'bg-[#96D9D6]', name: '얼음' },
+            fighting: { bg: 'bg-[#C22E28]', name: '격투' },
+            poison: { bg: 'bg-[#A33EA1]', name: '독' },
+            ground: { bg: 'bg-[#E2BF65]', name: '땅' },
+            flying: { bg: 'bg-[#A98FF3]', name: '비행' },
+            psychic: { bg: 'bg-[#F95587]', name: '에스퍼' },
+            bug: { bg: 'bg-[#A6B91A]', name: '벌레' },
+            rock: { bg: 'bg-[#B6A136]', name: '바위' },
+            ghost: { bg: 'bg-[#735797]', name: '고스트' },
+            dragon: { bg: 'bg-[#6F35FC]', name: '드래곤' },
+            dark: { bg: 'bg-[#705746]', name: '악' },
+            steel: { bg: 'bg-[#B7B7CE]', name: '강철' },
+            fairy: { bg: 'bg-[#D685AD]', name: '페어리' }
         };
 
         // UI 헬퍼
@@ -454,16 +477,19 @@
             window.state.currentQuiz = window.state.quizzes[Math.floor(Math.random() * window.state.quizzes.length)];
             if (txt) txt.innerText = window.state.currentQuiz.meaning;
 
-            // 몬스터 생성
+            // 몬스터(포켓몬) 생성
             const word = window.state.currentQuiz.word;
             const catchCount = (window.state.gameData.caughtWords && window.state.gameData.caughtWords[word]) ? window.state.gameData.caughtWords[word] : 0;
             
+            const pInfo = getPokemonInfoForWord(word, catchCount);
+            
             window.state.monster.name = word;
-            window.state.monster.tier = catchCount >= 5 ? 3 : (catchCount >= 2 ? 2 : 1);
+            window.state.monster.tier = pInfo.tier;
             window.state.monster.hp = 100;
             
             window.monsterImg = new Image();
-            window.monsterImg.src = getMonsterSVG(word, catchCount);
+            window.monsterImg.crossOrigin = "Anonymous"; // Canvas에 외부 이미지 그릴 때 보안 에러 방지
+            window.monsterImg.src = pInfo.imgSrc;
         };
 
         window.checkMagic = () => {
@@ -492,7 +518,7 @@
             window.state.monster.shake = 25;
             
             for (let i = 0; i < 20; i++) {
-                window.state.particles.push({ x: 280, y: 220, vx: (Math.random()-0.5)*20, vy: (Math.random()-0.5)*20, life: 1.0, color: "white" });
+                window.state.particles.push({ x: 280, y: 220, vx: (Math.random()-0.5)*20, vy: (Math.random()-0.5)*20, life: 1.0, color: "#fbbf24" });
             }
 
             if (window.state.monster.hp <= 0) {
@@ -526,8 +552,8 @@
             }
         };
 
-        // 도감 렌더링
-        window.renderDex = () => {
+        // 도감 렌더링 (비동기 방식으로 변경됨)
+        window.renderDex = async () => {
             const dexList = document.getElementById('dex-list');
             const caughtWords = window.state.gameData.caughtWords || {};
             const keys = Object.keys(caughtWords);
@@ -537,26 +563,48 @@
                 dexList.innerHTML = `<p class="text-center text-slate-400 py-10 text-sm">아직 포획한 단어가 없습니다.<br>사냥터에서 단어를 잡아보세요!</p>`; return;
             }
 
-            let html = '<div class="grid grid-cols-2 sm:grid-cols-3 gap-3">';
-            keys.sort((a, b) => caughtWords[b] - caughtWords[a]).forEach(word => {
+            // 데이터를 불러오는 동안 표시할 로딩 메시지
+            dexList.innerHTML = `<p class="text-center text-indigo-400 py-10 text-sm animate-pulse">포켓몬 도감 데이터를 분석하는 중...</p>`;
+
+            const sortedKeys = keys.sort((a, b) => caughtWords[b] - caughtWords[a]);
+            
+            // 모든 몬스터의 속성과 이름 데이터를 API를 통해 받아옵니다.
+            const cardDataList = await Promise.all(sortedKeys.map(async (word) => {
                 const count = caughtWords[word];
                 const quizData = window.state.quizzes.find(q => q.word.toLowerCase() === word.toLowerCase());
                 const meaning = quizData ? quizData.meaning : "알 수 없음";
-                const tier = count >= 5 ? 3 : (count >= 2 ? 2 : 1);
-                const imgSrc = getMonsterSVG(word, count);
+                
+                const pInfo = getPokemonInfoForWord(word, count);
+                const apiData = await fetchPokemonData(pInfo.id);
+                
+                return { word, count, meaning, pInfo, apiData };
+            }));
+
+            let html = '<div class="grid grid-cols-2 sm:grid-cols-3 gap-3">';
+            cardDataList.forEach(item => {
+                // 타입에 따른 디자인 컬러값 지정
+                const typeInfo = TYPE_COLORS[item.apiData.type] || TYPE_COLORS['normal'];
+                const bgColor = typeInfo.bg;
+                const koType = typeInfo.name;
                 
                 html += `
-                <div class="flex flex-col items-center justify-center p-3 bg-white rounded-2xl border-2 border-slate-100 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all relative group cursor-pointer">
+                <div class="flex flex-col items-center justify-center p-3 rounded-2xl shadow-sm hover:shadow-lg transition-all relative group cursor-pointer ${bgColor} bg-opacity-80 border-2 border-white/40">
                     <div class="w-full flex justify-between items-center mb-1 px-1">
-                        <span class="text-[10px] text-slate-400 font-bold tracking-tighter">LV <span class="text-slate-700 text-xs">${tier}</span></span>
-                        <span class="text-[10px] bg-indigo-50 text-indigo-500 px-1.5 py-0.5 rounded-md font-bold">★ ${count}</span>
+                        <span class="text-[10px] text-white bg-black/20 px-1.5 py-0.5 rounded-md font-bold tracking-tighter">LV <span class="text-xs">${item.pInfo.tier}</span></span>
+                        <span class="text-[10px] bg-white text-slate-700 px-1.5 py-0.5 rounded-md font-bold shadow-sm">★ ${item.count}</span>
                     </div>
-                    <div class="h-20 w-20 flex items-center justify-center my-1 relative">
-                        <img src="${imgSrc}" class="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-300 drop-shadow-md" alt="${word}" />
+                    
+                    <div class="h-24 w-24 flex items-center justify-center my-1 relative bg-white/30 rounded-full shadow-inner p-1">
+                        <img src="${item.pInfo.imgSrc}" crossorigin="anonymous" class="max-w-full max-h-full object-contain group-hover:scale-125 transition-transform duration-300 drop-shadow-md" style="image-rendering: pixelated;" alt="${item.word}" />
                     </div>
-                    <div class="w-full text-center border-t-2 border-slate-50 pt-2 mt-1">
-                        <div class="font-black text-slate-700 text-[13px] capitalize truncate w-full tracking-wide" title="${word}">${word}</div>
-                        <div class="text-slate-400 text-[10px] truncate w-full mt-0.5 font-bold" title="${meaning}">${meaning}</div>
+                    
+                    <div class="w-full text-center bg-white rounded-xl py-2 mt-2 shadow-sm">
+                        <div class="font-black text-slate-800 text-[13px] capitalize truncate w-full tracking-wide px-1" title="${item.word}">${item.word}</div>
+                        <div class="text-slate-500 text-[10px] truncate w-full font-bold px-1" title="${item.meaning}">${item.meaning}</div>
+                        <div class="mt-1 flex items-center justify-center gap-1">
+                            <span class="text-[9px] text-white ${bgColor} rounded-md px-1.5 py-0.5 font-bold">${koType}</span>
+                            <span class="text-[9px] text-slate-600 font-bold truncate max-w-[50px]">${item.apiData.name}</span>
+                        </div>
                     </div>
                 </div>`;
             });
@@ -673,17 +721,32 @@
             
             ctx.save(); ctx.translate(280 + mns, 220); 
             
+            // 포켓몬 이미지 그리기
             if (window.monsterImg && window.monsterImg.complete) {
-                const scale = 1 + (window.state.monster.tier * 0.15);
-                const w = 80 * scale; const h = 80 * scale;
-                ctx.drawImage(window.monsterImg, -w/2, -h/2 - 10, w, h);
+                // 포켓몬 스프라이트 크기에 맞춰서 크기 조절
+                const scale = 1 + (window.state.monster.tier * 0.4);
+                const w = 96 * scale; const h = 96 * scale;
+                // 화질 저하 방지 (도트 느낌 살리기)
+                ctx.imageSmoothingEnabled = false;
+                ctx.drawImage(window.monsterImg, -w/2, -h/2 - 20, w, h);
             }
 
-            ctx.fillStyle = "#64748b"; ctx.font = "bold 10px sans-serif"; ctx.textAlign = "center";
-            ctx.fillText(`Lv.${window.state.monster.tier} 야생 몬스터`, 0, -65 - (window.state.monster.tier * 10));
+            // 1. 몬스터 위에 한글 뜻 표시 (기존 Lv 텍스트 대체)
+            const meaning = window.state.currentQuiz ? window.state.currentQuiz.meaning : "???";
+            ctx.fillStyle = "#475569"; 
+            ctx.font = "bold 18px 'Jua', sans-serif"; 
+            ctx.textAlign = "center";
+            // 몬스터 크기(tier)에 따라 텍스트가 가려지지 않게 Y축 위치 자동 조절
+            ctx.fillText(meaning, 0, -65 - (window.state.monster.tier * 20));
 
-            ctx.fillStyle = "#e2e8f0"; ctx.fillRect(-35, -55, 70, 6);
-            ctx.fillStyle = "#ef4444"; ctx.fillRect(-35, -55, 70 * (Math.max(0, window.state.monster.hp)/100), 6); 
+            // 2. 몬스터 아래에 잡은 횟수 표시 (기존 체력바 대체)
+            const currentWord = window.state.monster.name;
+            const catchCount = (window.state.gameData.caughtWords && window.state.gameData.caughtWords[currentWord]) ? window.state.gameData.caughtWords[currentWord] : 0;
+            
+            ctx.fillStyle = "#6366f1"; 
+            ctx.font = "bold 15px 'Jua', sans-serif";
+            ctx.fillText(`★ 잡은 횟수: ${catchCount}회`, 0, 35 + (window.state.monster.tier * 20));
+            
             ctx.restore();
             
             window.state.particles.forEach((p, i) => {
@@ -720,108 +783,55 @@
             return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
         }
 
-       // [업그레이드] 단어별 고유한 "포켓몬 스타일" SVG 몬스터 생성 함수
-        function getMonsterSVG(word, count) {
-            // 단어의 문자열을 분석하여 고유 번호(Hash) 생성 (항상 같은 단어는 같은 몬스터)
+        // [신규] 기존 SVG 대신 포켓몬 ID와 기본 정보를 가져오는 함수
+        function getPokemonInfoForWord(word, count) {
             let hash = 0;
-            for (let i = 0; i < word.length; i++) {
-                hash = word.charCodeAt(i) + ((hash << 5) - hash);
-            }
+            for (let i = 0; i < word.length; i++) { hash = word.charCodeAt(i) + ((hash << 5) - hash); }
             hash = Math.abs(hash);
 
-            const hue = hash % 360; // 0~360 색상값 (단어마다 다름)
-            const type = hash % 4;  // 0:불/드래곤, 1:물/비버, 2:풀/식물, 3:전기/쥐 (포켓몬 속성 스타일)
-            const tier = count >= 5 ? 3 : (count >= 2 ? 2 : 1); // 포획 횟수에 따른 진화(1~3)
+            const tier = count >= 5 ? 3 : (count >= 2 ? 2 : 1); 
 
-            let mainColor = `hsl(${hue}, 85%, 65%)`; // 밝고 선명한 메인 컬러
-            let darkColor = `hsl(${hue}, 90%, 40%)`; // 짙은 테두리용
-            let eyeColor = "#1e293b"; // 눈 색상
+            // 요청에 따라 등장 범위를 200(총 600마리)으로 수정했습니다. 
+            // 비교적 친숙한 포켓몬들이 자주 등장하게 됩니다.
+            const baseId = (hash % 200) * 3 + 1; 
+            const finalPokemonId = baseId + (tier - 1);
+
+            return {
+                id: finalPokemonId,
+                tier: tier,
+                imgSrc: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${finalPokemonId}.png`
+            };
+        }
+
+        // [신규] PokeAPI를 호출하여 몬스터의 실제 이름(한국어)과 타입을 가져오는 비동기 함수
+        async function fetchPokemonData(pokemonId) {
+            // 한 번 찾은 포켓몬은 캐시에 저장해 두어 속도를 엄청나게 향상시킵니다.
+            if (window.pokemonCache[pokemonId]) return window.pokemonCache[pokemonId];
             
-            // 진화 단계에 따른 크기 보정값 (위에서 그릴 때 크기 조절을 위해 사용됨)
-            const sizeBonus = (tier - 1) * 5; 
+            try {
+                // 1. 기본 정보(타입 등) 가져오기
+                const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${pokemonId}`);
+                const data = await res.json();
+                
+                let koName = data.name; // 기본 영어 이름
+                
+                // 2. 한국어 이름 가져오기 시도
+                try {
+                    const speciesRes = await fetch(data.species.url);
+                    const speciesData = await speciesRes.json();
+                    const koEntry = speciesData.names.find(n => n.language.name === 'ko');
+                    if (koEntry) koName = koEntry.name;
+                } catch(e) {} // 에러 발생 시 영어 이름 그대로 사용
 
-            // SVG 내부 컴포넌트 초기화
-            let body = '';
-            let face = '';
-            let extraParts = ''; // 뿔, 날개, 나뭇잎 등
-            let aura = ''; // 레벨 3일 때 빛나는 효과
-
-            // --- 0. 레벨 3 (최종 진화) 전용 오라 효과 ---
-            if (tier === 3) {
-                aura = `<circle cx="50" cy="50" r="45" fill="${mainColor}" opacity="0.2">
-                          <animate attributeName="r" values="40;48;40" dur="1.5s" repeatCount="indefinite" />
-                          <animate attributeName="opacity" values="0.2;0.05;0.2" dur="1.5s" repeatCount="indefinite" />
-                        </circle>`;
+                const typeEng = data.types[0].type.name;
+                const result = { name: koName, type: typeEng };
+                
+                window.pokemonCache[pokemonId] = result;
+                return result;
+            } catch (e) {
+                // 인터넷 문제 등으로 못 가져왔을 때의 기본값
+                return { name: "알 수 없음", type: "normal" };
             }
-
-            // --- 1. 타입별 몸통 및 특징 설계 ---
-            if (type === 0) { // 불/드래곤 스타일 (약간 공룡 느낌)
-                body = `<path d="M 30 ${75-sizeBonus} Q 50 ${10-sizeBonus*2} 70 ${75-sizeBonus} L 60 90 L 40 90 Z" fill="${mainColor}" stroke="${darkColor}" stroke-width="2.5"/>
-                        <path d="M 50 ${15-sizeBonus*2} L 40 30 L 60 30 Z" fill="${darkColor}"/>`; // 머리 뿔
-                if (tier >= 2) extraParts += `<path d="M 30 50 Q 10 40 25 30 Z M 70 50 Q 90 40 75 30 Z" fill="#f87171" stroke="${darkColor}" stroke-width="1.5"/>`; // 레벨2부터 날개
-                if (tier === 3) extraParts += `<circle cx="50" cy="90" r="8" fill="#fbbf24" opacity="0.8"/>`; // 레벨3 꼬리불꽃
-
-            } else if (type === 1) { // 물/비버 스타일 (둥글둥글)
-                body = `<ellipse cx="50" cy="${65-sizeBonus}" rx="${30+sizeBonus*2}" ry="${28+sizeBonus*2}" fill="${mainColor}" stroke="${darkColor}" stroke-width="2.5"/>
-                        <ellipse cx="50" cy="${85-sizeBonus}" rx="${15+sizeBonus}" ry="${10+sizeBonus}" fill="#a5f3fc" stroke="${darkColor}" stroke-width="1.5"/>`; // 배 무늬
-                extraParts = `<circle cx="25" cy="${45-sizeBonus}" r="${8+sizeBonus/2}" fill="${mainColor}" stroke="${darkColor}" stroke-width="2"/>
-                              <circle cx="75" cy="${45-sizeBonus}" r="${8+sizeBonus/2}" fill="${mainColor}" stroke="${darkColor}" stroke-width="2"/>`; // 귀
-                if (tier >= 2) extraParts += `<path d="M 20 80 Q 0 95 20 100 L 80 100 Q 100 95 80 80 Z" fill="${darkColor}"/>`; // 레벨2부터 넓은 꼬리
-
-            } else if (type === 2) { // 풀/식물 스타일 (나뭇잎 정령)
-                body = `<path d="M 50 ${20-sizeBonus} Q 80 50 50 90 Q 20 50 50 20 Z" fill="${mainColor}" stroke="${darkColor}" stroke-width="2.5"/>`; // 잎사귀 몸통
-                extraParts = `<path d="M 50 ${20-sizeBonus} L 50 ${5-sizeBonus} M 50 10 L 40 15 M 50 15 L 60 10" stroke="${darkColor}" stroke-width="2"/>`; // 줄기
-                if (tier >= 2) extraParts += `<ellipse cx="30" cy="${70-sizeBonus}" rx="10" ry="15" fill="#a7f3d0" transform="rotate(-30 30 70)"/>
-                                             <ellipse cx="70" cy="${70-sizeBonus}" rx="10" ry="15" fill="#a7f3d0" transform="rotate(30 70 70)"/>`; // 레벨2부터 꽃받침
-                if (tier === 3) mainColor = `hsl(${hue}, 85%, 50%)`; // 레벨3은 더 진한 녹색
-
-            } else { // 전기/쥐 스타일 (피카츄 느낌)
-                body = `<ellipse cx="50" cy="${68-sizeBonus}" rx="${28+sizeBonus}" ry="${25+sizeBonus}" fill="${mainColor}" stroke="${darkColor}" stroke-width="2.5"/>`;
-                extraParts = `<polygon points="25,30 35,50 15,45" fill="${mainColor}" stroke="${darkColor}" stroke-width="2"/>
-                              <polygon points="75,30 65,50 85,45" fill="${mainColor}" stroke="${darkColor}" stroke-width="2"/>`; // 귀
-                face = `<circle cx="35" cy="${70-sizeBonus}" r="4" fill="#ef4444"/>
-                        <circle cx="65" cy="${70-sizeBonus}" r="4" fill="#ef4444"/>`; // 볼터치
-                if (tier >= 2) extraParts += `<path d="M 80 70 L 95 60 L 85 80 L 98 75" stroke="#fbbf24" stroke-width="3" fill="none"/>`; // 레벨2부터 번개꼬리
-            }
-
-            // --- 2. 진화 단계에 따른 눈매 및 표정 변화 ---
-            let eyes = '';
-            if (tier === 1) { // 귀여운 아기 눈 (초롱초롱)
-                eyes = `<circle cx="40" cy="${ type < 2 ? 50-sizeBonus : 55-sizeBonus}" r="4" fill="${eyeColor}"/>
-                        <circle cx="60" cy="${ type < 2 ? 50-sizeBonus : 55-sizeBonus}" r="4" fill="${eyeColor}"/>
-                        <circle cx="38" cy="${ type < 2 ? 48-sizeBonus : 53-sizeBonus}" r="1.5" fill="white"/>
-                        <circle cx="58" cy="${ type < 2 ? 48-sizeBonus : 53-sizeBonus}" r="1.5" fill="white"/>
-                        <path d="M 46 60 Q 50 63 54 60" stroke="${eyeColor}" stroke-width="1.5" fill="none"/>`; // 입
-            } else if (tier === 2) { // 성장한 눈 (약간 진지)
-                eyes = `<path d="M 35 ${48-sizeBonus} L 45 ${52-sizeBonus} L 38 ${56-sizeBonus} Z" fill="${eyeColor}"/>
-                        <path d="M 65 ${48-sizeBonus} L 55 ${52-sizeBonus} L 62 ${56-sizeBonus} Z" fill="${eyeColor}"/>
-                        <path d="M 44 65 L 56 65" stroke="${eyeColor}" stroke-width="2" fill="none"/>`; // 일자 입
-            } else { // 최종 진화 (강력함, 분노)
-                eyes = `<path d="M 32 ${45-sizeBonus} L 47 ${54-sizeBonus} L 35 ${58-sizeBonus} Z" fill="#ef4444"/>
-                        <path d="M 68 ${45-sizeBonus} L 53 ${54-sizeBonus} L 65 ${58-sizeBonus} Z" fill="#ef4444"/>
-                        <circle cx="40" cy="${52-sizeBonus}" r="1.5" fill="white"/>
-                        <circle cx="60" cy="${52-sizeBonus}" r="1.5" fill="white"/>
-                        <path d="M 42 68 Q 50 60 58 68" stroke="#ef4444" stroke-width="2.5" fill="none"/>`; // 화난 입
-            }
-
-            // --- 3. 최종 SVG 조립 ---
-            const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-                           <defs>
-                             <filter id="shadow">
-                               <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="${darkColor}" flood-opacity="0.5"/>
-                             </filter>
-                           </defs>
-                           <g filter="url(#shadow)">
-                             ${aura}
-                             ${extraParts}
-                             ${body}
-                             ${face}
-                             ${eyes}
-                           </g>
-                         </svg>`;
-            
-            // Base64 인코딩하여 이미지 소스로 반환
-            return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
         }
     </script>
 </body>
