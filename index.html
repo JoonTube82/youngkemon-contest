@@ -79,7 +79,103 @@
             
             <!-- 탭 1: 사냥터 -->
             <div id="content-hunt" class="tab-content active">
-                <div class="flex flex-col md:flex-row gap-4">
+                
+                <!-- [신규] 맵 뷰 (단원 선택) -->
+                <div id="hunt-map-view" class="magic-card p-6 shadow-xl min-h-[400px]">
+                    <div class="text-center mb-6">
+                        <h3 class="text-2xl font-bold text-red-500 mb-1">🗺️ 영켓몬 모험 지도</h3>
+                        <p class="text-sm text-slate-500">탐험할 교과서 단원을 선택하세요!</p>
+                    </div>
+                    <div class="space-y-5 max-h-[450px] overflow-y-auto pr-2 custom-scrollbar pb-4">
+                        
+                        <!-- Region 1: 스타팅 포레스트 -->
+                        <div class="bg-green-50 border-2 border-green-200 rounded-3xl p-4 shadow-sm relative overflow-hidden">
+                            <div class="absolute -right-4 -top-2 text-6xl opacity-20">🌲</div>
+                            <h4 class="font-bold text-green-700 mb-3 text-sm"><span class="bg-green-500 text-white px-2 py-0.5 rounded-lg text-xs mr-1">지역 1</span> 초심자의 숲</h4>
+                            <div class="space-y-2">
+                                <button onclick="window.enterStage(1)" class="w-full bg-white border border-green-100 p-3 rounded-2xl flex items-center justify-between hover:border-green-400 hover:shadow-md transition-all text-left group">
+                                    <div><span class="text-xs font-bold text-green-400 block">01단원</span><span class="text-sm font-bold text-slate-700 group-hover:text-green-600">What Grade Are You In?</span></div>
+                                    <span class="text-xl text-green-300 group-hover:text-green-500">▶</span>
+                                </button>
+                                <button onclick="window.enterStage(2)" class="w-full bg-white border border-green-100 p-3 rounded-2xl flex items-center justify-between hover:border-green-400 hover:shadow-md transition-all text-left group">
+                                    <div><span class="text-xs font-bold text-green-400 block">02단원</span><span class="text-sm font-bold text-slate-700 group-hover:text-green-600">What Do You Want to Be?</span></div>
+                                    <span class="text-xl text-green-300 group-hover:text-green-500">▶</span>
+                                </button>
+                                <button onclick="window.enterStage(3)" class="w-full bg-white border border-green-100 p-3 rounded-2xl flex items-center justify-between hover:border-green-400 hover:shadow-md transition-all text-left group">
+                                    <div><span class="text-xs font-bold text-green-400 block">03단원</span><span class="text-sm font-bold text-slate-700 group-hover:text-green-600">When Is the Field Trip?</span></div>
+                                    <span class="text-xl text-green-300 group-hover:text-green-500">▶</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Region 2: 블루 오션 해안 -->
+                        <div class="bg-blue-50 border-2 border-blue-200 rounded-3xl p-4 shadow-sm relative overflow-hidden">
+                            <div class="absolute -right-4 -top-2 text-6xl opacity-20">🌊</div>
+                            <h4 class="font-bold text-blue-700 mb-3 text-sm"><span class="bg-blue-500 text-white px-2 py-0.5 rounded-lg text-xs mr-1">지역 2</span> 푸른 바다 해안</h4>
+                            <div class="space-y-2">
+                                <button onclick="window.enterStage(4)" class="w-full bg-white border border-blue-100 p-3 rounded-2xl flex items-center justify-between hover:border-blue-400 hover:shadow-md transition-all text-left group">
+                                    <div><span class="text-xs font-bold text-blue-400 block">04단원</span><span class="text-sm font-bold text-slate-700 group-hover:text-blue-600">He Has Short Curly Hair</span></div>
+                                    <span class="text-xl text-blue-300 group-hover:text-blue-500">▶</span>
+                                </button>
+                                <button onclick="window.enterStage(5)" class="w-full bg-white border border-blue-100 p-3 rounded-2xl flex items-center justify-between hover:border-blue-400 hover:shadow-md transition-all text-left group">
+                                    <div><span class="text-xs font-bold text-blue-400 block">05단원</span><span class="text-sm font-bold text-slate-700 group-hover:text-blue-600">How Often Do You Exercise?</span></div>
+                                    <span class="text-xl text-blue-300 group-hover:text-blue-500">▶</span>
+                                </button>
+                                <button onclick="window.enterStage(6)" class="w-full bg-white border border-blue-100 p-3 rounded-2xl flex items-center justify-between hover:border-blue-400 hover:shadow-md transition-all text-left group">
+                                    <div><span class="text-xs font-bold text-blue-400 block">06단원</span><span class="text-sm font-bold text-slate-700 group-hover:text-blue-600">I'm Going to Go on a Trip</span></div>
+                                    <span class="text-xl text-blue-300 group-hover:text-blue-500">▶</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Region 3: 미지의 화산 유적 -->
+                        <div class="bg-orange-50 border-2 border-orange-200 rounded-3xl p-4 shadow-sm relative overflow-hidden">
+                            <div class="absolute -right-4 -top-2 text-6xl opacity-20">🌋</div>
+                            <h4 class="font-bold text-orange-700 mb-3 text-sm"><span class="bg-orange-500 text-white px-2 py-0.5 rounded-lg text-xs mr-1">지역 3</span> 뜨거운 화산 유적</h4>
+                            <div class="space-y-2">
+                                <button onclick="window.enterStage(7)" class="w-full bg-white border border-orange-100 p-3 rounded-2xl flex items-center justify-between hover:border-orange-400 hover:shadow-md transition-all text-left group">
+                                    <div><span class="text-xs font-bold text-orange-400 block">07단원</span><span class="text-sm font-bold text-slate-700 group-hover:text-orange-600">What Season Do You Like?</span></div>
+                                    <span class="text-xl text-orange-300 group-hover:text-orange-500">▶</span>
+                                </button>
+                                <button onclick="window.enterStage(8)" class="w-full bg-white border border-orange-100 p-3 rounded-2xl flex items-center justify-between hover:border-orange-400 hover:shadow-md transition-all text-left group">
+                                    <div><span class="text-xs font-bold text-orange-400 block">08단원</span><span class="text-sm font-bold text-slate-700 group-hover:text-orange-600">I'm Faster Than You</span></div>
+                                    <span class="text-xl text-orange-300 group-hover:text-orange-500">▶</span>
+                                </button>
+                                <button onclick="window.enterStage(9)" class="w-full bg-white border border-orange-100 p-3 rounded-2xl flex items-center justify-between hover:border-orange-400 hover:shadow-md transition-all text-left group">
+                                    <div><span class="text-xs font-bold text-orange-400 block">09단원</span><span class="text-sm font-bold text-slate-700 group-hover:text-orange-600">How Can I Get to the Museum?</span></div>
+                                    <span class="text-xl text-orange-300 group-hover:text-orange-500">▶</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Region 4: 영켓몬 리그 시티 -->
+                        <div class="bg-purple-50 border-2 border-purple-200 rounded-3xl p-4 shadow-sm relative overflow-hidden">
+                            <div class="absolute -right-4 -top-2 text-6xl opacity-20">🏙️</div>
+                            <h4 class="font-bold text-purple-700 mb-3 text-sm"><span class="bg-purple-500 text-white px-2 py-0.5 rounded-lg text-xs mr-1">지역 4</span> 영켓몬 리그 대도시</h4>
+                            <div class="space-y-2">
+                                <button onclick="window.enterStage(10)" class="w-full bg-white border border-purple-100 p-3 rounded-2xl flex items-center justify-between hover:border-purple-400 hover:shadow-md transition-all text-left group">
+                                    <div><span class="text-xs font-bold text-purple-400 block">10단원</span><span class="text-sm font-bold text-slate-700 group-hover:text-purple-600">I'd Like to Have the Fruit Salad</span></div>
+                                    <span class="text-xl text-purple-300 group-hover:text-purple-500">▶</span>
+                                </button>
+                                <button onclick="window.enterStage(11)" class="w-full bg-white border border-purple-100 p-3 rounded-2xl flex items-center justify-between hover:border-purple-400 hover:shadow-md transition-all text-left group">
+                                    <div><span class="text-xs font-bold text-purple-400 block">11단원</span><span class="text-sm font-bold text-slate-700 group-hover:text-purple-600">Do You Know About Songpyeon?</span></div>
+                                    <span class="text-xl text-purple-300 group-hover:text-purple-500">▶</span>
+                                </button>
+                                <button onclick="window.enterStage(12)" class="w-full bg-white border border-purple-100 p-3 rounded-2xl flex items-center justify-between hover:border-purple-400 hover:shadow-md transition-all text-left group">
+                                    <div><span class="text-xs font-bold text-purple-400 block">12단원</span><span class="text-sm font-bold text-slate-700 group-hover:text-purple-600">We Should Save the World</span></div>
+                                    <span class="text-xl text-purple-300 group-hover:text-purple-500">▶</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- [수정] 기존 사냥터 배틀 뷰 (처음엔 숨김) -->
+                <div id="hunt-battle-view" class="hidden flex-col md:flex-row gap-4 relative mt-10">
+                    <div class="absolute -top-10 left-2 z-10">
+                        <button onclick="window.exitStage()" class="text-sm font-bold text-slate-500 hover:text-red-500 bg-white border border-slate-200 px-4 py-1.5 rounded-full shadow-sm transition-colors">🏃 지도로 도망가기</button>
+                    </div>
+
                     <div class="magic-card relative overflow-hidden shadow-xl flex-1 shrink-0 border-red-50">
                         <canvas id="gameCanvas" width="400" height="350"></canvas>
                         <div class="absolute bottom-4 left-6 right-6 bg-slate-100 h-4 rounded-full overflow-hidden border-2 border-white shadow-inner">
@@ -140,6 +236,21 @@
                 </div>
                 
                 <div class="space-y-3 mb-6 bg-red-50 p-4 rounded-2xl border">
+                    <!-- [신규] 관리자 단원 지정 셀렉트 박스 -->
+                    <select id="new-c" class="w-full p-3 border rounded-xl outline-none text-sm font-bold text-slate-700 focus:border-red-400 bg-white mb-1 shadow-sm">
+                        <option value="1">01단원: What Grade Are You In?</option>
+                        <option value="2">02단원: What Do You Want to Be?</option>
+                        <option value="3">03단원: When Is the Field Trip?</option>
+                        <option value="4">04단원: He Has Short Curly Hair</option>
+                        <option value="5">05단원: How Often Do You Exercise?</option>
+                        <option value="6">06단원: I'm Going to Go on a Trip</option>
+                        <option value="7">07단원: What Season Do You Like?</option>
+                        <option value="8">08단원: I'm Faster Than You</option>
+                        <option value="9">09단원: How Can I Get to the Museum?</option>
+                        <option value="10">10단원: I'd Like to Have the Fruit Salad</option>
+                        <option value="11">11단원: Do You Know About Songpyeon?</option>
+                        <option value="12">12단원: We Should Save the World</option>
+                    </select>
                     <div class="grid grid-cols-2 gap-2">
                         <input type="text" id="new-w" class="p-3 border rounded-xl outline-none text-sm focus:border-red-400" placeholder="영단어" autocomplete="off">
                         <input type="text" id="new-m" class="p-3 border rounded-xl outline-none text-sm focus:border-red-400" placeholder="뜻" autocomplete="off" onkeyup="if(event.key==='Enter')window.addWord()">
@@ -224,6 +335,7 @@
             gameData: { level: 1, exp: 0, count: 0, caughtWords: {} },
             quizzes: [],
             currentQuiz: null,
+            currentChapter: 1, // [신규] 현재 선택된 맵의 단원
             shake: 0,
             particles: [],
             monster: { hp: 100, shake: 0, tier: 1, name: "???" }
@@ -386,13 +498,31 @@
             else { adminView.style.display = 'block'; gameView.style.display = 'none'; }
         };
 
+        // [신규] 맵 화면 전환 함수
+        window.enterStage = (chapter) => {
+            window.state.currentChapter = chapter;
+            document.getElementById('hunt-map-view').style.display = 'none';
+            document.getElementById('hunt-battle-view').style.display = 'flex';
+            document.getElementById('hunt-battle-view').classList.replace('hidden', 'flex'); 
+            window.refreshQuiz();
+        };
+
+        window.exitStage = () => {
+            document.getElementById('hunt-map-view').style.display = 'block';
+            document.getElementById('hunt-battle-view').style.display = 'none';
+            document.getElementById('hunt-battle-view').classList.replace('flex', 'hidden');
+        };
+
         window.addWord = async () => {
+            const cInput = document.getElementById('new-c');
             const wInput = document.getElementById('new-w'); const mInput = document.getElementById('new-m');
+            const c = parseInt(cInput.value) || 1; // 단원 번호 추출
             const w = wInput.value.trim(); const m = mInput.value.trim();
             if (!w || !m) return;
             try {
                 const wordId = w.toLowerCase().replace(/\s+/g, '_');
-                await setDoc(getWordDoc(wordId), { word: w, meaning: m, createdAt: Date.now() });
+                // chapter 데이터를 함께 전송
+                await setDoc(getWordDoc(wordId), { word: w, meaning: m, chapter: c, createdAt: Date.now() });
                 wInput.value = ''; mInput.value = ''; wInput.focus();
             } catch (error) {}
         };
@@ -404,23 +534,44 @@
         window.updateAdminList = () => {
             const list = document.getElementById('admin-list');
             if(!list) return;
-            list.innerHTML = window.state.quizzes.map(q => `
+            list.innerHTML = window.state.quizzes.map(q => {
+                const chapterNum = q.chapter || 1; // 기본값 1단원
+                return `
                 <div class="flex justify-between items-center bg-white p-3 rounded-xl shadow-sm border border-slate-100 mb-2">
-                    <div class="truncate"><span class="font-black text-red-600 text-lg mr-2">${q.word}</span><span class="text-slate-600 text-sm">${q.meaning}</span></div>
-                    <button onclick="window.delWord('${q.id}')" class="text-red-400 p-2 font-bold text-xs">삭제</button>
+                    <div class="truncate flex items-center gap-2">
+                        <span class="bg-slate-100 text-slate-500 text-[10px] px-2 py-0.5 rounded font-bold shrink-0">${chapterNum}단원</span>
+                        <span class="font-black text-red-600 text-lg">${q.word}</span>
+                        <span class="text-slate-600 text-sm">${q.meaning}</span>
+                    </div>
+                    <button onclick="window.delWord('${q.id}')" class="text-red-400 p-2 font-bold text-xs shrink-0">삭제</button>
                 </div>
-            `).join('');
+            `}).join('');
         };
 
         window.refreshQuiz = () => {
+            const input = document.getElementById('spell-in');
+            const hint = document.getElementById('hint-msg');
+            
             if (window.state.quizzes.length === 0) return;
-            window.state.currentQuiz = window.state.quizzes[Math.floor(Math.random() * window.state.quizzes.length)];
+
+            // [수정] 현재 선택된 단원의 단어만 필터링 (과거에 입력되어 chapter 값이 없으면 1단원으로 간주)
+            const chapterQuizzes = window.state.quizzes.filter(q => (q.chapter || 1) === window.state.currentChapter);
+            
+            if (chapterQuizzes.length === 0) {
+                document.getElementById('quiz-txt').innerText = "해당 단원에 포켓몬(단어)이 서식하지 않습니다.";
+                if(input) input.disabled = true;
+                return;
+            }
+            if(input) input.disabled = false;
+
+            window.state.currentQuiz = chapterQuizzes[Math.floor(Math.random() * chapterQuizzes.length)];
             document.getElementById('quiz-txt').innerText = window.state.currentQuiz.meaning;
             
             // 힌트 메시지 초기화
-            const hint = document.getElementById('hint-msg');
-            hint.innerText = "정답 영단어를 입력하면 몬스터볼을 던집니다!";
-            hint.className = "text-slate-400 text-[10px] mt-4 font-normal italic";
+            if(hint) {
+                hint.innerText = "정답 영단어를 입력하면 몬스터볼을 던집니다!";
+                hint.className = "text-slate-400 text-[10px] mt-4 font-normal italic";
+            }
 
             const word = window.state.currentQuiz.word;
             const catchCount = window.state.gameData.caughtWords?.[word] || 0;
@@ -562,7 +713,14 @@
 
         function gameLoop() {
             const canvas = document.getElementById('gameCanvas');
-            if (!canvas || window.getComputedStyle(document.getElementById('content-hunt')).display === 'none') { requestAnimationFrame(gameLoop); return; }
+            const battleView = document.getElementById('hunt-battle-view');
+            
+            // 사냥터 탭이 아니거나, 배틀 뷰(캔버스 영역)가 숨겨져 있으면 그리지 않음
+            if (!canvas || window.getComputedStyle(document.getElementById('content-hunt')).display === 'none' || window.getComputedStyle(battleView).display === 'none') { 
+                requestAnimationFrame(gameLoop); 
+                return; 
+            }
+            
             const ctx = canvas.getContext('2d');
             ctx.clearRect(0,0,400,350); ctx.fillStyle="#f8fafc"; ctx.fillRect(0,0,400,350);
             const float = Math.sin(Date.now()/500)*10;
