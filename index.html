@@ -368,7 +368,7 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const STUDENT_LIST = ["0.서영", "1.단엘", "2.라희", "3.민지", "4.정훈", "5.문경", "6.소윤", "7.하율", "8.현수", "9.시율", "10.은영", "11.이담", "12.훈태", "마스터", "테스트", "선생님"];
+        const STUDENT_LIST = ["0.서영", "1.단엘", "2.라희", "3.민지", "4.정훈", "5.문경", "6.소윤", "7.하율", "8.현수", "9.시율", "10.은영", "11.이담", "12.훈태", "마스터", "테스트", "선생님", "테스트2"];
 
         const initStudentSelect = () => {
             const selectEl = document.getElementById('user-id');
@@ -405,8 +405,8 @@
         window.state = {
             user: null, 
             authUid: null,
-            // [수정] wins 속성 추가
-            gameData: { level: 1, exp: 0, count: 0, wins: 0, caughtWords: {} },
+            // [수정] wins 속성 추가, victories(승리 기록) 속성 추가
+            gameData: { level: 1, exp: 0, count: 0, wins: 0, caughtWords: {}, victories: {} },
             quizzes: [],
             currentQuiz: null,
             currentChapter: 1,
@@ -536,8 +536,9 @@
                         setStatus("비밀번호 오류", true);
                         return window.showCustomAlert("비밀번호가 틀렸습니다!");
                     }
-                    window.state.gameData = data.gameStats || { level: 1, exp: 0, count: 0, caughtWords: {}, wins: 0 };
+                    window.state.gameData = data.gameStats || { level: 1, exp: 0, count: 0, caughtWords: {}, wins: 0, victories: {} };
                     if(window.state.gameData.wins === undefined) window.state.gameData.wins = 0;
+                    if(window.state.gameData.victories === undefined) window.state.gameData.victories = {};
                     setStatus("접속 성공!");
                     enterGame(idInput);
                 } else {
@@ -804,13 +805,41 @@
             try {
                 const snap = await getDocs(getStudentsCollection());
                 let html = '';
+                const myId = window.state.user;
+                const isPrivileged = (myId === '선생님' || myId === '마스터' || myId === '테스트');
+
                 snap.forEach(doc => {
-                    if(doc.id === window.state.user || doc.id === '테스트') return; 
-                    const isBoss = (doc.id === '선생님' || doc.id === '마스터');
+                    const oppId = doc.id;
+                    if (oppId === myId) return; 
+                    if (oppId === '테스트' && !isPrivileged) return; // 특수계정 아니면 테스트 계정 숨김
+
+                    const isBoss = (oppId === '선생님' || oppId === '마스터');
+                    let canBattle = true;
+                    let cooldownMsg = "";
+
+                    // 일반 학생일 경우에만 1주일 승리 쿨타임 체크
+                    if (!isPrivileged) {
+                        const victories = window.state.gameData.victories || {};
+                        const lastWinTime = victories[oppId];
+                        if (lastWinTime) {
+                            const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
+                            const elapsed = Date.now() - lastWinTime;
+                            if (elapsed < oneWeekMs) {
+                                canBattle = false;
+                                const daysLeft = Math.ceil((oneWeekMs - elapsed) / (24 * 60 * 60 * 1000));
+                                cooldownMsg = `재도전까지 ${daysLeft}일`;
+                            }
+                        }
+                    }
+
+                    let btnHtml = canBattle 
+                        ? `<button onclick="window.prepareBattle('${oppId}')" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-md transition-transform active:scale-95">배틀 신청</button>`
+                        : `<button disabled class="bg-slate-200 text-slate-400 px-4 py-2 rounded-xl font-bold text-xs shadow-inner cursor-not-allowed text-center leading-tight">🏆 완료<br><span class="text-[9px]">${cooldownMsg}</span></button>`;
+
                     html += `<div class="flex justify-between items-center ${isBoss?'bg-yellow-50 border-yellow-300':'bg-white border-slate-200'} p-4 rounded-2xl shadow-sm border mb-3 hover:border-red-300 transition-colors">
                         <div class="flex items-center gap-3"><div class="text-2xl">${isBoss?'👑':'👦'}</div>
-                        <div><div class="font-bold text-slate-700">${doc.id}</div><div class="text-[10px] ${isBoss?'text-yellow-600':'text-slate-400'} font-bold">${isBoss?'체육관 관장':'트레이너'}</div></div></div>
-                        <button onclick="window.prepareBattle('${doc.id}')" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-md transition-transform active:scale-95">배틀 신청</button>
+                        <div><div class="font-bold text-slate-700">${oppId}</div><div class="text-[10px] ${isBoss?'text-yellow-600':'text-slate-400'} font-bold">${isBoss?'체육관 관장':'트레이너'}</div></div></div>
+                        ${btnHtml}
                     </div>`;
                 });
                 listEl.innerHTML = html || '<p class="text-center py-10">현재 도전 가능한 상대가 없습니다.</p>';
@@ -843,6 +872,7 @@
             document.getElementById('arena-team-view').style.display = 'none';
             document.getElementById('arena-battle-view').style.display = 'none';
             document.getElementById('arena-battle-view').classList.remove('flex');
+            window.loadArena(); // [추가] 목록 화면으로 돌아올 때 최신 상태로 새로고침 (잔상 문제 해결)
         };
 
         const renderTeamSelection = () => {
@@ -928,7 +958,7 @@
             updateBattleUI();
             logBattleMsg(`배틀 시작! 가랏, ${window.battleState.myTeam[0].word}!`);
             
-            // 상대방 자동 공격 타이머 (1.5초마다)
+            // 상대방 자동 공격 타이머 (0.7초마다)
             if(window.battleState.oppTimer) clearInterval(window.battleState.oppTimer);
             window.battleState.oppTimer = setInterval(() => {
                 if(window.battleState.active) opponentAttack();
@@ -1051,7 +1081,15 @@
             let msg = "";
             if (isWin) {
                 window.state.gameData.wins = (window.state.gameData.wins || 0) + 1;
-                msg = `🎉 배틀 승리!\n멋진 컨트롤이었습니다!\n총 🏆${window.state.gameData.wins}승 달성!`;
+                
+                // 승리한 시간 기록 (1주일 쿨타임용)
+                if (!window.state.gameData.victories) window.state.gameData.victories = {};
+                window.state.gameData.victories[window.battleState.oppId] = Date.now();
+                
+                const isPrivileged = (window.state.user === '선생님' || window.state.user === '마스터' || window.state.user === '테스트');
+                const extraMsg = isPrivileged ? "" : "\n(해당 상대와는 1주일 후 재대결 가능합니다.)";
+
+                msg = `🎉 배틀 승리!\n멋진 컨트롤이었습니다!\n총 🏆${window.state.gameData.wins}승 달성!${extraMsg}`;
                 window.saveProgress();
                 window.updateUI();
             } else {
