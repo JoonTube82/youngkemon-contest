@@ -932,7 +932,7 @@
             if(window.battleState.oppTimer) clearInterval(window.battleState.oppTimer);
             window.battleState.oppTimer = setInterval(() => {
                 if(window.battleState.active) opponentAttack();
-            }, 1500);
+            }, 700);
         };
 
         const updateBattleUI = () => {
