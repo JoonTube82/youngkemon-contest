@@ -958,11 +958,11 @@
             updateBattleUI();
             logBattleMsg(`배틀 시작! 가랏, ${window.battleState.myTeam[0].word}!`);
             
-            // 상대방 자동 공격 타이머 (0.7초마다)
+            // 상대방 자동 공격 타이머 (0.5초마다)
             if(window.battleState.oppTimer) clearInterval(window.battleState.oppTimer);
             window.battleState.oppTimer = setInterval(() => {
                 if(window.battleState.active) opponentAttack();
-            }, 700);
+            }, 500);
         };
 
         const updateBattleUI = () => {
