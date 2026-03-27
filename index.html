@@ -428,6 +428,13 @@
 
         const STUDENT_LIST = ["0.서영", "1.단엘", "2.라희", "3.민지", "4.정훈", "5.문경", "6.소윤", "7.하율", "8.현수", "9.시율", "10.은영", "11.이담", "12.훈태", "마스터", "테스트", "선생님", "테스트2"];
 
+        const STUDENT_GENDER = {
+            "0.서영": "female", "1.단엘": "male", "2.라희": "female", "3.민지": "female", 
+            "4.정훈": "male", "5.문경": "male", "6.소윤": "female", "7.하율": "female", 
+            "8.현수": "male", "9.시율": "male", "10.은영": "female", "11.이담": "male", 
+            "12.훈태": "male", "마스터": "male", "테스트": "female", "선생님": "male", "테스트2": "female"
+        };
+
         const initStudentSelect = () => {
             const selectEl = document.getElementById('user-id');
             if (selectEl) {
@@ -463,7 +470,6 @@
         window.state = {
             user: null, 
             authUid: null,
-            // [수정] wins 속성 추가, victories(승리 기록) 속성 추가
             gameData: { level: 1, exp: 0, count: 0, wins: 0, caughtWords: {}, victories: {} },
             quizzes: [],
             currentQuiz: null,
@@ -473,7 +479,6 @@
             monster: { hp: 100, shake: 0, tier: 1, name: "???" }
         };
 
-        // [신규] 타입 상성표 구현
         const TYPE_EFFECTIVENESS = {
             normal: { rock: 0.5, ghost: 0, steel: 0.5 },
             fire: { fire: 0.5, water: 0.5, grass: 2, ice: 2, bug: 2, rock: 0.5, dragon: 0.5, steel: 2 },
@@ -652,8 +657,21 @@
                 window.refreshQuiz();
                 window.updateAdminList();
             });
-            window.charImg = new Image();
-            window.charImg.src = getEvoSVG(window.state.gameData.level);
+            
+            // 로그인한 유저의 성별 확인 후 1(남) 또는 2(여) 배정
+            const gender = STUDENT_GENDER[window.state.user] || "male";
+            const tNum = gender === "female" ? "2" : "1";
+            
+            window.trainerIdleImg = new Image();
+            window.trainerIdleImg.src = `trainer${tNum}_idle.png`;
+            
+            window.trainerAttackImg = new Image();
+            window.trainerAttackImg.src = `trainer${tNum}_attack.png`;
+            
+            // 기본 이미지를 대기(idle) 상태로 설정
+            window.charImg = window.trainerIdleImg;
+            window.trainerAttackOffset = 0; // 앞으로 튀어나가는 거리 초기화
+
             window.updateUI();
             requestAnimationFrame(gameLoop);
         }
@@ -770,17 +788,26 @@
             window.state.gameData.count++; 
             window.state.monster.hp -= 34; window.state.monster.shake = 25;
             for (let i = 0; i < 20; i++) window.state.particles.push({ x: 280, y: 220, vx: (Math.random()-0.5)*20, vy: (Math.random()-0.5)*20, life: 1.0, color: "#ef4444" });
+            
+            // --- 신규: 트레이너 공격 모션 ---
+            window.charImg = window.trainerAttackImg; // 공격 이미지로 교체
+            window.trainerAttackOffset = 30; // 앞으로 30픽셀 돌진
+            setTimeout(() => {
+                window.charImg = window.trainerIdleImg; // 0.3초 뒤 대기 이미지로 원복
+                window.trainerAttackOffset = 0; // 원위치
+            }, 300);
+
             if (window.state.monster.hp <= 0) { window.state.gameData.exp += 40; window.state.monster.hp = 100; } else { window.state.gameData.exp += 15; }
             if (window.state.gameData.exp >= 100) {
                 window.state.gameData.exp -= 100; window.state.gameData.level++;
                 document.getElementById('modal').style.display = 'flex';
                 document.getElementById('modal-desc').innerText = `레벨 ${window.state.gameData.level} 트레이너가 되었습니다!`;
-                window.charImg.src = getEvoSVG(window.state.gameData.level);
+                // window.charImg.src = getEvoSVG(window.state.gameData.level);
             }
             window.updateUI(); window.saveProgress();
         }
 
-        // [신규] 티어 정보 가져오기 (200승 만렙 기준 적용)
+        // 티어 정보 가져오기 (200승 만렙 기준 적용)
         const getTierInfo = (wins) => {
             if (wins >= 200) return { name: '마스터', icon: '👑', color: 'text-purple-600', bgClass: 'tier-master', badgeClass: 'bg-purple-100 border-purple-300' };
             if (wins >= 150) return { name: '다이아', icon: '💎', color: 'text-sky-500', bgClass: 'tier-diamond', badgeClass: 'bg-sky-50 border-sky-200' };
@@ -930,7 +957,7 @@
             }
         };
 
-        // [신규] 일일 3승 제한 확인 로직
+        // 일일 3승 제한 확인 로직
         const checkDailyLimit = () => {
             const myId = window.state.user;
             // 관리자 및 테스트 계정은 무제한
@@ -969,7 +996,7 @@
                 return;
             }
 
-            // [신규] 하루 3승 제한 체크 후 안내 화면 표시
+            // 하루 3승 제한 체크 후 안내 화면 표시
             if (checkDailyLimit()) {
                 listEl.innerHTML = `
                     <div class="text-center py-10">
@@ -1029,7 +1056,7 @@
 
         // 배틀 준비 단계 (엔트리 선택)
         window.prepareBattle = async (oppId) => {
-            // [신규] 강제 진입 차단 보호 로직
+            // 강제 진입 차단 보호 로직
             if (checkDailyLimit()) {
                 return window.showCustomAlert("오늘의 배틀 에너지를 모두 소모했습니다!\n내일 다시 도전하세요.");
             }
@@ -1294,11 +1321,39 @@
             }
             
             const ctx = canvas.getContext('2d');
-            // 눈부심 방지용 다크모드 배경색 처리 부분
-            ctx.clearRect(0,0,400,350); ctx.fillStyle="#1f2937"; ctx.fillRect(0,0,400,350);
+            ctx.clearRect(0,0,400,350);
+            
+            // [수정] 단원별 다크모드 테마 배경 및 이모지 그리기 (외부 이미지 제거)
+            const ch = window.state.currentChapter || 1;
+            let bgColor = "#052e16"; let emoji = "🌲"; let groundColor = "#065f46";
+            if (ch >= 4 && ch <= 6) { bgColor = "#082f49"; emoji = "🌊"; groundColor = "#075985"; }
+            else if (ch >= 7 && ch <= 9) { bgColor = "#431407"; emoji = "🌋"; groundColor = "#7c2d12"; }
+            else if (ch >= 10 && ch <= 12) { bgColor = "#2e1065"; emoji = "🏙️"; groundColor = "#4c1d95"; }
+
+            // 배경 바탕색
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(0, 0, 400, 350);
+
+            // 거대 배경 이모지 (투명도 15%로 은은하게)
+            ctx.save();
+            ctx.globalAlpha = 0.15;
+            ctx.font = "150px Arial";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(emoji, 200, 140);
+            ctx.restore();
+
+            // 캐릭터 및 몬스터 발판(타원)
+            ctx.save();
+            ctx.globalAlpha = 0.8;
+            ctx.fillStyle = groundColor; // 테마에 맞는 발판 색상
+            ctx.beginPath(); ctx.ellipse(100, 260, 65, 20, 0, 0, Math.PI*2); ctx.fill(); // 내 발판
+            ctx.beginPath(); ctx.ellipse(280, 240, 80, 25, 0, 0, Math.PI*2); ctx.fill(); // 적 발판
+            ctx.restore();
+
             const float = Math.sin(Date.now()/500)*10;
             const ms = (Math.random()-0.5)*window.state.shake; if(window.state.shake>0) window.state.shake*=0.8;
-            ctx.save(); ctx.translate(100+ms, 200+float); if(window.charImg.complete) ctx.drawImage(window.charImg, -75, -75, 150, 150); ctx.restore();
+            ctx.save(); ctx.translate(100+ms + (window.trainerAttackOffset || 0), 200+float); if(window.charImg.complete) ctx.drawImage(window.charImg, -75, -75, 150, 150); ctx.restore();
             const mns = (Math.random()-0.5)*window.state.monster.shake; if(window.state.monster.shake>0) window.state.monster.shake*=0.8;
             ctx.save(); ctx.translate(280+mns, 220); 
             if (window.monsterImg?.complete) {
