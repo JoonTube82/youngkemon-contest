@@ -255,7 +255,7 @@
                             <input type="text" id="spell-in" class="spell-input border-red-200" placeholder="영단어를 입력하세요" autocomplete="off" onkeyup="if(event.key==='Enter')window.checkMagic()">
                             <button onclick="window.checkMagic()" class="btn-magic">🔴 몬스터볼 던지기!</button>
                         </div>
-                        <p id="hint-msg" class="text-slate-400 text-[10px] mt-4 font-normal italic">정답 영단어를 입력하면 몬스터볼을 던집니다!</p>
+                        <p id="hint-msg" class="text-slate-400 text-[10px] mt-4 font-normal italic">정답 영단어를 입력하면 몬스터볼 던집니다!</p>
                     </div>
                 </div>
             </div>
@@ -780,14 +780,14 @@
             window.updateUI(); window.saveProgress();
         }
 
-        // [신규] 티어 정보 가져오기
+        // [신규] 티어 정보 가져오기 (200승 만렙 기준 적용)
         const getTierInfo = (wins) => {
-            if (wins >= 50) return { name: '마스터', icon: '👑', color: 'text-purple-600', bgClass: 'tier-master', badgeClass: 'bg-purple-100 border-purple-300' };
-            if (wins >= 40) return { name: '다이아', icon: '💎', color: 'text-sky-500', bgClass: 'tier-diamond', badgeClass: 'bg-sky-50 border-sky-200' };
-            if (wins >= 30) return { name: '플래티넘', icon: '💠', color: 'text-emerald-500', bgClass: 'tier-platinum', badgeClass: 'bg-emerald-50 border-emerald-200' };
-            if (wins >= 20) return { name: '골드', icon: '🥇', color: 'text-yellow-600', bgClass: 'tier-gold', badgeClass: 'bg-yellow-50 border-yellow-300' };
-            if (wins >= 10) return { name: '실버', icon: '🥈', color: 'text-slate-500', bgClass: 'tier-silver', badgeClass: 'bg-slate-100 border-slate-300' };
-            if (wins >= 5) return { name: '브론즈', icon: '🥉', color: 'text-amber-700', bgClass: 'tier-bronze', badgeClass: 'bg-amber-100 border-amber-300' };
+            if (wins >= 200) return { name: '마스터', icon: '👑', color: 'text-purple-600', bgClass: 'tier-master', badgeClass: 'bg-purple-100 border-purple-300' };
+            if (wins >= 150) return { name: '다이아', icon: '💎', color: 'text-sky-500', bgClass: 'tier-diamond', badgeClass: 'bg-sky-50 border-sky-200' };
+            if (wins >= 100) return { name: '플래티넘', icon: '💠', color: 'text-emerald-500', bgClass: 'tier-platinum', badgeClass: 'bg-emerald-50 border-emerald-200' };
+            if (wins >= 60) return { name: '골드', icon: '🥇', color: 'text-yellow-600', bgClass: 'tier-gold', badgeClass: 'bg-yellow-50 border-yellow-300' };
+            if (wins >= 30) return { name: '실버', icon: '🥈', color: 'text-slate-500', bgClass: 'tier-silver', badgeClass: 'bg-slate-100 border-slate-300' };
+            if (wins >= 10) return { name: '브론즈', icon: '🥉', color: 'text-amber-700', bgClass: 'tier-bronze', badgeClass: 'bg-amber-100 border-amber-300' };
             return { name: '아이언', icon: '⚙️', color: 'text-slate-600', bgClass: 'tier-iron', badgeClass: 'bg-slate-100 border-slate-200' };
         };
 
@@ -809,7 +809,7 @@
             const playerName = document.getElementById('player-name');
             if (profileCard) {
                 profileCard.className = `rounded-3xl p-5 mb-4 shadow-lg flex justify-between items-start border-b-4 transition-all duration-500 ${tier.bgClass}`;
-                if (wins >= 50) playerName.classList.add('name-master');
+                if (wins >= 200) playerName.classList.add('name-master');
                 else playerName.classList.remove('name-master');
             }
 
@@ -930,6 +930,24 @@
             }
         };
 
+        // [신규] 일일 3승 제한 확인 로직
+        const checkDailyLimit = () => {
+            const myId = window.state.user;
+            // 관리자 및 테스트 계정은 무제한
+            if (myId === '선생님' || myId === '마스터' || myId === '테스트' || myId === '테스트2') return false;
+            
+            const victories = window.state.gameData.victories || {};
+            const now = new Date();
+            // 오늘 자정 시간(Timestamp) 구하기
+            const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+            let count = 0;
+            
+            for (let opp in victories) {
+                if (victories[opp] >= startOfToday) count++;
+            }
+            return count >= 3;
+        };
+
         // --- 실시간 배틀 관련 로직 ---
         window.battleState = {
             active: false,
@@ -951,12 +969,25 @@
                 return;
             }
 
+            // [신규] 하루 3승 제한 체크 후 안내 화면 표시
+            if (checkDailyLimit()) {
+                listEl.innerHTML = `
+                    <div class="text-center py-10">
+                        <div class="text-5xl mb-4">💤</div>
+                        <h3 class="text-xl font-bold text-indigo-400 mb-2">오박사님의 휴식 권고</h3>
+                        <p class="text-sm text-slate-400">오늘의 배틀 에너지를 모두 소모했습니다! (일일 3승 달성)<br>풀숲에서 영단어를 더 포획하며 내일을 준비하세요!</p>
+                    </div>
+                `;
+                return;
+            }
+
             listEl.innerHTML = '<p class="text-center text-indigo-400 py-10 text-sm animate-pulse">상대를 찾고 있습니다...</p>';
             try {
                 const snap = await getDocs(getStudentsCollection());
                 let html = '';
                 const myId = window.state.user;
-                const isPrivileged = (myId === '선생님' || myId === '마스터' || myId === '테스트');
+                // 제한 예외 계정 목록에 '테스트2' 추가
+                const isPrivileged = (myId === '선생님' || myId === '마스터' || myId === '테스트' || myId === '테스트2');
 
                 snap.forEach(doc => {
                     const oppId = doc.id;
@@ -998,6 +1029,11 @@
 
         // 배틀 준비 단계 (엔트리 선택)
         window.prepareBattle = async (oppId) => {
+            // [신규] 강제 진입 차단 보호 로직
+            if (checkDailyLimit()) {
+                return window.showCustomAlert("오늘의 배틀 에너지를 모두 소모했습니다!\n내일 다시 도전하세요.");
+            }
+
             const docSnap = await getDoc(getStudentDoc(oppId));
             if (!docSnap.exists()) return window.showCustomAlert("상대 정보를 불러올 수 없습니다.");
             
@@ -1230,11 +1266,11 @@
             if (isWin) {
                 window.state.gameData.wins = (window.state.gameData.wins || 0) + 1;
                 
-                // 승리한 시간 기록 (1주일 쿨타임용)
+                // 승리한 시간 기록 (1주일 쿨타임용 및 일일 제한용)
                 if (!window.state.gameData.victories) window.state.gameData.victories = {};
                 window.state.gameData.victories[window.battleState.oppId] = Date.now();
                 
-                const isPrivileged = (window.state.user === '선생님' || window.state.user === '마스터' || window.state.user === '테스트');
+                const isPrivileged = (window.state.user === '선생님' || window.state.user === '마스터' || window.state.user === '테스트' || window.state.user === '테스트2');
                 const extraMsg = isPrivileged ? "" : "\n(해당 상대와는 1주일 후 재대결 가능합니다.)";
 
                 msg = `🎉 배틀 승리!\n멋진 컨트롤이었습니다!\n총 🏆${window.state.gameData.wins}승 달성!${extraMsg}`;
