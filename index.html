@@ -536,17 +536,6 @@
             monster: { hp: 100, shake: 0, tier: 1, name: "???" }
         };
 
-        // 레트로 해상도 배경 이미지 (유지)
-        window.bgImages = {
-            forest: new Image(), ocean: new Image(), volcano: new Image(), city: new Image()
-        };
-        window.bgImages.forest.crossOrigin = "Anonymous"; window.bgImages.ocean.crossOrigin = "Anonymous";
-        window.bgImages.volcano.crossOrigin = "Anonymous"; window.bgImages.city.crossOrigin = "Anonymous";
-        window.bgImages.forest.src = "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=100&h=88&fit=crop&q=80"; // 숲
-        window.bgImages.ocean.src = "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=100&h=88&fit=crop&q=80"; // 바다
-        window.bgImages.volcano.src = "https://images.unsplash.com/photo-1614732414444-096e5f1122d5?w=100&h=88&fit=crop&q=80"; // 화산
-        window.bgImages.city.src = "https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=100&h=88&fit=crop&q=80"; // 대도시
-
         const TYPE_EFFECTIVENESS = {
             normal: { rock: 0.5, ghost: 0, steel: 0.5 },
             fire: { fire: 0.5, water: 0.5, grass: 2, ice: 2, bug: 2, rock: 0.5, dragon: 0.5, steel: 2 },
@@ -1450,19 +1439,31 @@
             ctx.clearRect(0,0,400,350); 
             
             const ch = window.state.currentChapter || 1;
-            let bgImg = window.bgImages.forest;
-            if (ch >= 4 && ch <= 6) bgImg = window.bgImages.ocean;
-            else if (ch >= 7 && ch <= 9) bgImg = window.bgImages.volcano;
-            else if (ch >= 10 && ch <= 12) bgImg = window.bgImages.city;
+            let bgColor = "#052e16"; let emoji = "🌲"; let groundColor = "#065f46";
+            if (ch >= 4 && ch <= 6) { bgColor = "#082f49"; emoji = "🌊"; groundColor = "#075985"; }
+            else if (ch >= 7 && ch <= 9) { bgColor = "#431407"; emoji = "🌋"; groundColor = "#7c2d12"; }
+            else if (ch >= 10 && ch <= 12) { bgColor = "#2e1065"; emoji = "🏙️"; groundColor = "#4c1d95"; }
 
-            if (bgImg && bgImg.complete) {
-                ctx.imageSmoothingEnabled = false; 
-                ctx.drawImage(bgImg, 0, 0, 400, 350);
-            } else {
-                ctx.fillStyle="#1f2937"; ctx.fillRect(0,0,400,350);
-            }
-            
-            ctx.fillStyle="rgba(18, 18, 18, 0.2)"; ctx.fillRect(0,0,400,350);
+            // 배경 바탕색
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(0, 0, 400, 350);
+
+            // 거대 배경 이모지 (투명도 15%로 은은하게)
+            ctx.save();
+            ctx.globalAlpha = 0.15;
+            ctx.font = "150px Arial";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(emoji, 200, 140);
+            ctx.restore();
+
+            // 캐릭터 및 몬스터 발판(타원)
+            ctx.save();
+            ctx.globalAlpha = 0.8;
+            ctx.fillStyle = groundColor; // 테마에 맞는 발판 색상
+            ctx.beginPath(); ctx.ellipse(100, 260, 65, 20, 0, 0, Math.PI*2); ctx.fill(); // 내 발판
+            ctx.beginPath(); ctx.ellipse(280, 240, 80, 25, 0, 0, Math.PI*2); ctx.fill(); // 적 발판
+            ctx.restore();
 
             const float = Math.sin(Date.now()/500)*10;
             const ms = (Math.random()-0.5)*window.state.shake; if(window.state.shake>0) window.state.shake*=0.8;
