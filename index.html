@@ -133,16 +133,16 @@
                 </div>
             </div>
 
-            <!-- 네비게이션 탭 -->
+            <!-- 네비게이션 탭 (커뮤니티를 첫 번째로 변경) -->
             <div class="flex gap-1 mb-4 bg-white p-2 rounded-2xl shadow-sm">
-                <button onclick="window.switchTab('hunt')" id="tab-hunt" class="tab-btn active flex-1 py-3 text-xs sm:text-sm rounded-xl font-bold bg-slate-100 text-slate-500 truncate">🗡️ 풀숲</button>
+                <button onclick="window.switchTab('rank')" id="tab-rank" class="tab-btn active flex-1 py-3 text-xs sm:text-sm rounded-xl font-bold bg-slate-100 text-slate-500 truncate">🏆 커뮤니티</button>
+                <button onclick="window.switchTab('hunt')" id="tab-hunt" class="tab-btn flex-1 py-3 text-xs sm:text-sm rounded-xl font-bold bg-slate-100 text-slate-500 truncate">🗡️ 풀숲</button>
                 <button onclick="window.switchTab('dex')" id="tab-dex" class="tab-btn flex-1 py-3 text-xs sm:text-sm rounded-xl font-bold bg-slate-100 text-slate-500 truncate">📖 도감</button>
                 <button onclick="window.switchTab('arena')" id="tab-arena" class="tab-btn flex-1 py-3 text-xs sm:text-sm rounded-xl font-bold bg-slate-100 text-slate-500 truncate">⚔️ 배틀</button>
-                <button onclick="window.switchTab('rank')" id="tab-rank" class="tab-btn flex-1 py-3 text-xs sm:text-sm rounded-xl font-bold bg-slate-100 text-slate-500 truncate">🏆 명예</button>
             </div>
             
-            <!-- 탭 1: 사냥터 -->
-            <div id="content-hunt" class="tab-content active">
+            <!-- 탭 1: 사냥터 (기본 active 제거) -->
+            <div id="content-hunt" class="tab-content">
                 <div id="hunt-map-view" class="magic-card p-6 shadow-xl min-h-[400px]">
                     <div class="text-center mb-6">
                         <h3 class="text-2xl font-bold text-red-500 mb-1">🗺️ 영켓몬 모험 지도</h3>
@@ -319,13 +319,21 @@
                 </div>
             </div>
 
-            <!-- 탭 3: 투기장 (전면 개편) -->
+            <!-- 탭 3: 투기장 -->
             <div id="content-arena" class="tab-content">
                 
                 <!-- 뷰 3-1: 상대방 선택 목록 -->
                 <div id="arena-list-view" class="magic-card p-6 shadow-xl min-h-[400px]">
                     <div class="text-center mb-6">
-                        <h3 class="text-xl font-bold text-red-500 mb-1">트레이너 배틀</h3>
+                        <h3 class="text-xl font-bold text-red-500 mb-1 flex items-center justify-center gap-2">
+                            트레이너 배틀
+                            <button onclick="window.showTipModal()" class="bg-indigo-500 hover:bg-indigo-400 text-white text-[10px] px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm transition-transform active:scale-95 border border-indigo-400">
+                                💡 Tip
+                            </button>
+                            <button onclick="window.showTierModal()" class="bg-amber-500 hover:bg-amber-400 text-white text-[10px] px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm transition-transform active:scale-95 border border-amber-400">
+                                🏆 티어표
+                            </button>
+                        </h3>
                         <p class="text-xs text-slate-400">도감에서 강력한 3마리를 골라 체육관 배틀에 도전하세요!<br>승리하여 승수를 쌓고 최고의 트레이너가 되어보세요.</p>
                     </div>
                     <div id="arena-list" class="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
@@ -391,15 +399,15 @@
                 </div>
             </div>
 
-            <!-- 탭 4: 명예의 전당 -->
-            <div id="content-rank" class="tab-content">
+            <!-- 탭 4: 명예의 전당 (커뮤니티) (기본 활성화) -->
+            <div id="content-rank" class="tab-content active">
                 <div class="magic-card p-6 shadow-xl min-h-[400px]">
                     <div class="text-center mb-6">
-                        <h3 class="text-2xl font-bold text-yellow-500 mb-1">🏆 랭킹 (명예의 전당)</h3>
-                        <p class="text-sm text-slate-500">배틀 승수를 기준으로 한 트레이너 순위입니다.</p>
+                        <h3 class="text-2xl font-bold text-yellow-500 mb-1">🏆 커뮤니티</h3>
+                        <p class="text-sm text-slate-500">다른 트레이너들의 정보와 강력한 파트너를 확인해보세요.</p>
                     </div>
-                    <div id="rank-list" class="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar pb-4">
-                        <p class="text-center text-slate-400 py-10 text-sm animate-pulse">랭킹 정보를 불러오는 중...</p>
+                    <div id="rank-list" class="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar pb-4">
+                        <p class="text-center text-slate-400 py-10 text-sm animate-pulse col-span-full">랭킹 정보를 불러오는 중...</p>
                     </div>
                 </div>
             </div>
@@ -467,13 +475,80 @@
         </div>
     </div>
 
-    <!-- [신규] 트레이너 프로필 모달창 -->
+    <!-- 트레이너 프로필 모달창 -->
     <div id="trainer-modal" class="modal-overlay">
         <div class="modal-box border-indigo-500 relative !p-6 !max-w-[340px]">
             <button onclick="window.closeTrainerProfile()" class="absolute top-4 right-4 text-slate-400 hover:text-white font-bold text-2xl">&times;</button>
             <div id="trainer-modal-content">
                 <!-- 동적 렌더링 영역 -->
             </div>
+        </div>
+    </div>
+
+    <!-- Tip 모달창 (상성표 전용) -->
+    <div id="tip-modal" class="modal-overlay">
+        <div class="modal-box border-indigo-500 relative !p-6 !max-w-[360px] max-h-[85vh] overflow-y-auto custom-scrollbar bg-slate-800">
+            <button onclick="window.closeTipModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white font-bold text-2xl">&times;</button>
+            <div class="text-center mb-4">
+                <div class="text-4xl mb-2 drop-shadow-md">💡</div>
+                <h2 class="text-xl font-black text-indigo-400 mb-1">배틀 상성 가이드</h2>
+                <p class="text-[10px] text-slate-400">유리한 속성으로 공격하면 데미지가 강력해집니다!</p>
+            </div>
+            
+            <div class="space-y-4">
+                <!-- 속성 상성표 요약 -->
+                <div class="bg-slate-900/80 rounded-2xl p-4 border border-slate-700 shadow-inner text-left">
+                    <h4 class="text-sm font-bold text-red-400 mb-2 border-b border-slate-700 pb-1 flex items-center gap-1">🔥 주요 속성 상성표</h4>
+                    <p class="text-[9px] text-slate-400 mb-3 leading-tight">(* 아래는 대표적인 상성 예시입니다.)</p>
+                    <div class="grid grid-cols-1 gap-2 text-[10px] font-bold">
+                        <div class="flex items-center gap-1.5 p-1.5 bg-slate-800 rounded-lg border border-slate-700">
+                            <span class="bg-[#6390F0] text-white px-1.5 py-0.5 rounded">물</span> <span>▶</span> <span class="bg-[#EE8130] text-white px-1 rounded">불꽃</span> <span class="bg-[#E2BF65] text-white px-1 rounded">땅</span> <span class="bg-[#B6A136] text-white px-1 rounded">바위</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 p-1.5 bg-slate-800 rounded-lg border border-slate-700">
+                            <span class="bg-[#EE8130] text-white px-1.5 py-0.5 rounded">불꽃</span> <span>▶</span> <span class="bg-[#7AC74C] text-white px-1 rounded">풀</span> <span class="bg-[#A6B91A] text-white px-1 rounded">벌레</span> <span class="bg-[#96D9D6] text-white px-1 rounded">얼음</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 p-1.5 bg-slate-800 rounded-lg border border-slate-700">
+                            <span class="bg-[#7AC74C] text-white px-1.5 py-0.5 rounded">풀</span> <span>▶</span> <span class="bg-[#6390F0] text-white px-1 rounded">물</span> <span class="bg-[#E2BF65] text-white px-1 rounded">땅</span> <span class="bg-[#B6A136] text-white px-1 rounded">바위</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 p-1.5 bg-slate-800 rounded-lg border border-slate-700">
+                            <span class="bg-[#F7D02C] text-white px-1.5 py-0.5 rounded">전기</span> <span>▶</span> <span class="bg-[#6390F0] text-white px-1 rounded">물</span> <span class="bg-[#A98FF3] text-white px-1 rounded">비행</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 p-1.5 bg-slate-800 rounded-lg border border-slate-700">
+                            <span class="bg-[#E2BF65] text-white px-1.5 py-0.5 rounded">땅</span> <span>▶</span> <span class="bg-[#F7D02C] text-white px-1 rounded">전기</span> <span class="bg-[#EE8130] text-white px-1 rounded">불꽃</span> <span class="bg-[#A33EA1] text-white px-1 rounded">독</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button onclick="window.closeTipModal()" class="w-full mt-4 bg-indigo-500 hover:bg-indigo-600 text-white py-3 rounded-xl font-black text-sm shadow-md transition-transform active:scale-95">확인했습니다</button>
+        </div>
+    </div>
+
+    <!-- 티어표 모달창 -->
+    <div id="tier-modal" class="modal-overlay">
+        <div class="modal-box border-amber-500 relative !p-6 !max-w-[360px] max-h-[85vh] overflow-y-auto custom-scrollbar bg-slate-800">
+            <button onclick="window.closeTierModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white font-bold text-2xl">&times;</button>
+            <div class="text-center mb-4">
+                <div class="text-4xl mb-2 drop-shadow-md">🏆</div>
+                <h2 class="text-xl font-black text-amber-400 mb-1">티어 승급 가이드</h2>
+                <p class="text-[10px] text-slate-400">배틀에서 승리하여 영켓몬 마스터가 되세요!</p>
+            </div>
+            
+            <div class="space-y-4">
+                <!-- 티어 승급 기준 -->
+                <div class="bg-slate-900/80 rounded-2xl p-4 border border-slate-700 shadow-inner text-left">
+                    <h4 class="text-sm font-bold text-amber-400 mb-3 border-b border-slate-700 pb-1 flex items-center gap-1">🏆 승수별 티어 승급 기준</h4>
+                    <ul class="text-xs space-y-1.5 text-slate-300 font-bold">
+                        <li class="flex justify-between items-center p-1 hover:bg-slate-800 rounded transition-colors"><span class="text-purple-400 drop-shadow-sm">👑 마스터</span> <span>200승 이상</span></li>
+                        <li class="flex justify-between items-center p-1 hover:bg-slate-800 rounded transition-colors"><span class="text-sky-400 drop-shadow-sm">💎 다이아</span> <span>150승 이상</span></li>
+                        <li class="flex justify-between items-center p-1 hover:bg-slate-800 rounded transition-colors"><span class="text-emerald-400 drop-shadow-sm">💠 플래티넘</span> <span>100승 이상</span></li>
+                        <li class="flex justify-between items-center p-1 hover:bg-slate-800 rounded transition-colors"><span class="text-yellow-400 drop-shadow-sm">🥇 골드</span> <span>60승 이상</span></li>
+                        <li class="flex justify-between items-center p-1 hover:bg-slate-800 rounded transition-colors"><span class="text-slate-300 drop-shadow-sm">🥈 실버</span> <span>30승 이상</span></li>
+                        <li class="flex justify-between items-center p-1 hover:bg-slate-800 rounded transition-colors"><span class="text-amber-600 drop-shadow-sm">🥉 브론즈</span> <span>10승 이상</span></li>
+                        <li class="flex justify-between items-center p-1 hover:bg-slate-800 rounded transition-colors"><span class="text-slate-500 drop-shadow-sm">⚙️ 아이언</span> <span>0 ~ 9승</span></li>
+                    </ul>
+                </div>
+            </div>
+            <button onclick="window.closeTierModal()" class="w-full mt-4 bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-xl font-black text-sm shadow-md transition-transform active:scale-95">확인했습니다</button>
         </div>
     </div>
 
@@ -484,7 +559,6 @@
 
         const STUDENT_LIST = ["0.서영", "1.단엘", "2.라희", "3.민지", "4.정훈", "5.문경", "6.소윤", "7.하율", "8.현수", "9.시율", "10.은영", "11.이담", "12.훈태", "마스터", "테스트", "선생님", "테스트2"];
 
-        // 성별 배정 로직 유지
         const STUDENT_GENDER = {
             "0.서영": "female", "1.단엘": "male", "2.라희": "female", "3.민지": "female", 
             "4.정훈": "male", "5.문경": "male", "6.소윤": "female", "7.하율": "female", 
@@ -679,6 +753,7 @@
             document.getElementById('login-view').style.display = 'none';
             document.getElementById('game-view').style.display = 'block';
             startMagicRPG();
+            window.switchTab('rank'); // [신규] 로그인 후 커뮤니티가 기본 화면이 되도록 강제 전환
         }
 
         window.switchTab = (tabName) => {
@@ -691,11 +766,12 @@
                 btn.classList.add('bg-slate-100', 'text-slate-500');
             });
             const activeBtn = document.getElementById(`tab-${tabName}`);
-            activeBtn.classList.add('active', 'bg-red-500', 'text-white');
+            if (activeBtn) activeBtn.classList.add('active', 'bg-red-500', 'text-white');
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            document.getElementById(`content-${tabName}`).classList.add('active');
+            const contentEl = document.getElementById(`content-${tabName}`);
+            if (contentEl) contentEl.classList.add('active');
             
-            if (tabName === 'hunt') window.loadChapterDominators(); // [신규] 사냥터 진입 시 지배자 현황 갱신
+            if (tabName === 'hunt') window.loadChapterDominators(); 
             if (tabName === 'dex') renderDex();
             if (tabName === 'arena') {
                 document.getElementById('arena-list-view').style.display = 'block';
@@ -715,7 +791,6 @@
                 window.updateAdminList();
             });
             
-            // 로그인 유저 성별 기반 이미지 할당 (유지)
             const gender = STUDENT_GENDER[window.state.user] || "male";
             const tNum = gender === "female" ? "2" : "1";
             
@@ -729,7 +804,7 @@
             window.trainerAttackOffset = 0; 
 
             window.updateUI();
-            window.loadChapterDominators(); // [신규] 시작 시 지배자 현황 불러오기
+            window.loadChapterDominators(); 
             requestAnimationFrame(gameLoop);
         }
 
@@ -739,7 +814,6 @@
             catch (e) {}
         };
 
-        // [신규] 단원별 지배자 불러오기 로직
         window.loadChapterDominators = async () => {
             try {
                 const snap = await getDocs(getStudentsCollection());
@@ -748,7 +822,6 @@
 
                 snap.forEach(doc => {
                     const sId = doc.id;
-                    // 관리자 및 테스트 계정 제외
                     if (sId === '테스트' || sId === '테스트2' || sId === '선생님' || sId === '마스터') return;
                     
                     const stats = doc.data().gameStats || {};
@@ -789,7 +862,6 @@
             }
         };
 
-        // [신규] 트레이너 프로필 모달창 열기
         window.showTrainerProfile = async (studentId) => {
             document.getElementById('trainer-modal').style.display = 'flex';
             document.getElementById('trainer-modal-content').innerHTML = '<p class="text-slate-400 py-10 animate-pulse font-bold text-center">트레이너 정보를 불러오는 중...</p>';
@@ -803,7 +875,6 @@
                 const level = stats.level || 1;
                 const tier = getTierInfo(wins);
 
-                // 주력 몬스터 Top 3 계산
                 const sortedWords = Object.keys(caughtWords).sort((a,b)=>caughtWords[b]-caughtWords[a]).slice(0, 3);
                 let top3Html = '';
                 if (sortedWords.length === 0) {
@@ -826,7 +897,6 @@
                     top3Html += '</div>';
                 }
 
-                // 최고 도달 단원 계산
                 let maxCh = 1;
                 for (let w in caughtWords) {
                     const quiz = window.state.quizzes.find(q => q.word.toLowerCase() === w.toLowerCase());
@@ -855,6 +925,20 @@
 
         window.closeTrainerProfile = () => {
             document.getElementById('trainer-modal').style.display = 'none';
+        };
+
+        window.showTipModal = () => {
+            document.getElementById('tip-modal').style.display = 'flex';
+        };
+        window.closeTipModal = () => {
+            document.getElementById('tip-modal').style.display = 'none';
+        };
+
+        window.showTierModal = () => {
+            document.getElementById('tier-modal').style.display = 'flex';
+        };
+        window.closeTierModal = () => {
+            document.getElementById('tier-modal').style.display = 'none';
         };
 
         window.toggleAdmin = () => {
@@ -964,7 +1048,6 @@
             window.state.monster.hp -= 34; window.state.monster.shake = 25;
             for (let i = 0; i < 20; i++) window.state.particles.push({ x: 280, y: 220, vx: (Math.random()-0.5)*20, vy: (Math.random()-0.5)*20, life: 1.0, color: "#ef4444" });
             
-            // 트레이너 공격 돌진 모션 유지
             window.charImg = window.trainerAttackImg;
             window.trainerAttackOffset = 30; 
             setTimeout(() => {
@@ -1057,8 +1140,8 @@
                         <img src="${item.pInfo.imgSrc}" crossorigin="anonymous" class="max-w-full max-h-full object-contain" style="image-rendering: pixelated;" />
                     </div>
                     <div class="w-full text-center bg-white rounded-xl py-2 mt-2 shadow-sm">
-                        <div class="font-black text-slate-800 text-[13px] capitalize truncate px-1">${item.word}</div>
-                        <div class="text-slate-500 text-[10px] truncate px-1">${item.meaning}</div>
+                        <div class="font-black text-slate-800 text-base capitalize truncate px-1">${item.word}</div>
+                        <div class="text-slate-500 text-xs truncate px-1">${item.meaning}</div>
                         <div class="mt-1 flex items-center justify-center gap-1">
                             <span class="text-[9px] text-white ${typeInfo.bg} rounded px-1 font-bold shadow-sm">${typeInfo.name}</span>
                             <span class="text-[9px] text-slate-600 font-bold">${item.apiData.name}</span>
@@ -1069,10 +1152,10 @@
             dexList.innerHTML = html + '</div>';
         };
 
-        // 명예의 전당 렌더링 - [수정] 모달창 열기 이벤트 추가
+        // 명예의 전당 렌더링 - 커뮤니티 카드 글씨와 몬스터 크기 확대
         window.renderRanking = async () => {
             const listEl = document.getElementById('rank-list');
-            listEl.innerHTML = '<p class="text-center text-slate-400 py-10 text-sm animate-pulse">랭킹 정보를 가져오는 중...</p>';
+            listEl.innerHTML = '<p class="text-center text-slate-400 py-10 text-sm animate-pulse col-span-full">랭킹 정보를 가져오는 중...</p>';
             try {
                 const snap = await getDocs(getStudentsCollection());
                 let students = [];
@@ -1080,52 +1163,96 @@
                     if (doc.id !== '테스트' && doc.id !== '테스트2') {
                         const data = doc.data();
                         const stats = data.gameStats || {};
+                        
+                        const caughtWords = stats.caughtWords || {};
+                        let maxCh = 0;
+                        let bestWord = null;
+                        let bestCount = 0;
+                        
+                        for (let word in caughtWords) {
+                            if (caughtWords[word] > bestCount) {
+                                bestCount = caughtWords[word];
+                                bestWord = word;
+                            }
+                        }
+
+                        if (bestWord) {
+                            const quiz = window.state.quizzes.find(q => q.word.toLowerCase() === bestWord.toLowerCase());
+                            if (quiz) maxCh = quiz.chapter || 1;
+                        }
+
                         students.push({
                             id: doc.id,
                             wins: stats.wins || 0,
-                            caught: Object.keys(stats.caughtWords || {}).length,
-                            level: stats.level || 1
+                            caught: Object.keys(caughtWords).length,
+                            level: stats.level || 1,
+                            bestWord: bestWord,
+                            bestCount: bestCount,
+                            maxCh: maxCh
                         });
                     }
                 });
 
                 students.sort((a, b) => {
-                    if (b.wins !== a.wins) return b.wins - a.wins;
-                    if (b.caught !== a.caught) return b.caught - a.caught;
-                    return b.level - a.level;
+                    const getPriority = (id) => {
+                        if (id === '마스터') return -2;
+                        if (id === '선생님') return -1;
+                        const num = parseInt(id.split('.')[0]);
+                        return isNaN(num) ? 999 : num;
+                    };
+                    return getPriority(a.id) - getPriority(b.id);
                 });
 
                 let html = '';
-                students.forEach((student, idx) => {
+                students.forEach((student) => {
                     const tier = getTierInfo(student.wins);
                     const isMe = student.id === window.state.user;
-                    let rankIcon = `${idx + 1}위`;
-                    if (idx === 0) rankIcon = '👑 1위';
-                    else if (idx === 1) rankIcon = '🥈 2위';
-                    else if (idx === 2) rankIcon = '🥉 3위';
+                    
+                    // [수정] 기본 몬스터 이모지 크기 및 카드 몬스터 이미지 크기 대폭 확대
+                    let pInfoHtml = '<span class="text-5xl opacity-20">🥚</span>';
+                    let chapterBadge = '';
+                    if (student.bestWord) {
+                        const pInfo = getPokemonInfoForWord(student.bestWord, student.bestCount);
+                        pInfoHtml = `<img src="${pInfo.imgSrc}" crossorigin="anonymous" class="max-w-full max-h-full object-contain drop-shadow-md scale-150" style="image-rendering:pixelated;">`;
+                        chapterBadge = `<div class="absolute -bottom-2 -right-3 text-[11px] sm:text-xs bg-indigo-600 text-white px-2 py-0.5 rounded-md font-bold shadow-sm border border-indigo-400 z-10">${student.maxCh}단원</div>`;
+                    }
 
-                    // [수정] onclick 속성에 showTrainerProfile 추가 및 hover 효과 강화
+                    // [수정] 카드 안의 텍스트와 몬스터 여백/크기 모두 확대
                     html += `
-                    <div onclick="window.showTrainerProfile('${student.id}')" class="cursor-pointer flex justify-between items-center p-4 rounded-2xl shadow-sm border mb-2 ${isMe ? 'bg-indigo-50 border-indigo-300 scale-[1.02]' : 'bg-white border-slate-100 hover:bg-slate-50 hover:border-indigo-200'} transition-all">
-                        <div class="flex items-center gap-3">
-                            <div class="font-black ${idx < 3 ? 'text-red-500 text-lg' : 'text-slate-500'} w-12 text-center">${rankIcon}</div>
-                            <div>
-                                <div class="flex items-center gap-1">
-                                    <span class="font-bold text-slate-800 ${isMe ? 'text-indigo-700' : ''}">${student.id}</span>
-                                    ${isMe ? '<span class="text-[9px] bg-indigo-500 text-white px-1.5 rounded-full font-bold">나</span>' : ''}
-                                </div>
-                                <div class="text-[10px] text-slate-500">Lv.${student.level} • 포획 ${student.caught}마리</div>
+                    <div onclick="window.showTrainerProfile('${student.id}')" class="cursor-pointer border-2 border-white/10 ${tier.bgClass} rounded-2xl p-4 flex flex-col relative overflow-visible shadow-lg hover:scale-105 transition-transform hover:shadow-indigo-500/20 group ${isMe ? 'ring-2 ring-red-400' : ''}">
+                        ${isMe ? '<div class="absolute -top-2 -left-2 bg-red-500 text-white text-[10px] px-2.5 py-0.5 rounded-full font-bold shadow-md z-10 border border-white/20">나</div>' : ''}
+                        
+                        <!-- 카드 상단: 이름, 레벨, 티어 -->
+                        <div class="flex justify-between items-start mb-3">
+                            <div class="truncate pr-1 w-full">
+                                <div class="text-base sm:text-lg font-black text-white drop-shadow-md truncate w-full">${student.id}</div>
+                                <div class="text-xs sm:text-sm text-white/80 font-bold drop-shadow mt-0.5">Lv.${student.level}</div>
+                            </div>
+                            <div class="flex flex-col items-end shrink-0 pl-1">
+                                <div class="text-xs font-black ${tier.color} bg-black/40 px-2 py-1 rounded-lg border border-white/10 whitespace-nowrap backdrop-blur-sm drop-shadow">${tier.icon} ${tier.name}</div>
                             </div>
                         </div>
-                        <div class="text-right">
-                            <div class="font-black ${tier.color} text-lg">${tier.icon} ${student.wins}승</div>
-                            <div class="text-[10px] font-bold text-slate-400">${tier.name} 티어</div>
+
+                        <!-- 카드 중앙: 가장 강력한 파트너 -->
+                        <div class="h-24 w-24 sm:h-28 sm:w-28 mx-auto my-2 flex items-center justify-center relative bg-black/30 rounded-full border border-white/10 group-hover:bg-black/50 transition-colors shadow-inner">
+                            ${pInfoHtml}
+                            ${chapterBadge}
+                        </div>
+
+                        <!-- 카드 하단: 포획 수 & 승수 -->
+                        <div class="mt-auto pt-4 flex justify-between border-t border-white/20">
+                            <div class="flex items-center gap-1 bg-black/30 px-2 py-1 rounded-lg border border-white/10">
+                                <span class="text-xs sm:text-sm">📖</span> <span class="text-xs sm:text-sm font-bold text-white drop-shadow-sm">${student.caught}</span>
+                            </div>
+                            <div class="flex items-center gap-1 bg-black/30 px-2 py-1 rounded-lg border border-white/10">
+                                <span class="text-xs sm:text-sm">⚔️</span> <span class="text-xs sm:text-sm font-bold text-white drop-shadow-sm">${student.wins}</span>
+                            </div>
                         </div>
                     </div>`;
                 });
-                listEl.innerHTML = html || '<p class="text-center py-10">랭킹 정보가 없습니다.</p>';
+                listEl.innerHTML = html || '<p class="text-center py-10 col-span-full">랭킹 정보가 없습니다.</p>';
             } catch (e) {
-                listEl.innerHTML = '<p class="text-center text-red-500 py-10">네트워크 오류</p>';
+                listEl.innerHTML = '<p class="text-center text-red-500 py-10 col-span-full">네트워크 오류</p>';
             }
         };
 
@@ -1145,6 +1272,17 @@
             active: false, oppId: null, oppStats: null,
             mySelection: [], myTeam: [], oppTeam: [],
             myIdx: 0, oppIdx: 0, oppTimer: null
+        };
+
+        window.showOppMonDetail = (word, count) => {
+            const pInfo = getPokemonInfoForWord(word, count);
+            const apiData = LOCAL_POKEMON_DB[pInfo.id] || { name: "알 수 없음", type: "normal" };
+            const typeInfo = TYPE_COLORS[apiData.type] || TYPE_COLORS['normal'];
+            const quiz = window.state.quizzes.find(q => q.word.toLowerCase() === word.toLowerCase());
+            const meaning = quiz ? quiz.meaning : "알 수 없음";
+
+            const msg = `✨ ${word} ✨\n\n📖 뜻: ${meaning}\n🔥 속성: ${typeInfo.name}\n👾 종류: ${apiData.name} (LV.${pInfo.tier})\n⭐ 잡은 횟수: ${count}회`;
+            window.showCustomAlert(msg);
         };
 
         window.loadArena = async () => {
@@ -1196,13 +1334,37 @@
                         }
                     }
 
-                    let btnHtml = canBattle 
-                        ? `<button onclick="window.prepareBattle('${oppId}')" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-md transition-transform active:scale-95">배틀 신청</button>`
-                        : `<button disabled class="bg-slate-200 text-slate-400 px-4 py-2 rounded-xl font-bold text-xs shadow-inner cursor-not-allowed text-center leading-tight">🏆 완료<br><span class="text-[9px]">${cooldownMsg}</span></button>`;
+                    const oppStats = doc.data().gameStats || {};
+                    const oppCaughtWords = oppStats.caughtWords || {};
+                    const sortedOppWords = Object.keys(oppCaughtWords).sort((a,b)=>oppCaughtWords[b]-oppCaughtWords[a]).slice(0,3);
 
-                    html += `<div class="flex justify-between items-center ${isBoss?'bg-yellow-50 border-yellow-300':'bg-white border-slate-200'} p-4 rounded-2xl shadow-sm border mb-3 hover:border-red-300 transition-colors">
-                        <div class="flex items-center gap-3"><div class="text-2xl">${isBoss?'👑':'👦'}</div>
-                        <div><div class="font-bold text-slate-700">${oppId}</div><div class="text-[10px] ${isBoss?'text-yellow-600':'text-slate-400'} font-bold">${isBoss?'체육관 관장':'트레이너'}</div></div></div>
+                    let top3Html = '<div class="flex gap-1 ml-1 sm:ml-3 items-center">';
+                    if (sortedOppWords.length > 0) {
+                        sortedOppWords.forEach(word => {
+                            const count = oppCaughtWords[word];
+                            const pInfo = getPokemonInfoForWord(word, count);
+                            top3Html += `<div onclick="window.showOppMonDetail('${word}', ${count})" class="cursor-pointer w-10 h-10 sm:w-12 sm:h-12 bg-black/30 hover:bg-black/50 rounded-full flex items-center justify-center border border-white/20 p-1 transition-transform hover:scale-110 shadow-inner" title="${word} 상세정보"><img src="${pInfo.imgSrc}" crossorigin="anonymous" class="max-w-full max-h-full object-contain drop-shadow-md scale-110" style="image-rendering:pixelated;"></div>`;
+                        });
+                    } else {
+                        top3Html += `<span class="text-[10px] text-slate-400 pl-2">포획 없음</span>`;
+                    }
+                    top3Html += '</div>';
+
+                    let btnHtml = canBattle 
+                        ? `<button onclick="window.prepareBattle('${oppId}')" class="bg-red-500 hover:bg-red-600 text-white px-3 sm:px-4 py-2 rounded-xl font-bold text-xs sm:text-sm shadow-md transition-transform active:scale-95 shrink-0">배틀 신청</button>`
+                        : `<button disabled class="bg-slate-200 text-slate-400 px-3 sm:px-4 py-2 rounded-xl font-bold text-[10px] sm:text-xs shadow-inner cursor-not-allowed text-center leading-tight shrink-0">🏆 완료<br><span class="text-[9px]">${cooldownMsg}</span></button>`;
+
+                    html += `<div class="flex justify-between items-center ${isBoss?'bg-yellow-50 border-yellow-300':'bg-white border-slate-200'} p-3 sm:p-4 rounded-2xl shadow-sm border mb-3 hover:border-red-300 transition-colors overflow-hidden">
+                        <div class="flex items-center gap-2 sm:gap-3 overflow-hidden">
+                            <div class="text-xl sm:text-2xl shrink-0">${isBoss?'👑':'👦'}</div>
+                            <div class="flex flex-col sm:flex-row sm:items-center shrink-0 min-w-0">
+                                <div class="min-w-[60px] truncate">
+                                    <div class="font-bold text-slate-700 truncate text-sm">${oppId}</div>
+                                    <div class="text-[10px] ${isBoss?'text-yellow-600':'text-slate-400'} font-bold">${isBoss?'체육관 관장':'트레이너'}</div>
+                                </div>
+                                ${top3Html}
+                            </div>
+                        </div>
                         ${btnHtml}
                     </div>`;
                 });
@@ -1444,11 +1606,9 @@
             else if (ch >= 7 && ch <= 9) { bgColor = "#431407"; emoji = "🌋"; groundColor = "#7c2d12"; }
             else if (ch >= 10 && ch <= 12) { bgColor = "#2e1065"; emoji = "🏙️"; groundColor = "#4c1d95"; }
 
-            // 배경 바탕색
             ctx.fillStyle = bgColor;
             ctx.fillRect(0, 0, 400, 350);
 
-            // 거대 배경 이모지 (투명도 15%로 은은하게)
             ctx.save();
             ctx.globalAlpha = 0.15;
             ctx.font = "150px Arial";
@@ -1457,12 +1617,11 @@
             ctx.fillText(emoji, 200, 140);
             ctx.restore();
 
-            // 캐릭터 및 몬스터 발판(타원)
             ctx.save();
             ctx.globalAlpha = 0.8;
-            ctx.fillStyle = groundColor; // 테마에 맞는 발판 색상
-            ctx.beginPath(); ctx.ellipse(100, 260, 65, 20, 0, 0, Math.PI*2); ctx.fill(); // 내 발판
-            ctx.beginPath(); ctx.ellipse(280, 240, 80, 25, 0, 0, Math.PI*2); ctx.fill(); // 적 발판
+            ctx.fillStyle = groundColor;
+            ctx.beginPath(); ctx.ellipse(100, 260, 65, 20, 0, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(280, 240, 80, 25, 0, 0, Math.PI*2); ctx.fill();
             ctx.restore();
 
             const float = Math.sin(Date.now()/500)*10;
