@@ -492,66 +492,66 @@
 
     <!-- Tip 모달창 (상성표) -->
     <div id="tip-modal" class="modal-overlay">
-        <div class="modal-box border-indigo-500 relative !p-6 !max-w-[360px] max-h-[85vh] overflow-y-auto custom-scrollbar bg-slate-800">
-            <button onclick="window.closeTipModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white font-bold text-2xl">&times;</button>
-            <div class="text-center mb-4">
-                <div class="text-4xl mb-2 drop-shadow-md">💡</div>
-                <h2 class="text-xl font-black text-indigo-400 mb-1">배틀 상성 가이드</h2>
-                <p class="text-[10px] text-slate-400">유리한 속성으로 공격하면 데미지가 강력해집니다!</p>
+        <div class="modal-box border-indigo-500 relative !p-8 !max-w-[500px] max-h-[85vh] overflow-y-auto custom-scrollbar bg-slate-800">
+            <button onclick="window.closeTipModal()" class="absolute top-4 right-5 text-slate-400 hover:text-white font-bold text-3xl">&times;</button>
+            <div class="text-center mb-6">
+                <div class="text-5xl mb-3 drop-shadow-md">💡</div>
+                <h2 class="text-2xl font-black text-indigo-400 mb-2">배틀 상성 가이드</h2>
+                <p class="text-xs sm:text-sm text-slate-400">유리한 속성으로 공격하면 데미지가 강력해집니다!</p>
             </div>
             
             <div class="space-y-4">
-                <div class="bg-slate-900/80 rounded-2xl p-4 border border-slate-700 shadow-inner text-left">
-                    <h4 class="text-sm font-bold text-red-400 mb-2 border-b border-slate-700 pb-1 flex items-center gap-1">🔥 주요 속성 상성표</h4>
-                    <p class="text-[9px] text-slate-400 mb-3 leading-tight">(* 아래는 대표적인 상성 예시입니다.)</p>
-                    <div class="grid grid-cols-1 gap-2 text-[10px] font-bold">
-                        <div class="flex items-center gap-1.5 p-1.5 bg-slate-800 rounded-lg border border-slate-700">
-                            <span class="bg-[#6390F0] text-white px-1.5 py-0.5 rounded">물</span> <span>▶</span> <span class="bg-[#EE8130] text-white px-1 rounded">불꽃</span> <span class="bg-[#E2BF65] text-white px-1 rounded">땅</span> <span class="bg-[#B6A136] text-white px-1 rounded">바위</span>
+                <div class="bg-slate-900/80 rounded-3xl p-5 border border-slate-700 shadow-inner text-left">
+                    <h4 class="text-base sm:text-lg font-bold text-red-400 mb-3 border-b border-slate-700 pb-2 flex items-center gap-2">🔥 주요 속성 상성표</h4>
+                    <p class="text-xs text-slate-400 mb-4 leading-relaxed">(* 아래는 대표적인 상성 예시입니다.)</p>
+                    <div class="grid grid-cols-1 gap-3 text-xs sm:text-sm font-bold">
+                        <div class="flex items-center gap-2 p-2.5 bg-slate-800 rounded-xl border border-slate-700">
+                            <span class="bg-[#6390F0] text-white px-2 py-1 rounded-md">물</span> <span class="mx-1">▶</span> <span class="bg-[#EE8130] text-white px-2 py-1 rounded-md">불꽃</span> <span class="bg-[#E2BF65] text-white px-2 py-1 rounded-md">땅</span> <span class="bg-[#B6A136] text-white px-2 py-1 rounded-md">바위</span>
                         </div>
-                        <div class="flex items-center gap-1.5 p-1.5 bg-slate-800 rounded-lg border border-slate-700">
-                            <span class="bg-[#EE8130] text-white px-1.5 py-0.5 rounded">불꽃</span> <span>▶</span> <span class="bg-[#7AC74C] text-white px-1 rounded">풀</span> <span class="bg-[#A6B91A] text-white px-1 rounded">벌레</span> <span class="bg-[#96D9D6] text-white px-1 rounded">얼음</span>
+                        <div class="flex items-center gap-2 p-2.5 bg-slate-800 rounded-xl border border-slate-700">
+                            <span class="bg-[#EE8130] text-white px-2 py-1 rounded-md">불꽃</span> <span class="mx-1">▶</span> <span class="bg-[#7AC74C] text-white px-2 py-1 rounded-md">풀</span> <span class="bg-[#A6B91A] text-white px-2 py-1 rounded-md">벌레</span> <span class="bg-[#96D9D6] text-white px-2 py-1 rounded-md">얼음</span>
                         </div>
-                        <div class="flex items-center gap-1.5 p-1.5 bg-slate-800 rounded-lg border border-slate-700">
-                            <span class="bg-[#7AC74C] text-white px-1.5 py-0.5 rounded">풀</span> <span>▶</span> <span class="bg-[#6390F0] text-white px-1 rounded">물</span> <span class="bg-[#E2BF65] text-white px-1 rounded">땅</span> <span class="bg-[#B6A136] text-white px-1 rounded">바위</span>
+                        <div class="flex items-center gap-2 p-2.5 bg-slate-800 rounded-xl border border-slate-700">
+                            <span class="bg-[#7AC74C] text-white px-2 py-1 rounded-md">풀</span> <span class="mx-1">▶</span> <span class="bg-[#6390F0] text-white px-2 py-1 rounded-md">물</span> <span class="bg-[#E2BF65] text-white px-2 py-1 rounded-md">땅</span> <span class="bg-[#B6A136] text-white px-2 py-1 rounded-md">바위</span>
                         </div>
-                        <div class="flex items-center gap-1.5 p-1.5 bg-slate-800 rounded-lg border border-slate-700">
-                            <span class="bg-[#F7D02C] text-white px-1.5 py-0.5 rounded">전기</span> <span>▶</span> <span class="bg-[#6390F0] text-white px-1 rounded">물</span> <span class="bg-[#A98FF3] text-white px-1 rounded">비행</span>
+                        <div class="flex items-center gap-2 p-2.5 bg-slate-800 rounded-xl border border-slate-700">
+                            <span class="bg-[#F7D02C] text-white px-2 py-1 rounded-md">전기</span> <span class="mx-1">▶</span> <span class="bg-[#6390F0] text-white px-2 py-1 rounded-md">물</span> <span class="bg-[#A98FF3] text-white px-2 py-1 rounded-md">비행</span>
                         </div>
-                        <div class="flex items-center gap-1.5 p-1.5 bg-slate-800 rounded-lg border border-slate-700">
-                            <span class="bg-[#E2BF65] text-white px-1.5 py-0.5 rounded">땅</span> <span>▶</span> <span class="bg-[#F7D02C] text-white px-1 rounded">전기</span> <span class="bg-[#EE8130] text-white px-1 rounded">불꽃</span> <span class="bg-[#A33EA1] text-white px-1 rounded">독</span>
+                        <div class="flex items-center gap-2 p-2.5 bg-slate-800 rounded-xl border border-slate-700">
+                            <span class="bg-[#E2BF65] text-white px-2 py-1 rounded-md">땅</span> <span class="mx-1">▶</span> <span class="bg-[#F7D02C] text-white px-2 py-1 rounded-md">전기</span> <span class="bg-[#EE8130] text-white px-2 py-1 rounded-md">불꽃</span> <span class="bg-[#A33EA1] text-white px-2 py-1 rounded-md">독</span>
                         </div>
                     </div>
                 </div>
             </div>
-            <button onclick="window.closeTipModal()" class="w-full mt-4 bg-indigo-500 hover:bg-indigo-600 text-white py-3 rounded-xl font-black text-sm shadow-md transition-transform active:scale-95">확인했습니다</button>
+            <button onclick="window.closeTipModal()" class="w-full mt-6 bg-indigo-500 hover:bg-indigo-600 text-white py-4 rounded-2xl font-black text-base shadow-md transition-transform active:scale-95">확인했습니다</button>
         </div>
     </div>
 
     <!-- 티어표 모달창 -->
     <div id="tier-modal" class="modal-overlay">
-        <div class="modal-box border-amber-500 relative !p-6 !max-w-[360px] max-h-[85vh] overflow-y-auto custom-scrollbar bg-slate-800">
-            <button onclick="window.closeTierModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white font-bold text-2xl">&times;</button>
-            <div class="text-center mb-4">
-                <div class="text-4xl mb-2 drop-shadow-md">🏆</div>
-                <h2 class="text-xl font-black text-amber-400 mb-1">티어 승급 가이드</h2>
-                <p class="text-[10px] text-slate-400">배틀에서 승리하여 영켓몬 마스터가 되세요!</p>
+        <div class="modal-box border-amber-500 relative !p-8 !max-w-[450px] max-h-[85vh] overflow-y-auto custom-scrollbar bg-slate-800">
+            <button onclick="window.closeTierModal()" class="absolute top-4 right-5 text-slate-400 hover:text-white font-bold text-3xl">&times;</button>
+            <div class="text-center mb-6">
+                <div class="text-5xl mb-3 drop-shadow-md">🏆</div>
+                <h2 class="text-2xl font-black text-amber-400 mb-2">티어 승급 가이드</h2>
+                <p class="text-xs sm:text-sm text-slate-400">배틀에서 승리하여 영켓몬 마스터가 되세요!</p>
             </div>
             
             <div class="space-y-4">
-                <div class="bg-slate-900/80 rounded-2xl p-4 border border-slate-700 shadow-inner text-left">
-                    <h4 class="text-sm font-bold text-amber-400 mb-3 border-b border-slate-700 pb-1 flex items-center gap-1">🏆 승수별 티어 승급 기준</h4>
-                    <ul class="text-xs space-y-1.5 text-slate-300 font-bold">
-                        <li class="flex justify-between items-center p-1 hover:bg-slate-800 rounded transition-colors"><span class="text-purple-400 drop-shadow-sm">👑 마스터</span> <span>200승 이상</span></li>
-                        <li class="flex justify-between items-center p-1 hover:bg-slate-800 rounded transition-colors"><span class="text-sky-400 drop-shadow-sm">💎 다이아</span> <span>150승 이상</span></li>
-                        <li class="flex justify-between items-center p-1 hover:bg-slate-800 rounded transition-colors"><span class="text-emerald-400 drop-shadow-sm">💠 플래티넘</span> <span>100승 이상</span></li>
-                        <li class="flex justify-between items-center p-1 hover:bg-slate-800 rounded transition-colors"><span class="text-yellow-400 drop-shadow-sm">🥇 골드</span> <span>60승 이상</span></li>
-                        <li class="flex justify-between items-center p-1 hover:bg-slate-800 rounded transition-colors"><span class="text-slate-300 drop-shadow-sm">🥈 실버</span> <span>30승 이상</span></li>
-                        <li class="flex justify-between items-center p-1 hover:bg-slate-800 rounded transition-colors"><span class="text-amber-600 drop-shadow-sm">🥉 브론즈</span> <span>10승 이상</span></li>
-                        <li class="flex justify-between items-center p-1 hover:bg-slate-800 rounded transition-colors"><span class="text-slate-500 drop-shadow-sm">⚙️ 아이언</span> <span>0 ~ 9승</span></li>
+                <div class="bg-slate-900/80 rounded-3xl p-5 border border-slate-700 shadow-inner text-left">
+                    <h4 class="text-base sm:text-lg font-bold text-amber-400 mb-4 border-b border-slate-700 pb-2 flex items-center gap-2">🏆 승수별 티어 승급 기준</h4>
+                    <ul class="text-sm sm:text-base space-y-2 text-slate-300 font-bold">
+                        <li class="flex justify-between items-center p-2 hover:bg-slate-800 rounded-lg transition-colors"><span class="text-purple-400 drop-shadow-sm text-lg">👑 마스터</span> <span>200승 이상</span></li>
+                        <li class="flex justify-between items-center p-2 hover:bg-slate-800 rounded-lg transition-colors"><span class="text-sky-400 drop-shadow-sm">💎 다이아</span> <span>150승 이상</span></li>
+                        <li class="flex justify-between items-center p-2 hover:bg-slate-800 rounded-lg transition-colors"><span class="text-emerald-400 drop-shadow-sm">💠 플래티넘</span> <span>100승 이상</span></li>
+                        <li class="flex justify-between items-center p-2 hover:bg-slate-800 rounded-lg transition-colors"><span class="text-yellow-400 drop-shadow-sm">🥇 골드</span> <span>60승 이상</span></li>
+                        <li class="flex justify-between items-center p-2 hover:bg-slate-800 rounded-lg transition-colors"><span class="text-slate-300 drop-shadow-sm">🥈 실버</span> <span>30승 이상</span></li>
+                        <li class="flex justify-between items-center p-2 hover:bg-slate-800 rounded-lg transition-colors"><span class="text-amber-600 drop-shadow-sm">🥉 브론즈</span> <span>10승 이상</span></li>
+                        <li class="flex justify-between items-center p-2 hover:bg-slate-800 rounded-lg transition-colors"><span class="text-slate-500 drop-shadow-sm">⚙️ 아이언</span> <span>0 ~ 9승</span></li>
                     </ul>
                 </div>
             </div>
-            <button onclick="window.closeTierModal()" class="w-full mt-4 bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-xl font-black text-sm shadow-md transition-transform active:scale-95">확인했습니다</button>
+            <button onclick="window.closeTierModal()" class="w-full mt-6 bg-amber-500 hover:bg-amber-600 text-white py-4 rounded-2xl font-black text-base shadow-md transition-transform active:scale-95">확인했습니다</button>
         </div>
     </div>
 
@@ -1379,7 +1379,9 @@
             listEl.innerHTML = '<p class="text-center text-indigo-400 py-10 text-sm animate-pulse">상대를 찾고 있습니다...</p>';
             try {
                 const snap = await getDocs(getStudentsCollection());
-                let html = '';
+                
+                // [신규] 배틀 리스트용 배열 추출 및 테스트2 계정 완전 제외
+                let opponents = [];
                 const myId = window.state.user;
                 const isPrivileged = (myId === '선생님' || myId === '마스터' || myId === '테스트' || myId === '테스트2');
 
@@ -1387,7 +1389,27 @@
                     const oppId = doc.id;
                     if (oppId === myId) return; 
                     if (oppId === '테스트' && !isPrivileged) return;
+                    if (oppId === '테스트2') return; // 테스트2 계정 렌더링 제외
 
+                    opponents.push({ id: oppId, data: doc.data() });
+                });
+
+                // [신규] 정렬 로직: 마스터 -> 선생님 -> 번호순
+                opponents.sort((a, b) => {
+                    const getPriority = (id) => {
+                        if (id === '마스터') return -2;
+                        if (id === '선생님') return -1;
+                        const num = parseInt(id.split('.')[0]);
+                        return isNaN(num) ? 999 : num;
+                    };
+                    return getPriority(a.id) - getPriority(b.id);
+                });
+
+                let html = '';
+                
+                opponents.forEach(opp => {
+                    const oppId = opp.id;
+                    const docData = opp.data;
                     const isBoss = (oppId === '선생님' || oppId === '마스터');
                     let canBattle = true;
                     let cooldownMsg = "";
@@ -1406,33 +1428,35 @@
                         }
                     }
 
-                    const oppStats = doc.data().gameStats || {};
+                    const oppStats = docData.gameStats || {};
                     const oppCaughtWords = oppStats.caughtWords || {};
                     const sortedOppWords = Object.keys(oppCaughtWords).sort((a,b)=>oppCaughtWords[b]-oppCaughtWords[a]).slice(0,3);
 
-                    let top3Html = '<div class="flex gap-1 ml-1 sm:ml-3 items-center">';
+                    // [수정] 몬스터 아이콘 크기 및 정보 레이아웃 확대
+                    let top3Html = '<div class="flex gap-2 ml-2 sm:ml-4 items-center">';
                     if (sortedOppWords.length > 0) {
                         sortedOppWords.forEach(word => {
                             const count = oppCaughtWords[word];
                             const pInfo = getPokemonInfoForWord(word, count);
-                            top3Html += `<div onclick="window.showOppMonDetail('${word}', ${count})" class="cursor-pointer w-10 h-10 sm:w-12 sm:h-12 bg-black/30 hover:bg-black/50 rounded-full flex items-center justify-center border border-white/20 p-1 transition-transform hover:scale-110 shadow-inner" title="${word} 상세정보"><img src="${pInfo.imgSrc}" crossorigin="anonymous" class="max-w-full max-h-full object-contain drop-shadow-md scale-110" style="image-rendering:pixelated;"></div>`;
+                            top3Html += `<div onclick="window.showOppMonDetail('${word}', ${count})" class="cursor-pointer w-12 h-12 sm:w-14 sm:h-14 bg-black/30 hover:bg-black/50 rounded-full flex items-center justify-center border border-white/20 p-1.5 transition-transform hover:scale-110 shadow-inner" title="${word} 상세정보"><img src="${pInfo.imgSrc}" crossorigin="anonymous" class="max-w-full max-h-full object-contain drop-shadow-md scale-125" style="image-rendering:pixelated;"></div>`;
                         });
                     } else {
-                        top3Html += `<span class="text-[10px] text-slate-400 pl-2">포획 없음</span>`;
+                        top3Html += `<span class="text-xs text-slate-400 pl-2">포획 없음</span>`;
                     }
                     top3Html += '</div>';
 
                     let btnHtml = canBattle 
-                        ? `<button onclick="window.prepareBattle('${oppId}')" class="bg-red-500 hover:bg-red-600 text-white px-3 sm:px-4 py-2 rounded-xl font-bold text-xs sm:text-sm shadow-md transition-transform active:scale-95 shrink-0">배틀 신청</button>`
-                        : `<button disabled class="bg-slate-200 text-slate-400 px-3 sm:px-4 py-2 rounded-xl font-bold text-[10px] sm:text-xs shadow-inner cursor-not-allowed text-center leading-tight shrink-0">🏆 완료<br><span class="text-[9px]">${cooldownMsg}</span></button>`;
+                        ? `<button onclick="window.prepareBattle('${oppId}')" class="bg-red-500 hover:bg-red-600 text-white px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl font-bold text-sm sm:text-base shadow-md transition-transform active:scale-95 shrink-0">배틀 신청</button>`
+                        : `<button disabled class="bg-slate-200 text-slate-400 px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl font-bold text-xs sm:text-sm shadow-inner cursor-not-allowed text-center leading-tight shrink-0">🏆 완료<br><span class="text-[10px]">${cooldownMsg}</span></button>`;
 
-                    html += `<div class="flex justify-between items-center ${isBoss?'bg-yellow-50 border-yellow-300':'bg-white border-slate-200'} p-3 sm:p-4 rounded-2xl shadow-sm border mb-3 hover:border-red-300 transition-colors overflow-hidden">
-                        <div class="flex items-center gap-2 sm:gap-3 overflow-hidden">
-                            <div class="text-xl sm:text-2xl shrink-0">${isBoss?'👑':'👦'}</div>
+                    // [수정] 박스 패딩, 글자 크기 등 가독성 향상
+                    html += `<div class="flex justify-between items-center ${isBoss?'bg-yellow-900/40 border-yellow-500/50':'bg-[#1f2937] border-slate-600'} p-4 sm:p-5 rounded-2xl shadow-lg border mb-4 hover:border-red-400 transition-colors overflow-hidden">
+                        <div class="flex items-center gap-3 sm:gap-4 overflow-hidden">
+                            <div class="text-3xl sm:text-4xl shrink-0 drop-shadow-md">${isBoss?'👑':'👦'}</div>
                             <div class="flex flex-col sm:flex-row sm:items-center shrink-0 min-w-0">
-                                <div class="min-w-[60px] truncate">
-                                    <div class="font-bold text-slate-700 truncate text-sm">${oppId}</div>
-                                    <div class="text-[10px] ${isBoss?'text-yellow-600':'text-slate-400'} font-bold">${isBoss?'체육관 관장':'트레이너'}</div>
+                                <div class="min-w-[70px] truncate">
+                                    <div class="font-black text-white truncate text-base sm:text-lg">${oppId}</div>
+                                    <div class="text-xs sm:text-sm ${isBoss?'text-yellow-400':'text-slate-400'} font-bold mt-0.5">${isBoss?'체육관 관장':'트레이너'}</div>
                                 </div>
                                 ${top3Html}
                             </div>
