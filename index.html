@@ -148,7 +148,6 @@
                         <h3 class="text-2xl font-bold text-red-500 mb-1">🗺️ 영켓몬 모험 지도</h3>
                         <p class="text-sm text-slate-500">탐험할 교과서 단원을 선택하세요!</p>
                     </div>
-                    <!-- [수정] max-h를 vh 단위로 변경하여 화면 넓이에 맞게 세로 공간 확보 -->
                     <div class="space-y-5 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar pb-4">
                         
                         <!-- Region 1: 스타팅 포레스트 -->
@@ -315,7 +314,6 @@
                         <span>내 영켓몬 도감</span>
                         <span class="text-sm bg-red-100 text-red-600 px-3 py-1 rounded-full"><span id="dex-total">0</span>마리 포획</span>
                     </h3>
-                    <!-- [수정] max-h를 vh 단위로 변경 -->
                     <div id="dex-list" class="max-h-[70vh] overflow-y-auto pr-2 pb-4 custom-scrollbar">
                         <p class="text-center text-slate-400 py-10 text-sm">아직 포획한 영켓몬이 없습니다.<br>사냥터에서 영단어를 맞혀보세요!</p>
                     </div>
@@ -339,7 +337,6 @@
                         </h3>
                         <p class="text-xs text-slate-400">도감에서 강력한 3마리를 골라 체육관 배틀에 도전하세요!<br>승리하여 승수를 쌓고 최고의 트레이너가 되어보세요.</p>
                     </div>
-                    <!-- [수정] max-h를 vh 단위로 변경 -->
                     <div id="arena-list" class="space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
                         <p class="text-center text-slate-400 py-10 text-sm">상대 트레이너를 찾고 있습니다...</p>
                     </div>
@@ -410,7 +407,6 @@
                         <h3 class="text-2xl font-bold text-yellow-500 mb-1">🏆 커뮤니티</h3>
                         <p class="text-sm text-slate-500">다른 트레이너들의 정보와 강력한 파트너를 확인해보세요.</p>
                     </div>
-                    <!-- [수정] Grid를 화면 폭에 따라 2~5개까지 유연하게 늘어나도록 수정 및 max-h를 vh 단위로 넓게 적용 -->
                     <div id="rank-list" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar pb-4">
                         <p class="text-center text-slate-400 py-10 text-sm animate-pulse col-span-full">랭킹 정보를 불러오는 중...</p>
                     </div>
@@ -481,7 +477,6 @@
     </div>
 
     <div id="trainer-modal" class="modal-overlay">
-        <!-- [수정] 모달창의 전체 최대 크기(max-w)와 내부 패딩(p)을 확대하여 가독성 개선 -->
         <div class="modal-box border-indigo-500 relative !p-8 !max-w-[450px]">
             <button onclick="window.closeTrainerProfile()" class="absolute top-4 right-5 text-slate-400 hover:text-white font-bold text-3xl">&times;</button>
             <div id="trainer-modal-content">
@@ -622,7 +617,7 @@
         window.state = {
             user: null, 
             authUid: null,
-            gameData: { level: 1, exp: 0, count: 0, wins: 0, caughtWords: {}, victories: {} },
+            gameData: { level: 1, exp: 0, count: 0, wins: 0, caughtWords: {}, victories: {}, partnerWord: null },
             quizzes: [],
             currentQuiz: null,
             currentChapter: 1,
@@ -750,9 +745,10 @@
                         setStatus("비밀번호 오류", true);
                         return window.showCustomAlert("비밀번호가 틀렸습니다!");
                     }
-                    window.state.gameData = data.gameStats || { level: 1, exp: 0, count: 0, caughtWords: {}, wins: 0, victories: {} };
+                    window.state.gameData = data.gameStats || { level: 1, exp: 0, count: 0, caughtWords: {}, wins: 0, victories: {}, partnerWord: null };
                     if(window.state.gameData.wins === undefined) window.state.gameData.wins = 0;
                     if(window.state.gameData.victories === undefined) window.state.gameData.victories = {};
+                    if(window.state.gameData.partnerWord === undefined) window.state.gameData.partnerWord = null;
                     setStatus("접속 성공!");
                     enterGame(idInput);
                 } else {
@@ -765,7 +761,6 @@
             } catch (error) { btn.disabled = false; }
         };
 
-        // [수정] 캔버스 최대 너비 확장 (480px -> 1400px)
         function enterGame(id) {
             window.state.user = id;
             document.getElementById('player-name').innerText = id;
@@ -793,15 +788,22 @@
             if (contentEl) contentEl.classList.add('active');
             
             if (tabName === 'hunt') window.loadChapterDominators(); 
-            if (tabName === 'dex') renderDex();
+            if (tabName === 'dex') window.renderDex();
             if (tabName === 'arena') {
                 document.getElementById('arena-list-view').style.display = 'block';
                 document.getElementById('arena-team-view').style.display = 'none';
                 document.getElementById('arena-battle-view').style.display = 'none';
                 document.getElementById('arena-battle-view').classList.remove('flex');
-                loadArena();
+                window.loadArena();
             }
             if (tabName === 'rank') window.renderRanking();
+        };
+
+        window.setPartner = (word) => {
+            window.state.gameData.partnerWord = word;
+            window.saveProgress();
+            window.renderDex(); 
+            window.showCustomAlert(word + "이(가) 대표 파트너 포켓몬으로 지정되었습니다!");
         };
 
         let unsubscribeWords = null;
@@ -907,7 +909,6 @@
                         const pInfo = getPokemonInfoForWord(word, count);
                         const apiData = LOCAL_POKEMON_DB[pInfo.id] || { name: "알 수 없음", type: "normal" };
                         
-                        // [수정] 몬스터 썸네일 박스 크기, 이미지, 글씨 확대
                         top3Html += `
                             <div class="bg-slate-800 border border-slate-600 rounded-2xl p-3 flex flex-col items-center w-28 sm:w-32 shadow-md hover:scale-105 transition-transform">
                                 <img src="${pInfo.imgSrc}" crossorigin="anonymous" class="h-16 sm:h-20 object-contain drop-shadow-md mb-2" style="image-rendering:pixelated;">
@@ -925,7 +926,6 @@
                     if (quiz && quiz.chapter > maxCh) maxCh = quiz.chapter;
                 }
 
-                // [수정] 팝업창 내 전체 텍스트 크기 상향 (제목, 티어, 배지 등)
                 document.getElementById('trainer-modal-content').innerHTML = `
                     <div class="mb-6 mt-2 text-center">
                         <div class="text-6xl mb-3 drop-shadow-lg">${tier.icon}</div>
@@ -1185,7 +1185,6 @@
             else { badge.innerText = "🔴 비기너"; badge.className = "text-[10px] px-2 py-0.5 rounded-full bg-red-100 text-red-600 font-bold uppercase tracking-wider"; }
         };
 
-        // [수정] 도감 그리드 레이아웃을 반응형에 맞게 변경
         window.renderDex = async () => {
             const dexList = document.getElementById('dex-list');
             const caughtWords = window.state.gameData.caughtWords || {};
@@ -1208,8 +1207,14 @@
                 let auraBg = 'bg-white/30';
                 if (item.pInfo.auraLevel === 1) auraBg = 'bg-blue-400/50 shadow-[0_0_15px_rgba(96,165,250,0.8)]';
                 if (item.pInfo.auraLevel === 2) auraBg = 'bg-red-400/50 shadow-[0_0_20px_rgba(248,113,113,0.8)] animate-pulse';
+                
+                const isPartner = window.state.gameData.partnerWord === item.word;
+                const borderClass = isPartner ? 'border-yellow-400 ring-2 ring-yellow-400/50 scale-105' : 'border-white/40 hover:scale-105';
+                const partnerBadge = isPartner ? '<div class="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-300 to-yellow-500 text-yellow-900 text-[10px] px-2 py-0.5 rounded-full font-black shadow-md z-10 border border-yellow-200">👑 파트너</div>' : '';
+
                 html += `
-                <div class="flex flex-col items-center justify-center p-3 rounded-2xl ${typeInfo.bg} bg-opacity-80 border-2 border-white/40">
+                <div onclick="window.setPartner('${item.word}')" class="cursor-pointer relative flex flex-col items-center justify-center p-3 rounded-2xl ${typeInfo.bg} bg-opacity-80 border-2 ${borderClass} transition-all">
+                    ${partnerBadge}
                     <div class="w-full flex justify-between items-center mb-1 px-1">
                         <span class="text-[10px] text-white bg-black/20 px-1.5 py-0.5 rounded-md font-bold">LV ${item.pInfo.tier}</span>
                         <span class="text-[10px] bg-white text-slate-700 px-1.5 py-0.5 rounded-md font-bold">★ ${item.count}</span>
@@ -1246,10 +1251,15 @@
                         let bestWord = null;
                         let bestCount = 0;
                         
-                        for (let word in caughtWords) {
-                            if (caughtWords[word] > bestCount) {
-                                bestCount = caughtWords[word];
-                                bestWord = word;
+                        if (stats.partnerWord && caughtWords[stats.partnerWord]) {
+                            bestWord = stats.partnerWord;
+                            bestCount = caughtWords[stats.partnerWord];
+                        } else {
+                            for (let word in caughtWords) {
+                                if (caughtWords[word] > bestCount) {
+                                    bestCount = caughtWords[word];
+                                    bestWord = word;
+                                }
                             }
                         }
 
@@ -1380,7 +1390,6 @@
             try {
                 const snap = await getDocs(getStudentsCollection());
                 
-                // [신규] 배틀 리스트용 배열 추출 및 테스트2 계정 완전 제외
                 let opponents = [];
                 const myId = window.state.user;
                 const isPrivileged = (myId === '선생님' || myId === '마스터' || myId === '테스트' || myId === '테스트2');
@@ -1389,12 +1398,11 @@
                     const oppId = doc.id;
                     if (oppId === myId) return; 
                     if (oppId === '테스트' && !isPrivileged) return;
-                    if (oppId === '테스트2') return; // 테스트2 계정 렌더링 제외
+                    if (oppId === '테스트2') return;
 
                     opponents.push({ id: oppId, data: doc.data() });
                 });
 
-                // [신규] 정렬 로직: 마스터 -> 선생님 -> 번호순
                 opponents.sort((a, b) => {
                     const getPriority = (id) => {
                         if (id === '마스터') return -2;
@@ -1432,7 +1440,6 @@
                     const oppCaughtWords = oppStats.caughtWords || {};
                     const sortedOppWords = Object.keys(oppCaughtWords).sort((a,b)=>oppCaughtWords[b]-oppCaughtWords[a]).slice(0,3);
 
-                    // [수정] 몬스터 아이콘 크기 및 정보 레이아웃 확대
                     let top3Html = '<div class="flex gap-2 ml-2 sm:ml-4 items-center">';
                     if (sortedOppWords.length > 0) {
                         sortedOppWords.forEach(word => {
@@ -1449,13 +1456,12 @@
                         ? `<button onclick="window.prepareBattle('${oppId}')" class="bg-red-500 hover:bg-red-600 text-white px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl font-bold text-sm sm:text-base shadow-md transition-transform active:scale-95 shrink-0">배틀 신청</button>`
                         : `<button disabled class="bg-slate-200 text-slate-400 px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl font-bold text-xs sm:text-sm shadow-inner cursor-not-allowed text-center leading-tight shrink-0">🏆 완료<br><span class="text-[10px]">${cooldownMsg}</span></button>`;
 
-                    // [수정] 박스 패딩, 글자 크기 등 가독성 향상
                     html += `<div class="flex justify-between items-center ${isBoss?'bg-yellow-900/40 border-yellow-500/50':'bg-[#1f2937] border-slate-600'} p-4 sm:p-5 rounded-2xl shadow-lg border mb-4 hover:border-red-400 transition-colors overflow-hidden">
                         <div class="flex items-center gap-3 sm:gap-4 overflow-hidden">
                             <div class="text-3xl sm:text-4xl shrink-0 drop-shadow-md">${isBoss?'👑':'👦'}</div>
                             <div class="flex flex-col sm:flex-row sm:items-center shrink-0 min-w-0">
                                 <div class="min-w-[70px] truncate">
-                                    <div class="font-black text-white truncate text-base sm:text-lg">${oppId}</div>
+                                    <div class="font-bold text-white truncate text-base sm:text-lg">${oppId}</div>
                                     <div class="text-xs sm:text-sm ${isBoss?'text-yellow-400':'text-slate-400'} font-bold mt-0.5">${isBoss?'체육관 관장':'트레이너'}</div>
                                 </div>
                                 ${top3Html}
@@ -1578,7 +1584,6 @@
             const oppLevel = window.battleState.oppStats.level || 1;
             const oppTop3 = Object.keys(oppCaught).sort((a,b)=>oppCaught[b]-oppCaught[a]).slice(0,3);
             
-            // [난이도 상향 2] 수비대(상대방 팀) 홈그라운드 스탯 버프 (체력 및 공격력 1.3배)
             window.battleState.oppTeam = oppTop3.map(w => {
                 const mon = createBattleMon(w, oppCaught[w], oppLevel);
                 mon.hp = Math.floor(mon.hp * 1.3);
@@ -1592,7 +1597,6 @@
             updateBattleUI();
             logBattleMsg(`배틀 시작! 가랏, ${window.battleState.myTeam[0].word}!`);
             
-            // [난이도 상향 3] 상대방 공격 속도 단축 (300ms -> 200ms)
             if(window.battleState.oppTimer) clearInterval(window.battleState.oppTimer);
             window.battleState.oppTimer = setInterval(() => { if(window.battleState.active) opponentAttack(); }, 200);
         };
@@ -1673,7 +1677,6 @@
             const multiplier = getMatchup(oppMon.type, myMon.type);
             let dmg = Math.floor((oppMon.atk * multiplier) * (0.8 + Math.random()*0.4));
             
-            // [난이도 상향 1] 상대방 자동 공격 크리티컬 로직 추가
             const oppLevel = window.battleState.oppStats.level || 1;
             const critChance = 0.05 + (oppLevel * 0.01);
             const isCrit = Math.random() < critChance;
