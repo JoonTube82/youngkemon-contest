@@ -1553,15 +1553,24 @@
             const oppCaught = window.battleState.oppStats.caughtWords || {};
             const oppLevel = window.battleState.oppStats.level || 1;
             const oppTop3 = Object.keys(oppCaught).sort((a,b)=>oppCaught[b]-oppCaught[a]).slice(0,3);
-            window.battleState.oppTeam = oppTop3.map(w => createBattleMon(w, oppCaught[w], oppLevel));
+            
+            // [난이도 상향 2] 수비대(상대방 팀) 홈그라운드 스탯 버프 (체력 및 공격력 1.3배)
+            window.battleState.oppTeam = oppTop3.map(w => {
+                const mon = createBattleMon(w, oppCaught[w], oppLevel);
+                mon.hp = Math.floor(mon.hp * 1.3);
+                mon.maxHp = Math.floor(mon.maxHp * 1.3);
+                mon.atk = Math.floor(mon.atk * 1.3);
+                return mon;
+            });
 
             window.battleState.myIdx = 0; window.battleState.oppIdx = 0; window.battleState.active = true;
 
             updateBattleUI();
             logBattleMsg(`배틀 시작! 가랏, ${window.battleState.myTeam[0].word}!`);
             
+            // [난이도 상향 3] 상대방 공격 속도 단축 (300ms -> 200ms)
             if(window.battleState.oppTimer) clearInterval(window.battleState.oppTimer);
-            window.battleState.oppTimer = setInterval(() => { if(window.battleState.active) opponentAttack(); }, 300);
+            window.battleState.oppTimer = setInterval(() => { if(window.battleState.active) opponentAttack(); }, 200);
         };
 
         const updateBattleUI = () => {
@@ -1638,13 +1647,22 @@
             const oppMon = window.battleState.oppTeam[window.battleState.oppIdx];
             
             const multiplier = getMatchup(oppMon.type, myMon.type);
-            const dmg = Math.floor((oppMon.atk * multiplier) * (0.8 + Math.random()*0.4));
+            let dmg = Math.floor((oppMon.atk * multiplier) * (0.8 + Math.random()*0.4));
+            
+            // [난이도 상향 1] 상대방 자동 공격 크리티컬 로직 추가
+            const oppLevel = window.battleState.oppStats.level || 1;
+            const critChance = 0.05 + (oppLevel * 0.01);
+            const isCrit = Math.random() < critChance;
+            
+            if (isCrit) dmg = Math.floor(dmg * 1.5);
             
             myMon.hp -= dmg;
-            showDmgText(dmg, false);
+            showDmgText(dmg, false, isCrit);
 
             const myImg = document.getElementById('my-b-img');
             myImg.classList.remove('animate-hit'); void myImg.offsetWidth; myImg.classList.add('animate-hit');
+
+            if(isCrit) logBattleMsg("상대방의 크리티컬 히트!!", true);
 
             updateBattleUI(); checkFaint();
         };
