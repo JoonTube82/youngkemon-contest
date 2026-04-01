@@ -481,8 +481,9 @@
     </div>
 
     <div id="trainer-modal" class="modal-overlay">
-        <div class="modal-box border-indigo-500 relative !p-6 !max-w-[340px]">
-            <button onclick="window.closeTrainerProfile()" class="absolute top-4 right-4 text-slate-400 hover:text-white font-bold text-2xl">&times;</button>
+        <!-- [수정] 모달창의 전체 최대 크기(max-w)와 내부 패딩(p)을 확대하여 가독성 개선 -->
+        <div class="modal-box border-indigo-500 relative !p-8 !max-w-[450px]">
+            <button onclick="window.closeTrainerProfile()" class="absolute top-4 right-5 text-slate-400 hover:text-white font-bold text-3xl">&times;</button>
             <div id="trainer-modal-content">
                 <!-- 동적 렌더링 영역 -->
             </div>
@@ -884,7 +885,7 @@
 
         window.showTrainerProfile = async (studentId) => {
             document.getElementById('trainer-modal').style.display = 'flex';
-            document.getElementById('trainer-modal-content').innerHTML = '<p class="text-slate-400 py-10 animate-pulse font-bold text-center">트레이너 정보를 불러오는 중...</p>';
+            document.getElementById('trainer-modal-content').innerHTML = '<p class="text-slate-400 py-10 animate-pulse font-bold text-center text-lg">트레이너 정보를 불러오는 중...</p>';
 
             try {
                 const docSnap = await getDoc(getStudentDoc(studentId));
@@ -898,19 +899,20 @@
                 const sortedWords = Object.keys(caughtWords).sort((a,b)=>caughtWords[b]-caughtWords[a]).slice(0, 3);
                 let top3Html = '';
                 if (sortedWords.length === 0) {
-                    top3Html = '<p class="text-slate-500 text-xs font-bold text-center py-4">포획한 영켓몬이 없습니다.</p>';
+                    top3Html = '<p class="text-slate-500 text-sm font-bold text-center py-6">포획한 영켓몬이 없습니다.</p>';
                 } else {
-                    top3Html = '<div class="flex justify-center gap-2">';
+                    top3Html = '<div class="flex justify-center gap-3">';
                     sortedWords.forEach(word => {
                         const count = caughtWords[word];
                         const pInfo = getPokemonInfoForWord(word, count);
                         const apiData = LOCAL_POKEMON_DB[pInfo.id] || { name: "알 수 없음", type: "normal" };
                         
+                        // [수정] 몬스터 썸네일 박스 크기, 이미지, 글씨 확대
                         top3Html += `
-                            <div class="bg-slate-800 border border-slate-600 rounded-xl p-2 flex flex-col items-center w-24 shadow-md">
-                                <img src="${pInfo.imgSrc}" crossorigin="anonymous" class="h-12 object-contain drop-shadow-md" style="image-rendering:pixelated;">
-                                <span class="text-[10px] font-black text-white truncate w-full text-center mt-1">${word}</span>
-                                <span class="text-[9px] text-yellow-400 font-bold">★ ${count}회</span>
+                            <div class="bg-slate-800 border border-slate-600 rounded-2xl p-3 flex flex-col items-center w-28 sm:w-32 shadow-md hover:scale-105 transition-transform">
+                                <img src="${pInfo.imgSrc}" crossorigin="anonymous" class="h-16 sm:h-20 object-contain drop-shadow-md mb-2" style="image-rendering:pixelated;">
+                                <span class="text-xs sm:text-sm font-black text-white truncate w-full text-center mt-1">${word}</span>
+                                <span class="text-[10px] sm:text-xs text-yellow-400 font-bold mt-1">★ ${count}회</span>
                             </div>
                         `;
                     });
@@ -923,23 +925,24 @@
                     if (quiz && quiz.chapter > maxCh) maxCh = quiz.chapter;
                 }
 
+                // [수정] 팝업창 내 전체 텍스트 크기 상향 (제목, 티어, 배지 등)
                 document.getElementById('trainer-modal-content').innerHTML = `
-                    <div class="mb-5 mt-2 text-center">
-                        <div class="text-5xl mb-2 drop-shadow-lg">${tier.icon}</div>
-                        <h3 class="text-2xl font-black ${tier.color} mb-1">${studentId}</h3>
-                        <p class="text-xs text-slate-400 font-bold">Lv.${level} • ${tier.name} 티어 (${wins}승)</p>
+                    <div class="mb-6 mt-2 text-center">
+                        <div class="text-6xl mb-3 drop-shadow-lg">${tier.icon}</div>
+                        <h3 class="text-3xl font-black ${tier.color} mb-2">${studentId}</h3>
+                        <p class="text-sm text-slate-300 font-bold">Lv.${level} • ${tier.name} 티어 (${wins}승)</p>
                     </div>
-                    <div class="bg-slate-900/80 rounded-2xl p-4 mb-4 border border-slate-700 shadow-inner">
-                        <h4 class="text-xs font-bold text-slate-400 mb-3 text-left pl-1">✨ 주력 파트너 (Top 3)</h4>
+                    <div class="bg-slate-900/80 rounded-3xl p-5 mb-5 border border-slate-700 shadow-inner">
+                        <h4 class="text-sm sm:text-base font-bold text-slate-400 mb-4 text-left pl-1">✨ 주력 파트너 (Top 3)</h4>
                         ${top3Html}
                     </div>
-                    <div class="bg-slate-900/80 rounded-2xl p-4 border border-slate-700 shadow-inner flex justify-between items-center">
-                        <span class="text-xs font-bold text-slate-400">🗺️ 최고 도달 단원</span>
-                        <span class="text-sm font-black text-indigo-400 px-3 py-1 bg-indigo-900/30 rounded-lg border border-indigo-500/30">${maxCh}단원</span>
+                    <div class="bg-slate-900/80 rounded-3xl p-5 border border-slate-700 shadow-inner flex justify-between items-center">
+                        <span class="text-sm sm:text-base font-bold text-slate-400 pl-1">🗺️ 최고 도달 단원</span>
+                        <span class="text-base sm:text-lg font-black text-indigo-400 px-4 py-1.5 bg-indigo-900/30 rounded-xl border border-indigo-500/30">${maxCh}단원</span>
                     </div>
                 `;
             } catch(e) {
-                document.getElementById('trainer-modal-content').innerHTML = '<p class="text-red-500 py-10 font-bold text-center">정보를 불러올 수 없습니다.</p>';
+                document.getElementById('trainer-modal-content').innerHTML = '<p class="text-red-500 py-10 font-bold text-center text-lg">정보를 불러올 수 없습니다.</p>';
             }
         };
 
