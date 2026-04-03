@@ -1238,8 +1238,10 @@
                 window.state.gameData.exp += hitExp; 
             }
 
-            if (window.state.gameData.exp >= 100) {
-                window.state.gameData.exp -= 100; window.state.gameData.level++;
+            let reqExp = 100 + (window.state.gameData.level * 100);
+            if (window.state.gameData.exp >= reqExp) {
+                window.state.gameData.exp -= reqExp; 
+                window.state.gameData.level++;
                 document.getElementById('modal').style.display = 'flex';
                 document.getElementById('modal-desc').innerText = `레벨 ${window.state.gameData.level} 트레이너가 되었습니다!`;
             }
@@ -1259,7 +1261,10 @@
         window.updateUI = () => {
             document.getElementById('lvl-txt').innerText = window.state.gameData.level;
             document.getElementById('cnt-txt').innerText = window.state.gameData.count; 
-            document.getElementById('exp-bar').style.width = window.state.gameData.exp + "%";
+            
+            let reqExp = 100 + (window.state.gameData.level * 100);
+            let expPercent = Math.min(100, (window.state.gameData.exp / reqExp) * 100);
+            document.getElementById('exp-bar').style.width = expPercent + "%";
             
             const wins = window.state.gameData.wins || 0;
             const tier = getTierInfo(wins);
