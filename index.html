@@ -299,7 +299,6 @@
                         <h3 id="quiz-txt" class="text-3xl text-red-600 font-bold mt-1 mb-6 leading-tight break-keep">단어장을 불러오는 중...</h3>
                         
                         <div class="flex flex-col gap-3 relative">
-                            <!-- [수정] 3번 방식: 실제 입력창은 password로 숨기고, 가짜 텍스트로 글자 렌더링 -->
                             <div class="relative w-full">
                                 <input type="password" id="spell-in" class="spell-input border-red-200 w-full relative z-0" style="color: transparent; caret-color: white;" autocomplete="new-password" autocorrect="off" spellcheck="false" autocapitalize="off" onkeyup="if(event.key==='Enter')window.checkMagic()" oninput="document.getElementById('fake-text').textContent = this.value || '영단어를 입력하세요'; document.getElementById('fake-text').style.color = this.value ? '#f9fafb' : '#9ca3af';">
                                 <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10 overflow-hidden px-4">
@@ -426,6 +425,25 @@
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-xl font-bold text-red-600">🛠️ 영켓몬 도감 관리</h2>
                     <button onclick="window.toggleAdmin()" class="bg-slate-100 px-4 py-2 rounded-xl text-xs font-bold text-red-600 hover:bg-slate-200">닫기</button>
+                </div>
+                
+                <!-- [신규] 게임 운영 관리 기능 -->
+                <div class="mb-6 space-y-3">
+                    <!-- 비밀번호 재설정 -->
+                    <div class="bg-blue-50 p-4 rounded-2xl border border-blue-200">
+                        <h3 class="text-sm font-bold text-blue-700 mb-2">🔑 학생 비밀번호 재설정</h3>
+                        <div class="flex gap-2">
+                            <select id="reset-pw-student" class="flex-1 p-3 border rounded-xl outline-none text-sm font-bold text-slate-700 focus:border-blue-400 bg-white shadow-sm">
+                                <option value="" disabled selected>학생 선택</option>
+                            </select>
+                            <button onclick="window.resetStudentPassword()" class="bg-blue-600 text-white px-4 py-3 rounded-xl font-bold text-sm shadow-md active:scale-95 transition-transform hover:bg-blue-700 shrink-0">초기화</button>
+                        </div>
+                    </div>
+                    <!-- 시즌 초기화 -->
+                    <div class="bg-red-100 p-4 rounded-2xl border border-red-300 text-center">
+                        <button onclick="window.resetAllStudentsData()" class="w-full bg-red-600 text-white py-3 rounded-xl font-black text-sm shadow-md active:scale-95 transition-transform hover:bg-red-700">⚠️ 새 시즌 시작 (전체 데이터 초기화)</button>
+                        <p class="text-[10px] text-red-500 mt-2 font-bold">모든 학생의 진행 데이터가 0으로 리셋됩니다. (비밀번호 유지)</p>
+                    </div>
                 </div>
                 
                 <div class="space-y-3 mb-6 bg-red-50 p-4 rounded-2xl border">
@@ -600,6 +618,20 @@
             }
         };
         initStudentSelect();
+        
+        // [수정] 관리자 메뉴용 학생 드롭다운 렌더링 (관리자 및 테스트 계정 포함)
+        const initAdminStudentSelect = () => {
+            const selectEl = document.getElementById('reset-pw-student');
+            if (selectEl) {
+                STUDENT_LIST.forEach(name => {
+                    const opt = document.createElement('option');
+                    opt.value = name;
+                    opt.innerText = name;
+                    selectEl.appendChild(opt);
+                });
+            }
+        };
+        initAdminStudentSelect();
 
         const firebaseConfig = {
             apiKey: "AIzaSyCxfI0Zh4mxbY13WigsFlNLDmA3ikkAIjE",
@@ -1030,6 +1062,50 @@
             document.getElementById('hunt-battle-view').classList.replace('flex', 'hidden');
         };
 
+        // [신규] 관리자 전용 1: 학생 전체 데이터 초기화(시즌 리셋) 기능 추가
+        window.resetAllStudentsData = async () => {
+            const confirmed = await window.showCustomConfirm("정말로 모든 학생의 게임 데이터를 초기화하시겠습니까? (비밀번호는 유지됩니다)");
+            if (!confirmed) return;
+
+            try {
+                window.showCustomAlert("데이터 초기화 중입니다... 잠시만 기다려주세요.");
+                const snap = await getDocs(getStudentsCollection());
+                const emptyStats = { level: 1, exp: 0, count: 0, caughtWords: {}, wins: 0, victories: {}, partnerWord: null };
+                
+                const promises = [];
+                snap.forEach(docSnap => {
+                    promises.push(setDoc(docSnap.ref, { gameStats: emptyStats }, { merge: true }));
+                });
+                await Promise.all(promises);
+
+                window.showCustomAlert("새로운 시즌이 시작되었습니다! 데이터가 초기화되었습니다.");
+                setTimeout(() => { location.reload(); }, 2000); 
+            } catch (error) {
+                console.error(error);
+                window.showCustomAlert("초기화 중 오류가 발생했습니다.");
+            }
+        };
+
+        // [신규] 관리자 전용 2: 특정 학생 비밀번호 재설정 기능 추가
+        window.resetStudentPassword = async () => {
+            const selectEl = document.getElementById('reset-pw-student');
+            const studentId = selectEl.value;
+            if (!studentId) return window.showCustomAlert("비밀번호를 재설정할 학생을 선택하세요.");
+
+            const newPw = prompt(`[${studentId}] 새로운 비밀번호를 입력하세요.\n(빈칸으로 두면 '1234'로 설정됩니다)`);
+            if (newPw === null) return; 
+
+            const finalPw = newPw.trim() === "" ? "1234" : newPw.trim();
+
+            try {
+                await setDoc(getStudentDoc(studentId), { password: finalPw }, { merge: true });
+                window.showCustomAlert(`${studentId}의 비밀번호가 변경되었습니다!`);
+                selectEl.value = ""; 
+            } catch (error) {
+                window.showCustomAlert("비밀번호 변경 중 오류가 발생했습니다.");
+            }
+        };
+
         window.addWord = async () => {
             const cInput = document.getElementById('new-c');
             const wInput = document.getElementById('new-w'); const mInput = document.getElementById('new-m');
@@ -1107,7 +1183,6 @@
                 input.value = ''; input.focus();
             }
 
-            // [추가] 정답 제출 후 가짜 텍스트 UI 초기화 로직
             const fakeText = document.getElementById('fake-text');
             if (fakeText) {
                 fakeText.textContent = '영단어를 입력하세요';
