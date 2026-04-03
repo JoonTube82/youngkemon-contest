@@ -1072,7 +1072,15 @@
                 
                 const promises = [];
                 snap.forEach(docSnap => {
-                    promises.push(setDoc(docSnap.ref, { gameStats: emptyStats }, { merge: true }));
+                    const data = docSnap.data();
+                    // merge: true 대신 전체 문서를 덮어씌워 하위 데이터(caughtWords 등)를 완벽히 삭제.
+                    // 단, 비밀번호(password), 아이디(id), 생성일(createdAt)은 기존 값을 보존.
+                    promises.push(setDoc(docSnap.ref, { 
+                        id: data.id || docSnap.id,
+                        password: data.password || "1234",
+                        createdAt: data.createdAt || new Date().toISOString(),
+                        gameStats: emptyStats 
+                    }));
                 });
                 await Promise.all(promises);
 
