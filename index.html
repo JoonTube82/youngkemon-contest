@@ -299,7 +299,7 @@
                         <h3 id="quiz-txt" class="text-3xl text-red-600 font-bold mt-1 mb-6 leading-tight break-keep">단어장을 불러오는 중...</h3>
                         
                         <div class="flex flex-col gap-3 relative">
-                            <input type="text" id="spell-in" class="spell-input border-red-200" placeholder="영단어를 입력하세요" autocomplete="off" autocorrect="off" spellcheck="false" autocapitalize="off" onkeyup="if(event.key==='Enter')window.checkMagic()">
+                            <input type="password" id="spell-in" class="spell-input border-red-200" style="-webkit-text-security: none;" placeholder="영단어를 입력하세요" autocomplete="off" autocorrect="off" spellcheck="false" autocapitalize="off" onkeyup="if(event.key==='Enter')window.checkMagic()">
                             <button onclick="window.checkMagic()" class="btn-magic">🔴 몬스터볼 던지기!</button>
                         </div>
                         <p id="hint-msg" class="text-slate-400 text-[10px] mt-4 font-normal italic">정답 영단어를 입력하면 몬스터볼 던집니다!</p>
