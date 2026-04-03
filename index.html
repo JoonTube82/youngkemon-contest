@@ -299,8 +299,13 @@
                         <h3 id="quiz-txt" class="text-3xl text-red-600 font-bold mt-1 mb-6 leading-tight break-keep">단어장을 불러오는 중...</h3>
                         
                         <div class="flex flex-col gap-3 relative">
-                            <!-- [수정] 모바일 키보드 자동완성을 완전히 차단하기 위해 속성 교체 적용 -->
-                            <input type="url" inputmode="url" id="spell-in" class="spell-input border-red-200" placeholder="영단어를 입력하세요" autocomplete="new-password" autocorrect="off" spellcheck="false" autocapitalize="off" onkeyup="if(event.key==='Enter')window.checkMagic()">
+                            <!-- [수정] 3번 방식: 실제 입력창은 password로 숨기고, 가짜 텍스트로 글자 렌더링 -->
+                            <div class="relative w-full">
+                                <input type="password" id="spell-in" class="spell-input border-red-200 w-full relative z-0" style="color: transparent; caret-color: white;" autocomplete="new-password" autocorrect="off" spellcheck="false" autocapitalize="off" onkeyup="if(event.key==='Enter')window.checkMagic()" oninput="document.getElementById('fake-text').textContent = this.value || '영단어를 입력하세요'; document.getElementById('fake-text').style.color = this.value ? '#f9fafb' : '#9ca3af';">
+                                <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10 overflow-hidden px-4">
+                                    <span id="fake-text" class="text-slate-400 text-[1.8rem] whitespace-pre truncate">영단어를 입력하세요</span>
+                                </div>
+                            </div>
                             <button onclick="window.checkMagic()" class="btn-magic">🔴 몬스터볼 던지기!</button>
                         </div>
                         <p id="hint-msg" class="text-slate-400 text-[10px] mt-4 font-normal italic">정답 영단어를 입력하면 몬스터볼 던집니다!</p>
@@ -1100,6 +1105,13 @@
                 hint.innerText = `틀렸어요! (정답 힌트: ${window.state.currentQuiz.word.charAt(0)}...)`;
                 hint.className = "text-red-500 text-[12px] mt-4 font-bold animate-bounce";
                 input.value = ''; input.focus();
+            }
+
+            // [추가] 정답 제출 후 가짜 텍스트 UI 초기화 로직
+            const fakeText = document.getElementById('fake-text');
+            if (fakeText) {
+                fakeText.textContent = '영단어를 입력하세요';
+                fakeText.style.color = '#9ca3af';
             }
         };
 
