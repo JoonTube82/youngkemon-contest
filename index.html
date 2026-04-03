@@ -427,7 +427,6 @@
                     <button onclick="window.toggleAdmin()" class="bg-slate-100 px-4 py-2 rounded-xl text-xs font-bold text-red-600 hover:bg-slate-200">닫기</button>
                 </div>
                 
-                <!-- [신규] 게임 운영 관리 기능 -->
                 <div class="mb-6 space-y-3">
                     <!-- 비밀번호 재설정 -->
                     <div class="bg-blue-50 p-4 rounded-2xl border border-blue-200">
@@ -619,7 +618,6 @@
         };
         initStudentSelect();
         
-        // [수정] 관리자 메뉴용 학생 드롭다운 렌더링 (관리자 및 테스트 계정 포함)
         const initAdminStudentSelect = () => {
             const selectEl = document.getElementById('reset-pw-student');
             if (selectEl) {
@@ -655,7 +653,7 @@
         window.state = {
             user: null, 
             authUid: null,
-            gameData: { level: 1, exp: 0, count: 0, wins: 0, caughtWords: {}, victories: {}, partnerWord: null },
+            gameData: { level: 1, exp: 0, count: 0, wins: 0, caughtWords: {}, victories: {}, partnerWord: null, usedPokemonCooldown: {} },
             quizzes: [],
             currentQuiz: null,
             currentChapter: 1,
@@ -783,10 +781,11 @@
                         setStatus("비밀번호 오류", true);
                         return window.showCustomAlert("비밀번호가 틀렸습니다!");
                     }
-                    window.state.gameData = data.gameStats || { level: 1, exp: 0, count: 0, caughtWords: {}, wins: 0, victories: {}, partnerWord: null };
+                    window.state.gameData = data.gameStats || { level: 1, exp: 0, count: 0, caughtWords: {}, wins: 0, victories: {}, partnerWord: null, usedPokemonCooldown: {} };
                     if(window.state.gameData.wins === undefined) window.state.gameData.wins = 0;
                     if(window.state.gameData.victories === undefined) window.state.gameData.victories = {};
                     if(window.state.gameData.partnerWord === undefined) window.state.gameData.partnerWord = null;
+                    if(window.state.gameData.usedPokemonCooldown === undefined) window.state.gameData.usedPokemonCooldown = {};
                     setStatus("접속 성공!");
                     enterGame(idInput);
                 } else {
@@ -1062,7 +1061,6 @@
             document.getElementById('hunt-battle-view').classList.replace('flex', 'hidden');
         };
 
-        // [신규] 관리자 전용 1: 학생 전체 데이터 초기화(시즌 리셋) 기능 추가
         window.resetAllStudentsData = async () => {
             const confirmed = await window.showCustomConfirm("정말로 모든 학생의 게임 데이터를 초기화하시겠습니까? (비밀번호는 유지됩니다)");
             if (!confirmed) return;
@@ -1070,7 +1068,7 @@
             try {
                 window.showCustomAlert("데이터 초기화 중입니다... 잠시만 기다려주세요.");
                 const snap = await getDocs(getStudentsCollection());
-                const emptyStats = { level: 1, exp: 0, count: 0, caughtWords: {}, wins: 0, victories: {}, partnerWord: null };
+                const emptyStats = { level: 1, exp: 0, count: 0, caughtWords: {}, wins: 0, victories: {}, partnerWord: null, usedPokemonCooldown: {} };
                 
                 const promises = [];
                 snap.forEach(docSnap => {
@@ -1086,7 +1084,6 @@
             }
         };
 
-        // [신규] 관리자 전용 2: 특정 학생 비밀번호 재설정 기능 추가
         window.resetStudentPassword = async () => {
             const selectEl = document.getElementById('reset-pw-student');
             const studentId = selectEl.value;
@@ -1433,9 +1430,20 @@
             const victories = window.state.gameData.victories || {};
             const now = new Date();
             const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-            let count = 0;
-            for (let opp in victories) { if (victories[opp] >= startOfToday) count++; }
-            return count >= 3;
+            
+            let studentWins = 0;
+            let masterWin = false;
+            let teacherWin = false;
+
+            for (let opp in victories) { 
+                if (victories[opp] >= startOfToday) {
+                    if (opp === '마스터') masterWin = true;
+                    else if (opp === '선생님') teacherWin = true;
+                    else if (opp !== '테스트' && opp !== '테스트2') studentWins++;
+                }
+            }
+            
+            return studentWins >= 3 && masterWin && teacherWin;
         };
 
         window.battleState = {
@@ -1468,7 +1476,7 @@
                     <div class="text-center py-10">
                         <div class="text-5xl mb-4">💤</div>
                         <h3 class="text-xl font-bold text-indigo-400 mb-2">오박사님의 휴식 권고</h3>
-                        <p class="text-sm text-slate-400">오늘의 배틀 에너지를 모두 소모했습니다! (일일 3승 달성)<br>풀숲에서 영단어를 더 포획하며 내일을 준비하세요!</p>
+                        <p class="text-sm text-slate-400">오늘의 배틀 에너지를 모두 소모했습니다! (학생 3승 + 관장 2승 달성)<br>풀숲에서 영단어를 더 포획하며 내일을 준비하세요!</p>
                     </div>
                 `;
                 return;
@@ -1481,6 +1489,17 @@
                 let opponents = [];
                 const myId = window.state.user;
                 const isPrivileged = (myId === '선생님' || myId === '마스터' || myId === '테스트' || myId === '테스트2');
+                
+                const victories = window.state.gameData.victories || {};
+                const now = new Date();
+                const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+                
+                let studentWinsToday = 0;
+                for (let opp in victories) {
+                    if (victories[opp] >= startOfToday && !['마스터', '선생님', '테스트', '테스트2'].includes(opp)) {
+                        studentWinsToday++;
+                    }
+                }
 
                 snap.forEach(doc => {
                     const oppId = doc.id;
@@ -1511,15 +1530,24 @@
                     let cooldownMsg = "";
 
                     if (!isPrivileged) {
-                        const victories = window.state.gameData.victories || {};
-                        const lastWinTime = victories[oppId];
-                        if (lastWinTime) {
-                            const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
-                            const elapsed = Date.now() - lastWinTime;
-                            if (elapsed < oneWeekMs) {
+                        const lastWinTime = victories[oppId] || 0;
+                        
+                        if (isBoss) {
+                            if (lastWinTime >= startOfToday) {
                                 canBattle = false;
-                                const daysLeft = Math.ceil((oneWeekMs - elapsed) / (24 * 60 * 60 * 1000));
+                                cooldownMsg = `내일 재도전 가능`;
+                            }
+                        } else {
+                            const cooldownMs = 3 * 24 * 60 * 60 * 1000;
+                            const elapsed = Date.now() - lastWinTime;
+                            
+                            if (lastWinTime > 0 && elapsed < cooldownMs) {
+                                canBattle = false;
+                                const daysLeft = Math.ceil((cooldownMs - elapsed) / (24 * 60 * 60 * 1000));
                                 cooldownMsg = `재도전까지 ${daysLeft}일`;
+                            } else if (studentWinsToday >= 3) {
+                                canBattle = false;
+                                cooldownMsg = `오늘 학생 배틀 완료`;
                             }
                         }
                     }
@@ -1563,7 +1591,12 @@
         };
 
         window.prepareBattle = async (oppId) => {
-            if (checkDailyLimit()) return window.showCustomAlert("오늘의 배틀 에너지를 모두 소모했습니다!\n내일 다시 도전하세요.");
+            const myId = window.state.user;
+            const isPrivileged = (myId === '선생님' || myId === '마스터' || myId === '테스트' || myId === '테스트2');
+            
+            if (!isPrivileged && checkDailyLimit()) {
+                return window.showCustomAlert("오늘의 배틀 에너지를 모두 소모했습니다!\n내일 다시 도전하세요.");
+            }
 
             const docSnap = await getDoc(getStudentDoc(oppId));
             if (!docSnap.exists()) return window.showCustomAlert("상대 정보를 불러올 수 없습니다.");
@@ -1598,6 +1631,10 @@
             const sortedWords = Object.keys(caughtWords).sort((a,b)=>caughtWords[b]-caughtWords[a]);
             
             let html = '';
+            const now = new Date();
+            const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+            const usedCooldown = window.state.gameData.usedPokemonCooldown || {};
+
             sortedWords.forEach(word => {
                 const count = caughtWords[word];
                 const pInfo = getPokemonInfoForWord(word, count);
@@ -1605,10 +1642,26 @@
                 const typeInfo = TYPE_COLORS[apiData.type] || TYPE_COLORS['normal'];
                 const isSelected = window.battleState.mySelection.includes(word);
                 
+                const lastUsed = usedCooldown[word] || 0;
+                const isFatigued = lastUsed >= startOfToday;
+                
+                let clickEvent = `onclick="window.toggleTeamSelection('${word}')"`;
+                let wrapperClass = isSelected ? 'border-red-500 bg-red-50 scale-105' : 'border-transparent bg-slate-50 hover:bg-slate-100 cursor-pointer';
+                let imgClass = 'max-h-full drop-shadow-sm';
+                let badgeHtml = '';
+
+                if (isFatigued) {
+                    clickEvent = '';
+                    wrapperClass = 'border-slate-300 bg-slate-200 opacity-60 cursor-not-allowed';
+                    imgClass += ' grayscale';
+                    badgeHtml = `<div class="absolute -top-2 -right-2 bg-slate-600 text-white text-[9px] px-2 py-0.5 rounded-full font-black shadow-md z-10 border border-slate-400">💤 오늘 휴식</div>`;
+                }
+                
                 html += `
-                <div onclick="window.toggleTeamSelection('${word}')" class="cursor-pointer border-4 rounded-2xl p-2 flex flex-col items-center justify-center transition-all ${isSelected ? 'border-red-500 bg-red-50 scale-105' : 'border-transparent bg-slate-50 hover:bg-slate-100'}">
+                <div ${clickEvent} class="relative border-4 rounded-2xl p-2 flex flex-col items-center justify-center transition-all ${wrapperClass}">
+                    ${badgeHtml}
                     <div class="h-16 flex items-center justify-center">
-                        <img src="${pInfo.imgSrc}" class="max-h-full drop-shadow-sm" style="image-rendering:pixelated;">
+                        <img src="${pInfo.imgSrc}" class="${imgClass}" style="image-rendering:pixelated;">
                     </div>
                     <div class="text-[10px] font-black text-slate-700 truncate w-full text-center mt-1">${word}</div>
                     <div class="flex items-center gap-1 mt-1">
@@ -1807,10 +1860,23 @@
                 if (!window.state.gameData.victories) window.state.gameData.victories = {};
                 window.state.gameData.victories[window.battleState.oppId] = Date.now();
                 
+                if (!window.state.gameData.usedPokemonCooldown) window.state.gameData.usedPokemonCooldown = {};
+                const nowMs = Date.now();
+                window.battleState.mySelection.forEach(word => {
+                    window.state.gameData.usedPokemonCooldown[word] = nowMs;
+                });
+                
                 const isPrivileged = (window.state.user === '선생님' || window.state.user === '마스터' || window.state.user === '테스트' || window.state.user === '테스트2');
-                const extraMsg = isPrivileged ? "" : "\n(해당 상대와는 1주일 후 재대결 가능합니다.)";
+                let extraMsg = "";
+                if (!isPrivileged) {
+                    if (window.battleState.oppId === '선생님' || window.battleState.oppId === '마스터') {
+                        extraMsg = "\n(관장 배틀은 내일 다시 도전할 수 있습니다.)";
+                    } else {
+                        extraMsg = "\n(해당 학생과는 3일 후 재대결 가능합니다.)";
+                    }
+                }
 
-                msg = `🎉 배틀 승리!\n멋진 컨트롤이었습니다!\n총 🏆${window.state.gameData.wins}승 달성!${extraMsg}`;
+                msg = `🎉 배틀 승리!\n멋진 컨트롤이었습니다!\n출전한 파트너들은 오늘 하루 휴식합니다.\n총 🏆${window.state.gameData.wins}승 달성!${extraMsg}`;
                 window.saveProgress(); window.updateUI();
             } else { msg = `💥 배틀 패배...\n상대방의 포켓몬이 더 강합니다.\n단어를 더 잡아 레벨을 올리세요!`; }
             window.showCustomAlert(msg);
