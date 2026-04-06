@@ -653,7 +653,7 @@
         window.state = {
             user: null, 
             authUid: null,
-            gameData: { level: 1, exp: 0, count: 0, wins: 0, caughtWords: {}, victories: {}, partnerWord: null, usedPokemonCooldown: {} },
+            gameData: { level: 1, exp: 0, count: 0, wins: 0, caughtWords: {}, victories: {}, partnerWord: null, usedPokemonCooldown: {}, savedEncounters: {} },
             quizzes: [],
             currentQuiz: null,
             currentChapter: 1,
@@ -786,11 +786,12 @@
                         await setDoc(docRef, { forceLogout: false }, { merge: true });
                     }
 
-                    window.state.gameData = data.gameStats || { level: 1, exp: 0, count: 0, caughtWords: {}, wins: 0, victories: {}, partnerWord: null, usedPokemonCooldown: {} };
+                    window.state.gameData = data.gameStats || { level: 1, exp: 0, count: 0, caughtWords: {}, wins: 0, victories: {}, partnerWord: null, usedPokemonCooldown: {}, savedEncounters: {} };
                     if(window.state.gameData.wins === undefined) window.state.gameData.wins = 0;
                     if(window.state.gameData.victories === undefined) window.state.gameData.victories = {};
                     if(window.state.gameData.partnerWord === undefined) window.state.gameData.partnerWord = null;
                     if(window.state.gameData.usedPokemonCooldown === undefined) window.state.gameData.usedPokemonCooldown = {};
+                    if(window.state.gameData.savedEncounters === undefined) window.state.gameData.savedEncounters = {};
                     setStatus("접속 성공!");
                     enterGame(idInput);
                 } else {
@@ -1081,7 +1082,7 @@
             try {
                 window.showCustomAlert("데이터 초기화 중입니다... 잠시만 기다려주세요.");
                 const snap = await getDocs(getStudentsCollection());
-                const emptyStats = { level: 1, exp: 0, count: 0, caughtWords: {}, wins: 0, victories: {}, partnerWord: null, usedPokemonCooldown: {} };
+                const emptyStats = { level: 1, exp: 0, count: 0, caughtWords: {}, wins: 0, victories: {}, partnerWord: null, usedPokemonCooldown: {}, savedEncounters: {} };
                 
                 const promises = [];
                 snap.forEach(docSnap => {
@@ -1170,7 +1171,22 @@
             }
             if(input) input.disabled = false;
 
-            window.state.currentQuiz = chapterQuizzes[Math.floor(Math.random() * chapterQuizzes.length)];
+            if (!window.state.gameData.savedEncounters) window.state.gameData.savedEncounters = {};
+            const savedWord = window.state.gameData.savedEncounters[window.state.currentChapter];
+            
+            let foundQuiz = null;
+            if (savedWord) {
+                foundQuiz = chapterQuizzes.find(q => q.word.toLowerCase() === savedWord.toLowerCase());
+            }
+
+            if (foundQuiz) {
+                window.state.currentQuiz = foundQuiz;
+            } else {
+                window.state.currentQuiz = chapterQuizzes[Math.floor(Math.random() * chapterQuizzes.length)];
+                window.state.gameData.savedEncounters[window.state.currentChapter] = window.state.currentQuiz.word;
+                window.saveProgress();
+            }
+
             document.getElementById('quiz-txt').innerText = window.state.currentQuiz.meaning;
             
             if(hint) { hint.innerText = "정답 영단어를 입력하면 몬스터볼을 던집니다!"; hint.className = "text-slate-400 text-[10px] mt-4 font-normal italic"; }
@@ -1234,6 +1250,9 @@
             if (window.state.monster.hp <= 0) { 
                 window.state.gameData.exp += defeatExp; 
                 window.state.monster.hp = 100; 
+                if (window.state.gameData.savedEncounters) {
+                    delete window.state.gameData.savedEncounters[window.state.currentChapter];
+                }
             } else { 
                 window.state.gameData.exp += hitExp; 
             }
