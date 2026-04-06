@@ -443,6 +443,11 @@
                         <button onclick="window.resetAllStudentsData()" class="w-full bg-red-600 text-white py-3 rounded-xl font-black text-sm shadow-md active:scale-95 transition-transform hover:bg-red-700">⚠️ 새 시즌 시작 (전체 데이터 초기화)</button>
                         <p class="text-[10px] text-red-500 mt-2 font-bold">모든 학생의 진행 데이터가 0으로 리셋됩니다. (비밀번호 유지)</p>
                     </div>
+                    <!-- 전원 강제 로그아웃 (업데이트 용도) -->
+                    <div class="bg-purple-100 p-4 rounded-2xl border border-purple-300 text-center">
+                        <button onclick="window.forceLogoutAll()" class="w-full bg-purple-600 text-white py-3 rounded-xl font-black text-sm shadow-md active:scale-95 transition-transform hover:bg-purple-700">🔄 전원 강제 로그아웃 (업데이트 적용)</button>
+                        <p class="text-[10px] text-purple-500 mt-2 font-bold">접속 중인 모든 학생을 강제로 로그아웃시켜 변경사항을 동기화합니다.</p>
+                    </div>
                 </div>
                 
                 <div class="space-y-3 mb-6 bg-red-50 p-4 rounded-2xl border">
@@ -860,7 +865,7 @@
 
             unsubscribeStudent = onSnapshot(getStudentDoc(window.state.user), (docSnap) => {
                 if (docSnap.exists() && docSnap.data().forceLogout) {
-                    window.showCustomAlert("⚠️ 새 시즌이 시작되었습니다!\n데이터 동기화를 위해 자동으로 로그아웃됩니다.");
+                    window.showCustomAlert("⚠️ 데이터 동기화 및 업데이트를 위해 자동으로 로그아웃됩니다.");
                     setTimeout(() => location.reload(), 2500);
                 }
             });
@@ -1105,6 +1110,25 @@
             }
         };
 
+        window.forceLogoutAll = async () => {
+            const confirmed = await window.showCustomConfirm("접속 중인 모든 학생을 강제로 로그아웃하시겠습니까?\n(업데이트 적용을 위해 사용합니다)");
+            if (!confirmed) return;
+
+            try {
+                window.showCustomAlert("전체 로그아웃 신호를 전송 중입니다...");
+                const snap = await getDocs(getStudentsCollection());
+                const promises = [];
+                snap.forEach(docSnap => {
+                    promises.push(setDoc(docSnap.ref, { forceLogout: true }, { merge: true }));
+                });
+                await Promise.all(promises);
+                window.showCustomAlert("전원 강제 로그아웃 신호 전송이 완료되었습니다.");
+            } catch (error) {
+                console.error(error);
+                window.showCustomAlert("로그아웃 처리 중 오류가 발생했습니다.");
+            }
+        };
+
         window.resetStudentPassword = async () => {
             const selectEl = document.getElementById('reset-pw-student');
             const studentId = selectEl.value;
@@ -1182,7 +1206,12 @@
             if (foundQuiz) {
                 window.state.currentQuiz = foundQuiz;
             } else {
-                window.state.currentQuiz = chapterQuizzes[Math.floor(Math.random() * chapterQuizzes.length)];
+                let availableQuizzes = chapterQuizzes;
+                // 이전 단어와 동일한 단어가 연속으로 나오지 않도록 풀(pool)에서 필터링
+                if (window.state.currentQuiz && chapterQuizzes.length > 1) {
+                    availableQuizzes = chapterQuizzes.filter(q => q.word.toLowerCase() !== window.state.currentQuiz.word.toLowerCase());
+                }
+                window.state.currentQuiz = availableQuizzes[Math.floor(Math.random() * availableQuizzes.length)];
                 window.state.gameData.savedEncounters[window.state.currentChapter] = window.state.currentQuiz.word;
                 window.saveProgress();
             }
@@ -1228,7 +1257,8 @@
             if (!window.state.gameData.caughtWords) window.state.gameData.caughtWords = {};
             window.state.gameData.caughtWords[word] = (window.state.gameData.caughtWords[word] || 0) + 1;
             window.state.gameData.count++; 
-            window.state.monster.hp -= 34; window.state.monster.shake = 25;
+            window.state.monster.hp -= 100; 
+            window.state.monster.shake = 25;
             for (let i = 0; i < 20; i++) window.state.particles.push({ x: 280, y: 220, vx: (Math.random()-0.5)*20, vy: (Math.random()-0.5)*20, life: 1.0, color: "#ef4444" });
             
             window.charImg = window.trainerAttackImg;
