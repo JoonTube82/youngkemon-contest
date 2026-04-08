@@ -123,11 +123,14 @@
                     </h2>
                 </div>
                 <div class="text-right flex flex-col items-end">
-                    <button onclick="window.handleLogout()" class="text-slate-300 hover:text-red-400 mb-1 transition-colors" title="로그아웃">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
-                        </svg>
-                    </button>
+                    <div class="flex items-center gap-3 mb-1">
+                        <button id="btn-mute" onclick="window.AudioManager.toggleMute()" class="text-slate-300 hover:text-indigo-400 transition-colors text-xl leading-none" title="BGM 끄기/켜기">🎵</button>
+                        <button onclick="window.handleLogout()" class="text-slate-300 hover:text-red-400 transition-colors" title="로그아웃">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
+                            </svg>
+                        </button>
+                    </div>
                     <span class="text-slate-400 text-[10px] font-bold uppercase leading-none block mt-1">포획한 영켓몬</span>
                     <p id="cnt-txt" class="text-2xl font-bold text-slate-700 leading-none mt-1">0</p>
                 </div>
@@ -793,6 +796,52 @@
         };
         initAdminStudentSelect();
 
+        window.AudioManager = {
+            bgms: {
+                town: new Audio('bgm_town.mp3'),
+                hunt: new Audio('bgm_hunt.mp3'),
+                dex: new Audio('bgm_dex.mp3'),
+                battle: new Audio('bgm_battle.mp3')
+            },
+            currentType: null,
+            isMuted: false,
+            init: function() {
+                Object.values(this.bgms).forEach(audio => {
+                    audio.loop = true;
+                });
+            },
+            playBGM: function(type) {
+                if (this.currentType === type) return;
+                
+                if (this.currentType && this.bgms[this.currentType]) {
+                    this.bgms[this.currentType].pause();
+                    this.bgms[this.currentType].currentTime = 0;
+                }
+                
+                this.currentType = type;
+                
+                if (!this.isMuted && this.bgms[type]) {
+                    this.bgms[type].play().catch(e => console.log("BGM 재생 대기 중 (사용자 상호작용 필요):", e));
+                }
+            },
+            toggleMute: function() {
+                this.isMuted = !this.isMuted;
+                const btn = document.getElementById('btn-mute');
+                if (this.isMuted) {
+                    if (this.currentType && this.bgms[this.currentType]) {
+                        this.bgms[this.currentType].pause();
+                    }
+                    if (btn) btn.innerText = '🔇';
+                } else {
+                    if (this.currentType && this.bgms[this.currentType]) {
+                        this.bgms[this.currentType].play().catch(e => console.log(e));
+                    }
+                    if (btn) btn.innerText = '🎵';
+                }
+            }
+        };
+        window.AudioManager.init();
+
         const firebaseConfig = {
             apiKey: "AIzaSyCxfI0Zh4mxbY13WigsFlNLDmA3ikkAIjE",
             authDomain: "grade6-english-rpg.firebaseapp.com",
@@ -976,6 +1025,7 @@
             document.getElementById('game-view').style.display = 'block';
             startMagicRPG();
             window.switchTab('rank'); 
+            window.AudioManager.playBGM('town');
         }
 
         window.switchTab = (tabName) => {
@@ -1007,6 +1057,14 @@
                 window.loadArena();
             }
             if (tabName === 'rank') window.renderRanking();
+
+            if (tabName === 'rank' || tabName === 'arena') {
+                window.AudioManager.playBGM('town');
+            } else if (tabName === 'hunt') {
+                window.AudioManager.playBGM('hunt');
+            } else if (tabName === 'dex') {
+                window.AudioManager.playBGM('dex');
+            }
         };
 
         window.setPartner = (word) => {
@@ -1998,6 +2056,7 @@
             document.getElementById('arena-battle-view').style.display = 'none';
             document.getElementById('arena-battle-view').classList.remove('flex');
             window.loadArena();
+            window.AudioManager.playBGM('town');
         };
 
         const renderTeamSelection = () => {
@@ -2117,6 +2176,7 @@
 
             updateBattleUI();
             logBattleMsg(`배틀 시작! 가랏, ${window.battleState.myTeam[0].word}!`);
+            window.AudioManager.playBGM('battle');
             
             if(window.battleState.oppTimer) clearInterval(window.battleState.oppTimer);
             window.battleState.oppTimer = setInterval(() => { if(window.battleState.active) opponentAttack(); }, 200);
