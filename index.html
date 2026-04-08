@@ -1058,10 +1058,10 @@
             }
             if (tabName === 'rank') window.renderRanking();
 
-            if (tabName === 'rank' || tabName === 'arena') {
+            if (tabName === 'rank' || tabName === 'hunt') {
                 window.AudioManager.playBGM('town');
-            } else if (tabName === 'hunt') {
-                window.AudioManager.playBGM('hunt');
+            } else if (tabName === 'arena') {
+                window.AudioManager.playBGM('battle');
             } else if (tabName === 'dex') {
                 window.AudioManager.playBGM('dex');
             }
@@ -1333,12 +1333,14 @@
             document.getElementById('hunt-battle-view').style.display = 'flex';
             document.getElementById('hunt-battle-view').classList.replace('hidden', 'flex'); 
             window.refreshQuiz();
+            window.AudioManager.playBGM('hunt');
         };
 
         window.exitStage = () => {
             document.getElementById('hunt-map-view').style.display = 'block';
             document.getElementById('hunt-battle-view').style.display = 'none';
             document.getElementById('hunt-battle-view').classList.replace('flex', 'hidden');
+            window.AudioManager.playBGM('town');
         };
 
         window.resetAllStudentsData = async () => {
@@ -2056,7 +2058,7 @@
             document.getElementById('arena-battle-view').style.display = 'none';
             document.getElementById('arena-battle-view').classList.remove('flex');
             window.loadArena();
-            window.AudioManager.playBGM('town');
+            window.AudioManager.playBGM('battle');
         };
 
         const renderTeamSelection = () => {
@@ -2176,7 +2178,6 @@
 
             updateBattleUI();
             logBattleMsg(`배틀 시작! 가랏, ${window.battleState.myTeam[0].word}!`);
-            window.AudioManager.playBGM('battle');
             
             if(window.battleState.oppTimer) clearInterval(window.battleState.oppTimer);
             window.battleState.oppTimer = setInterval(() => { if(window.battleState.active) opponentAttack(); }, 200);
