@@ -342,6 +342,9 @@
                             <button onclick="window.openDefenseSetup()" class="bg-green-500 hover:bg-green-400 text-white text-[10px] px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm transition-transform active:scale-95 border border-green-400">
                                 🛡️ 방어 포켓몬 설정
                             </button>
+                            <button onclick="window.openDefenseLogs()" class="bg-pink-500 hover:bg-pink-400 text-white text-[10px] px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm transition-transform active:scale-95 border border-pink-400">
+                                📜 방어 기록
+                            </button>
                         </h3>
                         <p class="text-xs text-slate-400">도감에서 강력한 3마리를 골라 체육관 배틀에 도전하세요!<br>승리하여 승수를 쌓고 최고의 트레이너가 되어보세요.</p>
                     </div>
@@ -735,6 +738,21 @@
         </div>
     </div>
 
+    <!-- [신규] 방어 기록 모달창 -->
+    <div id="defense-log-modal" class="modal-overlay">
+        <div class="modal-box border-pink-500 relative !p-6 sm:!p-8 !max-w-[500px] max-h-[85vh] flex flex-col bg-slate-800">
+            <button onclick="window.closeDefenseLogs()" class="absolute top-4 right-5 text-slate-400 hover:text-white font-bold text-3xl">&times;</button>
+            <div class="text-center mb-6 shrink-0">
+                <div class="text-5xl mb-3 drop-shadow-md">🛡️</div>
+                <h2 class="text-2xl font-black text-pink-400 mb-2">체육관 방어 기록</h2>
+                <p class="text-xs sm:text-sm text-slate-400">다른 트레이너들의 도전 결과를 확인하세요.</p>
+            </div>
+            <div id="defense-log-list" class="space-y-3 text-left overflow-y-auto custom-scrollbar flex-1 pr-2">
+                <!-- 동적 렌더링 영역 -->
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -936,6 +954,7 @@
                     if(window.state.gameData.partnerWord === undefined) window.state.gameData.partnerWord = null;
                     if(window.state.gameData.usedPokemonCooldown === undefined) window.state.gameData.usedPokemonCooldown = {};
                     if(window.state.gameData.savedEncounters === undefined) window.state.gameData.savedEncounters = {};
+                    if(window.state.gameData.defenseLogs === undefined) window.state.gameData.defenseLogs = [];
                     setStatus("접속 성공!");
                     enterGame(idInput);
                 } else {
@@ -1271,7 +1290,7 @@
             try {
                 window.showCustomAlert("데이터 초기화 중입니다... 잠시만 기다려주세요.");
                 const snap = await getDocs(getStudentsCollection());
-                const emptyStats = { level: 1, exp: 0, count: 0, caughtWords: {}, wins: 0, victories: {}, partnerWord: null, usedPokemonCooldown: {}, savedEncounters: {} };
+                const emptyStats = { level: 1, exp: 0, count: 0, caughtWords: {}, wins: 0, victories: {}, partnerWord: null, usedPokemonCooldown: {}, savedEncounters: {}, defenseLogs: [] };
                 
                 const promises = [];
                 snap.forEach(docSnap => {
@@ -2211,6 +2230,29 @@
             }
         };
 
+        const recordDefenseLog = async (oppId, attackerWon) => {
+            try {
+                const oppRef = getStudentDoc(oppId);
+                const oppSnap = await getDoc(oppRef);
+                if (oppSnap.exists()) {
+                    const oppData = oppSnap.data();
+                    const oppStats = oppData.gameStats || {};
+                    const logs = oppStats.defenseLogs || [];
+                    
+                    logs.unshift({
+                        attacker: window.state.user,
+                        result: attackerWon ? 'lose' : 'win', // 상대방(방어자) 시점에서의 결과
+                        timestamp: Date.now(),
+                        claimed: false
+                    });
+                    
+                    if (logs.length > 30) logs.length = 30; // 최근 30개만 보관
+                    
+                    await setDoc(oppRef, { gameStats: { ...oppStats, defenseLogs: logs } }, { merge: true });
+                }
+            } catch(e) { console.error("방어 기록 전송 실패", e); }
+        };
+
         const endBattle = (isWin) => {
             window.battleState.active = false;
             clearInterval(window.battleState.oppTimer);
@@ -2240,8 +2282,82 @@
                 msg = `🎉 배틀 승리!\n멋진 컨트롤이었습니다!\n출전한 파트너들은 오늘 하루 휴식합니다.\n총 🏆${window.state.gameData.wins}승 달성!${extraMsg}`;
                 window.saveProgress(); window.updateUI();
             } else { msg = `💥 배틀 패배...\n상대방의 포켓몬이 더 강합니다.\n단어를 더 잡아 레벨을 올리세요!`; }
+            
+            // 상대방(방어자)의 문서에 방어 기록 업데이트
+            recordDefenseLog(window.battleState.oppId, isWin);
+            
             window.showCustomAlert(msg);
             setTimeout(() => { window.cancelBattleSelect(); }, 500);
+        };
+
+        window.openDefenseLogs = () => {
+            document.getElementById('defense-log-modal').style.display = 'flex';
+            const listEl = document.getElementById('defense-log-list');
+            const logs = window.state.gameData.defenseLogs || [];
+            
+            if (logs.length === 0) {
+                listEl.innerHTML = '<p class="text-center text-slate-400 py-10 text-sm">아직 체육관 방어 기록이 없습니다.</p>';
+                return;
+            }
+
+            let html = '';
+            const now = new Date();
+            const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+            logs.forEach(log => {
+                const date = new Date(log.timestamp);
+                const isToday = log.timestamp >= startOfToday;
+                const pad = (n) => n.toString().padStart(2, '0');
+                const timeStr = isToday ? `오늘 ${pad(date.getHours())}:${pad(date.getMinutes())}` : `${date.getMonth()+1}/${date.getDate()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+                
+                if (log.result === 'win') {
+                    html += `
+                    <div class="bg-green-900/30 border border-green-500/30 rounded-xl p-3 sm:p-4 shadow-sm">
+                        <div class="text-[10px] text-green-400 font-bold mb-1">${timeStr}</div>
+                        <div class="text-sm sm:text-base font-bold text-green-300">🛡️ ${log.attacker}의 도전을 완벽하게 방어했습니다!</div>
+                    </div>`;
+                } else {
+                    let rewardHtml = '';
+                    if (!log.claimed) {
+                        rewardHtml = `<button onclick="window.claimDefenseReward(${log.timestamp})" class="mt-2 w-full bg-pink-600 hover:bg-pink-700 text-white text-xs py-2 rounded-lg font-bold shadow-md transition-transform active:scale-95">🎁 위로 경험치(+20) 받기</button>`;
+                    } else {
+                        rewardHtml = `<div class="mt-2 text-[10px] text-slate-500 font-bold text-right">✅ 위로 보상 획득 완료</div>`;
+                    }
+
+                    html += `
+                    <div class="bg-red-900/30 border border-red-500/30 rounded-xl p-3 sm:p-4 shadow-sm">
+                        <div class="text-[10px] text-red-400 font-bold mb-1">${timeStr}</div>
+                        <div class="text-sm sm:text-base font-bold text-red-300">💔 ${log.attacker}에게 체육관이 돌파당했습니다...</div>
+                        <div class="text-xs text-slate-300 mt-1">하지만 파트너 포켓몬이 끝까지 맞서 싸운 덕분에 위로 경험치를 얻었습니다!</div>
+                        ${rewardHtml}
+                    </div>`;
+                }
+            });
+            listEl.innerHTML = html;
+        };
+
+        window.closeDefenseLogs = () => {
+            document.getElementById('defense-log-modal').style.display = 'none';
+        };
+
+        window.claimDefenseReward = (timestamp) => {
+            const logs = window.state.gameData.defenseLogs || [];
+            const log = logs.find(l => l.timestamp === timestamp);
+            if (!log || log.claimed || log.result !== 'lose') return;
+            
+            log.claimed = true;
+            window.state.gameData.exp += 20;
+            
+            let reqExp = 100 + (window.state.gameData.level * 100);
+            if (window.state.gameData.exp >= reqExp) {
+                window.state.gameData.exp -= reqExp; 
+                window.state.gameData.level++;
+                document.getElementById('modal').style.display = 'flex';
+                document.getElementById('modal-desc').innerText = `레벨 ${window.state.gameData.level} 트레이너가 되었습니다!`;
+            }
+            window.updateUI();
+            window.saveProgress();
+            window.openDefenseLogs();
         };
 
         function gameLoop() {
