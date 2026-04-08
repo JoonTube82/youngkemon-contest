@@ -531,33 +531,141 @@
 
     <!-- Tip 모달창 (상성표) -->
     <div id="tip-modal" class="modal-overlay">
-        <div class="modal-box border-indigo-500 relative !p-8 !max-w-[500px] max-h-[85vh] overflow-y-auto custom-scrollbar bg-slate-800">
+        <div class="modal-box border-indigo-500 relative !p-6 sm:!p-8 !max-w-[700px] max-h-[85vh] overflow-y-auto custom-scrollbar bg-slate-800">
             <button onclick="window.closeTipModal()" class="absolute top-4 right-5 text-slate-400 hover:text-white font-bold text-3xl">&times;</button>
             <div class="text-center mb-6">
                 <div class="text-5xl mb-3 drop-shadow-md">💡</div>
-                <h2 class="text-2xl font-black text-indigo-400 mb-2">배틀 상성 가이드</h2>
-                <p class="text-xs sm:text-sm text-slate-400">유리한 속성으로 공격하면 데미지가 강력해집니다!</p>
+                <h2 class="text-2xl font-black text-indigo-400 mb-2">전체 배틀 상성 가이드</h2>
+                <p class="text-xs sm:text-sm text-slate-400">유리한(2배) 속성으로 공격하면 데미지가 강력해집니다!</p>
             </div>
             
             <div class="space-y-4">
                 <div class="bg-slate-900/80 rounded-3xl p-5 border border-slate-700 shadow-inner text-left">
-                    <h4 class="text-base sm:text-lg font-bold text-red-400 mb-3 border-b border-slate-700 pb-2 flex items-center gap-2">🔥 주요 속성 상성표</h4>
-                    <p class="text-xs text-slate-400 mb-4 leading-relaxed">(* 아래는 대표적인 상성 예시입니다.)</p>
-                    <div class="grid grid-cols-1 gap-3 text-xs sm:text-sm font-bold">
-                        <div class="flex items-center gap-2 p-2.5 bg-slate-800 rounded-xl border border-slate-700">
-                            <span class="bg-[#6390F0] text-white px-2 py-1 rounded-md">물</span> <span class="mx-1">▶</span> <span class="bg-[#EE8130] text-white px-2 py-1 rounded-md">불꽃</span> <span class="bg-[#E2BF65] text-white px-2 py-1 rounded-md">땅</span> <span class="bg-[#B6A136] text-white px-2 py-1 rounded-md">바위</span>
+                    <h4 class="text-base sm:text-lg font-bold text-indigo-400 mb-3 border-b border-slate-700 pb-2 flex items-center gap-2">⚔️ 모든 속성 상성표 (공격 기준)</h4>
+                    <p class="text-xs text-slate-400 mb-4 leading-relaxed">(* 2배 데미지를 주는 유리한 속성 목록입니다.)</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] sm:text-xs font-bold">
+                        <!-- 노말 -->
+                        <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
+                            <span class="bg-[#A8A77A] text-white px-2 py-0.5 rounded drop-shadow-sm">노말</span> <span class="text-slate-500 mx-0.5">▶</span> <span class="text-slate-500 font-normal">(없음)</span>
                         </div>
-                        <div class="flex items-center gap-2 p-2.5 bg-slate-800 rounded-xl border border-slate-700">
-                            <span class="bg-[#EE8130] text-white px-2 py-1 rounded-md">불꽃</span> <span class="mx-1">▶</span> <span class="bg-[#7AC74C] text-white px-2 py-1 rounded-md">풀</span> <span class="bg-[#A6B91A] text-white px-2 py-1 rounded-md">벌레</span> <span class="bg-[#96D9D6] text-white px-2 py-1 rounded-md">얼음</span>
+                        <!-- 불꽃 -->
+                        <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
+                            <span class="bg-[#EE8130] text-white px-2 py-0.5 rounded drop-shadow-sm">불꽃</span> <span class="text-slate-500 mx-0.5">▶</span> 
+                            <span class="bg-[#7AC74C] text-white px-1.5 py-0.5 rounded">풀</span>
+                            <span class="bg-[#96D9D6] text-white px-1.5 py-0.5 rounded">얼음</span>
+                            <span class="bg-[#A6B91A] text-white px-1.5 py-0.5 rounded">벌레</span>
+                            <span class="bg-[#B7B7CE] text-white px-1.5 py-0.5 rounded">강철</span>
                         </div>
-                        <div class="flex items-center gap-2 p-2.5 bg-slate-800 rounded-xl border border-slate-700">
-                            <span class="bg-[#7AC74C] text-white px-2 py-1 rounded-md">풀</span> <span class="mx-1">▶</span> <span class="bg-[#6390F0] text-white px-2 py-1 rounded-md">물</span> <span class="bg-[#E2BF65] text-white px-2 py-1 rounded-md">땅</span> <span class="bg-[#B6A136] text-white px-2 py-1 rounded-md">바위</span>
+                        <!-- 물 -->
+                        <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
+                            <span class="bg-[#6390F0] text-white px-2 py-0.5 rounded drop-shadow-sm">물</span> <span class="text-slate-500 mx-0.5">▶</span> 
+                            <span class="bg-[#EE8130] text-white px-1.5 py-0.5 rounded">불꽃</span>
+                            <span class="bg-[#E2BF65] text-white px-1.5 py-0.5 rounded">땅</span>
+                            <span class="bg-[#B6A136] text-white px-1.5 py-0.5 rounded">바위</span>
                         </div>
-                        <div class="flex items-center gap-2 p-2.5 bg-slate-800 rounded-xl border border-slate-700">
-                            <span class="bg-[#F7D02C] text-white px-2 py-1 rounded-md">전기</span> <span class="mx-1">▶</span> <span class="bg-[#6390F0] text-white px-2 py-1 rounded-md">물</span> <span class="bg-[#A98FF3] text-white px-2 py-1 rounded-md">비행</span>
+                        <!-- 전기 -->
+                        <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
+                            <span class="bg-[#F7D02C] text-slate-800 px-2 py-0.5 rounded drop-shadow-sm">전기</span> <span class="text-slate-500 mx-0.5">▶</span> 
+                            <span class="bg-[#6390F0] text-white px-1.5 py-0.5 rounded">물</span>
+                            <span class="bg-[#A98FF3] text-white px-1.5 py-0.5 rounded">비행</span>
                         </div>
-                        <div class="flex items-center gap-2 p-2.5 bg-slate-800 rounded-xl border border-slate-700">
-                            <span class="bg-[#E2BF65] text-white px-2 py-1 rounded-md">땅</span> <span class="mx-1">▶</span> <span class="bg-[#F7D02C] text-white px-2 py-1 rounded-md">전기</span> <span class="bg-[#EE8130] text-white px-2 py-1 rounded-md">불꽃</span> <span class="bg-[#A33EA1] text-white px-2 py-1 rounded-md">독</span>
+                        <!-- 풀 -->
+                        <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
+                            <span class="bg-[#7AC74C] text-white px-2 py-0.5 rounded drop-shadow-sm">풀</span> <span class="text-slate-500 mx-0.5">▶</span> 
+                            <span class="bg-[#6390F0] text-white px-1.5 py-0.5 rounded">물</span>
+                            <span class="bg-[#E2BF65] text-white px-1.5 py-0.5 rounded">땅</span>
+                            <span class="bg-[#B6A136] text-white px-1.5 py-0.5 rounded">바위</span>
+                        </div>
+                        <!-- 얼음 -->
+                        <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
+                            <span class="bg-[#96D9D6] text-slate-800 px-2 py-0.5 rounded drop-shadow-sm">얼음</span> <span class="text-slate-500 mx-0.5">▶</span> 
+                            <span class="bg-[#7AC74C] text-white px-1.5 py-0.5 rounded">풀</span>
+                            <span class="bg-[#E2BF65] text-white px-1.5 py-0.5 rounded">땅</span>
+                            <span class="bg-[#A98FF3] text-white px-1.5 py-0.5 rounded">비행</span>
+                            <span class="bg-[#6F35FC] text-white px-1.5 py-0.5 rounded">드래곤</span>
+                        </div>
+                        <!-- 격투 -->
+                        <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
+                            <span class="bg-[#C22E28] text-white px-2 py-0.5 rounded drop-shadow-sm">격투</span> <span class="text-slate-500 mx-0.5">▶</span> 
+                            <span class="bg-[#A8A77A] text-white px-1.5 py-0.5 rounded">노말</span>
+                            <span class="bg-[#96D9D6] text-slate-800 px-1.5 py-0.5 rounded">얼음</span>
+                            <span class="bg-[#B6A136] text-white px-1.5 py-0.5 rounded">바위</span>
+                            <span class="bg-[#705746] text-white px-1.5 py-0.5 rounded">악</span>
+                            <span class="bg-[#B7B7CE] text-white px-1.5 py-0.5 rounded">강철</span>
+                        </div>
+                        <!-- 독 -->
+                        <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
+                            <span class="bg-[#A33EA1] text-white px-2 py-0.5 rounded drop-shadow-sm">독</span> <span class="text-slate-500 mx-0.5">▶</span> 
+                            <span class="bg-[#7AC74C] text-white px-1.5 py-0.5 rounded">풀</span>
+                            <span class="bg-[#D685AD] text-white px-1.5 py-0.5 rounded">페어리</span>
+                        </div>
+                        <!-- 땅 -->
+                        <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
+                            <span class="bg-[#E2BF65] text-white px-2 py-0.5 rounded drop-shadow-sm">땅</span> <span class="text-slate-500 mx-0.5">▶</span> 
+                            <span class="bg-[#EE8130] text-white px-1.5 py-0.5 rounded">불꽃</span>
+                            <span class="bg-[#F7D02C] text-slate-800 px-1.5 py-0.5 rounded">전기</span>
+                            <span class="bg-[#A33EA1] text-white px-1.5 py-0.5 rounded">독</span>
+                            <span class="bg-[#B6A136] text-white px-1.5 py-0.5 rounded">바위</span>
+                            <span class="bg-[#B7B7CE] text-white px-1.5 py-0.5 rounded">강철</span>
+                        </div>
+                        <!-- 비행 -->
+                        <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
+                            <span class="bg-[#A98FF3] text-white px-2 py-0.5 rounded drop-shadow-sm">비행</span> <span class="text-slate-500 mx-0.5">▶</span> 
+                            <span class="bg-[#7AC74C] text-white px-1.5 py-0.5 rounded">풀</span>
+                            <span class="bg-[#C22E28] text-white px-1.5 py-0.5 rounded">격투</span>
+                            <span class="bg-[#A6B91A] text-white px-1.5 py-0.5 rounded">벌레</span>
+                        </div>
+                        <!-- 에스퍼 -->
+                        <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
+                            <span class="bg-[#F95587] text-white px-2 py-0.5 rounded drop-shadow-sm">에스퍼</span> <span class="text-slate-500 mx-0.5">▶</span> 
+                            <span class="bg-[#C22E28] text-white px-1.5 py-0.5 rounded">격투</span>
+                            <span class="bg-[#A33EA1] text-white px-1.5 py-0.5 rounded">독</span>
+                        </div>
+                        <!-- 벌레 -->
+                        <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
+                            <span class="bg-[#A6B91A] text-white px-2 py-0.5 rounded drop-shadow-sm">벌레</span> <span class="text-slate-500 mx-0.5">▶</span> 
+                            <span class="bg-[#7AC74C] text-white px-1.5 py-0.5 rounded">풀</span>
+                            <span class="bg-[#F95587] text-white px-1.5 py-0.5 rounded">에스퍼</span>
+                            <span class="bg-[#705746] text-white px-1.5 py-0.5 rounded">악</span>
+                        </div>
+                        <!-- 바위 -->
+                        <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
+                            <span class="bg-[#B6A136] text-white px-2 py-0.5 rounded drop-shadow-sm">바위</span> <span class="text-slate-500 mx-0.5">▶</span> 
+                            <span class="bg-[#EE8130] text-white px-1.5 py-0.5 rounded">불꽃</span>
+                            <span class="bg-[#96D9D6] text-slate-800 px-1.5 py-0.5 rounded">얼음</span>
+                            <span class="bg-[#A98FF3] text-white px-1.5 py-0.5 rounded">비행</span>
+                            <span class="bg-[#A6B91A] text-white px-1.5 py-0.5 rounded">벌레</span>
+                        </div>
+                        <!-- 고스트 -->
+                        <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
+                            <span class="bg-[#735797] text-white px-2 py-0.5 rounded drop-shadow-sm">고스트</span> <span class="text-slate-500 mx-0.5">▶</span> 
+                            <span class="bg-[#F95587] text-white px-1.5 py-0.5 rounded">에스퍼</span>
+                            <span class="bg-[#735797] text-white px-1.5 py-0.5 rounded">고스트</span>
+                        </div>
+                        <!-- 드래곤 -->
+                        <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
+                            <span class="bg-[#6F35FC] text-white px-2 py-0.5 rounded drop-shadow-sm">드래곤</span> <span class="text-slate-500 mx-0.5">▶</span> 
+                            <span class="bg-[#6F35FC] text-white px-1.5 py-0.5 rounded">드래곤</span>
+                        </div>
+                        <!-- 악 -->
+                        <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
+                            <span class="bg-[#705746] text-white px-2 py-0.5 rounded drop-shadow-sm">악</span> <span class="text-slate-500 mx-0.5">▶</span> 
+                            <span class="bg-[#F95587] text-white px-1.5 py-0.5 rounded">에스퍼</span>
+                            <span class="bg-[#735797] text-white px-1.5 py-0.5 rounded">고스트</span>
+                        </div>
+                        <!-- 강철 -->
+                        <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
+                            <span class="bg-[#B7B7CE] text-white px-2 py-0.5 rounded drop-shadow-sm">강철</span> <span class="text-slate-500 mx-0.5">▶</span> 
+                            <span class="bg-[#96D9D6] text-slate-800 px-1.5 py-0.5 rounded">얼음</span>
+                            <span class="bg-[#B6A136] text-white px-1.5 py-0.5 rounded">바위</span>
+                            <span class="bg-[#D685AD] text-white px-1.5 py-0.5 rounded">페어리</span>
+                        </div>
+                        <!-- 페어리 -->
+                        <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
+                            <span class="bg-[#D685AD] text-white px-2 py-0.5 rounded drop-shadow-sm">페어리</span> <span class="text-slate-500 mx-0.5">▶</span> 
+                            <span class="bg-[#C22E28] text-white px-1.5 py-0.5 rounded">격투</span>
+                            <span class="bg-[#6F35FC] text-white px-1.5 py-0.5 rounded">드래곤</span>
+                            <span class="bg-[#705746] text-white px-1.5 py-0.5 rounded">악</span>
                         </div>
                     </div>
                 </div>
