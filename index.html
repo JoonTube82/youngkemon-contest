@@ -331,13 +331,16 @@
                 <!-- 뷰 3-1: 상대방 선택 목록 -->
                 <div id="arena-list-view" class="magic-card p-6 shadow-xl min-h-[400px]">
                     <div class="text-center mb-6">
-                        <h3 class="text-xl font-bold text-red-500 mb-1 flex items-center justify-center gap-2">
+                        <h3 class="text-xl font-bold text-red-500 mb-1 flex items-center justify-center gap-2 flex-wrap">
                             트레이너 배틀
                             <button onclick="window.showTipModal()" class="bg-indigo-500 hover:bg-indigo-400 text-white text-[10px] px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm transition-transform active:scale-95 border border-indigo-400">
                                 💡 Tip
                             </button>
                             <button onclick="window.showTierModal()" class="bg-amber-500 hover:bg-amber-400 text-white text-[10px] px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm transition-transform active:scale-95 border border-amber-400">
                                 🏆 티어표
+                            </button>
+                            <button onclick="window.openDefenseSetup()" class="bg-green-500 hover:bg-green-400 text-white text-[10px] px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm transition-transform active:scale-95 border border-green-400">
+                                🛡️ 방어 포켓몬 설정
                             </button>
                         </h3>
                         <p class="text-xs text-slate-400">도감에서 강력한 3마리를 골라 체육관 배틀에 도전하세요!<br>승리하여 승수를 쌓고 최고의 트레이너가 되어보세요.</p>
@@ -402,6 +405,19 @@
                             <p class="text-xs text-slate-500 mt-1 font-bold">내 남은 포켓몬: <span id="my-b-remain">3</span></p>
                         </div>
                     </div>
+                </div>
+
+                <!-- 뷰 3-4: 방어 팀 설정 -->
+                <div id="arena-defense-view" class="hidden magic-card p-6 shadow-xl min-h-[400px] border-4 border-green-100 relative">
+                    <button onclick="window.cancelDefenseSelect()" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 font-bold text-sm bg-slate-100 px-3 py-1 rounded-lg">돌아가기</button>
+                    <div class="text-center mb-4">
+                        <h3 class="text-xl font-bold text-green-600 mb-1" id="arena-defense-title">방어 포켓몬 설정</h3>
+                        <p class="text-xs text-slate-500">배틀에서 체육관을 방어할 영켓몬을 최대 3마리 선택하세요.<br>(10회 이상 포획한 포켓몬만 선택 가능합니다. 현재 <span id="defense-sel-cnt" class="text-green-600 font-bold text-sm">0</span>/3)</p>
+                    </div>
+                    <div id="arena-defense-list" class="grid grid-cols-3 gap-2 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar mb-4">
+                        <!-- 선택 가능한 방어 포켓몬 목록 -->
+                    </div>
+                    <button id="btn-save-defense" onclick="window.saveDefenseTeam()" class="w-full bg-slate-300 text-slate-500 py-3 rounded-2xl font-bold text-lg shadow-sm transition-all" disabled>방어 팀 저장하기</button>
                 </div>
             </div>
 
@@ -593,6 +609,21 @@
             </div>
             
             <button onclick="window.closeCheatSheet()" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white py-3 rounded-xl font-black text-sm shadow-md transition-transform active:scale-95 mt-auto shrink-0">확인 완료</button>
+        </div>
+    </div>
+
+    <!-- [신규] 파트너 진화 단계 선택 모달창 -->
+    <div id="partner-stage-modal" class="modal-overlay">
+        <div class="modal-box border-yellow-500 relative !p-8 !max-w-[450px] bg-slate-800">
+            <button onclick="window.closePartnerStageModal()" class="absolute top-4 right-5 text-slate-400 hover:text-white font-bold text-3xl">&times;</button>
+            <div class="text-center mb-6">
+                <div class="text-5xl mb-3 drop-shadow-md">👑</div>
+                <h2 class="text-2xl font-black text-yellow-400 mb-2">어떤 모습으로 전시할까요?</h2>
+                <p class="text-xs sm:text-sm text-slate-400">커뮤니티에 전시될 파트너의 진화 단계를 선택하세요.</p>
+            </div>
+            <div id="partner-stage-list" class="flex justify-center gap-3 mb-2">
+                <!-- 동적 렌더링 영역 -->
+            </div>
         </div>
     </div>
 
@@ -842,16 +873,61 @@
                 document.getElementById('arena-team-view').style.display = 'none';
                 document.getElementById('arena-battle-view').style.display = 'none';
                 document.getElementById('arena-battle-view').classList.remove('flex');
+                
+                const defenseView = document.getElementById('arena-defense-view');
+                if (defenseView) defenseView.style.display = 'none';
+                
                 window.loadArena();
             }
             if (tabName === 'rank') window.renderRanking();
         };
 
         window.setPartner = (word) => {
+            const count = window.state.gameData.caughtWords[word] || 0;
+            if (count < 10) {
+                return window.showCustomAlert(`포획 횟수가 10회 이상인 진정한 파트너만 등록할 수 있습니다!\n(현재: ${count}회)`);
+            }
+
+            const listEl = document.getElementById('partner-stage-list');
+            let html = '';
+            let uniqueStages = [];
+            let seenIds = new Set();
+
+            [1, 2, 3].forEach(tier => {
+                let fakeCount = tier === 1 ? 1 : (tier === 2 ? 5 : 10);
+                const pInfo = getPokemonInfoForWord(word, fakeCount);
+                if (!seenIds.has(pInfo.id)) {
+                    seenIds.add(pInfo.id);
+                    uniqueStages.push({ tier, pInfo });
+                }
+            });
+
+            uniqueStages.forEach(stage => {
+                const apiData = LOCAL_POKEMON_DB[stage.pInfo.id] || { name: "알 수 없음", type: "normal" };
+                html += `
+                <div onclick="window.confirmPartner('${word}', ${stage.tier})" class="cursor-pointer bg-slate-900 border-2 border-slate-600 hover:border-yellow-400 rounded-2xl p-4 flex flex-col items-center hover:scale-105 transition-all shadow-md w-28 sm:w-32">
+                    <img src="${stage.pInfo.imgSrc}" crossorigin="anonymous" class="h-16 w-16 sm:h-20 sm:w-20 object-contain mb-2 drop-shadow-md" style="image-rendering:pixelated;">
+                    <span class="text-xs font-bold text-yellow-500 bg-yellow-900/30 px-2 py-0.5 rounded mb-1">Lv.${stage.tier}</span>
+                    <span class="text-sm font-black text-white truncate w-full text-center">${apiData.name}</span>
+                </div>
+                `;
+            });
+
+            listEl.innerHTML = html;
+            document.getElementById('partner-stage-modal').style.display = 'flex';
+        };
+
+        window.closePartnerStageModal = () => {
+            document.getElementById('partner-stage-modal').style.display = 'none';
+        };
+
+        window.confirmPartner = (word, tier) => {
             window.state.gameData.partnerWord = word;
+            window.state.gameData.partnerStage = tier;
             window.saveProgress();
             window.renderDex(); 
-            window.showCustomAlert(word + "이(가) 대표 파트너 포켓몬으로 지정되었습니다!");
+            window.closePartnerStageModal();
+            window.showCustomAlert(`[${word}] 파트너가 성공적으로 전시되었습니다!`);
         };
 
         let unsubscribeWords = null;
@@ -1207,7 +1283,6 @@
                 window.state.currentQuiz = foundQuiz;
             } else {
                 let availableQuizzes = chapterQuizzes;
-                // 이전 단어와 동일한 단어가 연속으로 나오지 않도록 풀(pool)에서 필터링
                 if (window.state.currentQuiz && chapterQuizzes.length > 1) {
                     availableQuizzes = chapterQuizzes.filter(q => q.word.toLowerCase() !== window.state.currentQuiz.word.toLowerCase());
                 }
@@ -1409,10 +1484,12 @@
                         let maxCh = 0;
                         let bestWord = null;
                         let bestCount = 0;
+                        let partnerStage = null;
                         
                         if (stats.partnerWord && caughtWords[stats.partnerWord]) {
                             bestWord = stats.partnerWord;
                             bestCount = caughtWords[stats.partnerWord];
+                            partnerStage = stats.partnerStage || null;
                         } else {
                             for (let word in caughtWords) {
                                 if (caughtWords[word] > bestCount) {
@@ -1434,7 +1511,8 @@
                             level: stats.level || 1,
                             bestWord: bestWord,
                             bestCount: bestCount,
-                            maxCh: maxCh
+                            maxCh: maxCh,
+                            partnerStage: partnerStage
                         });
                     }
                 });
@@ -1457,7 +1535,14 @@
                     let pInfoHtml = '<span class="text-5xl opacity-20">🥚</span>';
                     let chapterBadge = '';
                     if (student.bestWord) {
-                        const pInfo = getPokemonInfoForWord(student.bestWord, student.bestCount);
+                        let pInfo;
+                        if (student.partnerStage) {
+                            const fakeCount = student.partnerStage === 1 ? 1 : (student.partnerStage === 2 ? 5 : 10);
+                            pInfo = getPokemonInfoForWord(student.bestWord, fakeCount);
+                        } else {
+                            pInfo = getPokemonInfoForWord(student.bestWord, student.bestCount);
+                        }
+                        
                         pInfoHtml = `<img src="${pInfo.imgSrc}" crossorigin="anonymous" class="max-w-full max-h-full object-contain drop-shadow-md scale-150" style="image-rendering:pixelated;">`;
                         chapterBadge = `<div class="absolute -bottom-2 -right-3 text-[11px] sm:text-xs bg-indigo-600 text-white px-2 py-0.5 rounded-md font-bold shadow-sm border border-indigo-400 z-10">${student.maxCh}단원</div>`;
                     }
@@ -1628,11 +1713,16 @@
 
                     const oppStats = docData.gameStats || {};
                     const oppCaughtWords = oppStats.caughtWords || {};
-                    const sortedOppWords = Object.keys(oppCaughtWords).sort((a,b)=>oppCaughtWords[b]-oppCaughtWords[a]).slice(0,3);
+                    
+                    let oppDefenseWords = oppStats.defenseTeam || [];
+                    oppDefenseWords = oppDefenseWords.filter(w => oppCaughtWords[w] >= 10);
+                    if (oppDefenseWords.length === 0) {
+                        oppDefenseWords = Object.keys(oppCaughtWords).sort((a,b)=>oppCaughtWords[b]-oppCaughtWords[a]).slice(0,3);
+                    }
 
                     let top3Html = '<div class="flex gap-2 ml-2 sm:ml-4 items-center">';
-                    if (sortedOppWords.length > 0) {
-                        sortedOppWords.forEach(word => {
+                    if (oppDefenseWords.length > 0) {
+                        oppDefenseWords.forEach(word => {
                             const count = oppCaughtWords[word];
                             const pInfo = getPokemonInfoForWord(word, count);
                             top3Html += `<div onclick="window.showOppMonDetail('${word}', ${count})" class="cursor-pointer w-12 h-12 sm:w-14 sm:h-14 bg-black/30 hover:bg-black/50 rounded-full flex items-center justify-center border border-white/20 p-1.5 transition-transform hover:scale-110 shadow-inner" title="${word} 상세정보"><img src="${pInfo.imgSrc}" crossorigin="anonymous" class="max-w-full max-h-full object-contain drop-shadow-md scale-125" style="image-rendering:pixelated;"></div>`;
@@ -1662,6 +1752,90 @@
                 });
                 listEl.innerHTML = html || '<p class="text-center py-10">현재 도전 가능한 상대가 없습니다.</p>';
             } catch(e) { listEl.innerHTML = '<p class="text-center text-red-500 py-10">네트워크 오류</p>'; }
+        };
+
+        window.openDefenseSetup = () => {
+            document.getElementById('arena-list-view').style.display = 'none';
+            document.getElementById('arena-defense-view').style.display = 'block';
+            
+            if(!window.state.gameData.defenseTeam) {
+                window.state.gameData.defenseTeam = [];
+            }
+            window.defenseSelectionTemp = [...window.state.gameData.defenseTeam];
+            renderDefenseSelection();
+        };
+
+        window.cancelDefenseSelect = () => {
+            document.getElementById('arena-list-view').style.display = 'block';
+            document.getElementById('arena-defense-view').style.display = 'none';
+            window.loadArena();
+        };
+
+        const renderDefenseSelection = () => {
+            const listEl = document.getElementById('arena-defense-list');
+            const caughtWords = window.state.gameData.caughtWords || {};
+            const eligibleWords = Object.keys(caughtWords).filter(w => caughtWords[w] >= 10).sort((a,b) => caughtWords[b] - caughtWords[a]);
+            
+            if (eligibleWords.length === 0) {
+                listEl.innerHTML = '<p class="text-center text-slate-400 py-10 col-span-3 text-sm">10회 이상 포획한 포켓몬이 없습니다.<br>단어를 더 사냥하세요!</p>';
+                document.getElementById('btn-save-defense').disabled = true;
+                document.getElementById('btn-save-defense').className = "w-full bg-slate-300 text-slate-500 py-3 rounded-2xl font-bold text-lg shadow-sm transition-all";
+                document.getElementById('defense-sel-cnt').innerText = "0";
+                return;
+            }
+
+            let html = '';
+            eligibleWords.forEach(word => {
+                const count = caughtWords[word];
+                const pInfo = getPokemonInfoForWord(word, count);
+                const apiData = LOCAL_POKEMON_DB[pInfo.id] || { name: "알 수 없음", type: "normal" };
+                const typeInfo = TYPE_COLORS[apiData.type] || TYPE_COLORS['normal'];
+                const isSelected = window.defenseSelectionTemp.includes(word);
+                
+                let clickEvent = `onclick="window.toggleDefenseSelection('${word}')"`;
+                let wrapperClass = isSelected ? 'border-green-500 bg-green-50 scale-105' : 'border-transparent bg-slate-50 hover:bg-slate-100 cursor-pointer';
+                let imgClass = 'max-h-full drop-shadow-sm';
+                
+                html += `
+                <div ${clickEvent} class="relative border-4 rounded-2xl p-2 flex flex-col items-center justify-center transition-all ${wrapperClass}">
+                    <div class="h-16 flex items-center justify-center">
+                        <img src="${pInfo.imgSrc}" class="${imgClass}" style="image-rendering:pixelated;">
+                    </div>
+                    <div class="text-[10px] font-black text-slate-700 truncate w-full text-center mt-1">${word}</div>
+                    <div class="flex items-center gap-1 mt-1">
+                        <span class="text-[8px] text-white ${typeInfo.bg} px-1 rounded">${typeInfo.name}</span>
+                        <span class="text-[9px] font-bold text-slate-500">★${count}</span>
+                    </div>
+                </div>`;
+            });
+            listEl.innerHTML = html;
+            document.getElementById('defense-sel-cnt').innerText = window.defenseSelectionTemp.length;
+            
+            const btn = document.getElementById('btn-save-defense');
+            if (window.defenseSelectionTemp.length > 0) {
+                btn.disabled = false;
+                btn.className = "w-full bg-green-500 text-white py-3 rounded-2xl font-bold text-lg shadow-md active:scale-95 transition-all hover:bg-green-600";
+            } else {
+                btn.disabled = true;
+                btn.className = "w-full bg-slate-300 text-slate-500 py-3 rounded-2xl font-bold text-lg shadow-sm transition-all";
+            }
+        };
+
+        window.toggleDefenseSelection = (word) => {
+            const idx = window.defenseSelectionTemp.indexOf(word);
+            if (idx > -1) window.defenseSelectionTemp.splice(idx, 1);
+            else {
+                if (window.defenseSelectionTemp.length >= 3) return window.showCustomAlert("최대 3마리까지만 방어 포켓몬으로 선택 가능합니다!");
+                window.defenseSelectionTemp.push(word);
+            }
+            renderDefenseSelection();
+        };
+
+        window.saveDefenseTeam = () => {
+            window.state.gameData.defenseTeam = [...window.defenseSelectionTemp];
+            window.saveProgress();
+            window.showCustomAlert("방어 팀이 성공적으로 설정되었습니다!");
+            window.cancelDefenseSelect();
         };
 
         window.prepareBattle = async (oppId) => {
@@ -1797,11 +1971,18 @@
             
             const oppCaught = window.battleState.oppStats.caughtWords || {};
             const oppLevel = window.battleState.oppStats.level || 1;
-            const oppTop3 = Object.keys(oppCaught).sort((a,b)=>oppCaught[b]-oppCaught[a]).slice(0,3);
             
-            window.battleState.oppTeam = oppTop3.map(w => {
+            let oppDefenseWords = window.battleState.oppStats.defenseTeam || [];
+            oppDefenseWords = oppDefenseWords.filter(w => oppCaught[w] >= 10);
+            if (oppDefenseWords.length === 0) {
+                oppDefenseWords = Object.keys(oppCaught).sort((a,b)=>oppCaught[b]-oppCaught[a]).slice(0,3);
+            }
+            
+            window.battleState.oppTeam = oppDefenseWords.map(w => {
                 const mon = createBattleMon(w, oppCaught[w], oppLevel);
-                // 홈그라운드 1.3배 버프 삭제 완료
+                mon.hp = Math.floor(mon.hp * 1.3);
+                mon.maxHp = Math.floor(mon.maxHp * 1.3);
+                mon.atk = Math.floor(mon.atk * 1.3);
                 return mon;
             });
 
