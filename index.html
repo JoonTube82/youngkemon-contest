@@ -448,6 +448,36 @@
                     <h2 class="text-xl font-bold text-red-600">🛠️ 영켓몬 도감 관리</h2>
                     <button onclick="window.toggleAdmin()" class="bg-slate-100 px-4 py-2 rounded-xl text-xs font-bold text-red-600 hover:bg-slate-200">닫기</button>
                 </div>
+
+                <!-- [신규] 단원별 단어 시험 관리 -->
+                <div class="bg-emerald-50 p-4 rounded-2xl border border-emerald-200 mb-6">
+                    <h3 class="text-sm font-bold text-emerald-700 mb-2">📝 단원별 단어 시험 관리</h3>
+                    <div class="flex gap-2 mb-3">
+                        <select id="test-chapter-select" class="flex-1 p-3 border rounded-xl outline-none text-sm font-bold text-slate-700 bg-white shadow-sm focus:border-emerald-400">
+                            <option value="1">1단원</option><option value="2">2단원</option><option value="3">3단원</option>
+                            <option value="4">4단원</option><option value="5">5단원</option><option value="6">6단원</option>
+                            <option value="7">7단원</option><option value="8">8단원</option><option value="9">9단원</option>
+                            <option value="10">10단원</option><option value="11">11단원</option><option value="12">12단원</option>
+                        </select>
+                        <button onclick="window.startTest()" class="bg-emerald-600 text-white px-4 py-3 rounded-xl font-bold text-sm shadow-md active:scale-95 transition-transform hover:bg-emerald-700 shrink-0">시험 시작</button>
+                        <button onclick="window.endTest()" class="bg-slate-400 text-white px-4 py-3 rounded-xl font-bold text-sm shadow-md active:scale-95 transition-transform hover:bg-slate-500 shrink-0">시험 종료</button>
+                    </div>
+                    <h4 class="text-xs font-bold text-emerald-600 mb-2 mt-4">📊 학생별 시험 성적표</h4>
+                    <div class="overflow-x-auto bg-white rounded-xl border border-emerald-100 shadow-inner max-h-60 custom-scrollbar">
+                        <table class="w-full text-left text-sm whitespace-nowrap">
+                            <thead class="bg-emerald-100 text-emerald-800 sticky top-0 z-10">
+                                <tr>
+                                    <th class="p-3 font-bold bg-emerald-100 sticky left-0 border-r border-emerald-200">학생명</th>
+                                    <!-- 헤더는 JS에서 렌더링 -->
+                                </tr>
+                            </thead>
+                            <tbody id="test-scores-tbody" class="text-slate-600">
+                                <!-- 데이터 동적 렌더링 -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <button onclick="window.renderTestScores()" class="w-full mt-3 bg-emerald-100 text-emerald-700 py-2.5 rounded-xl font-bold text-xs hover:bg-emerald-200 transition-colors">🔄 성적표 새로고침</button>
+                </div>
                 
                 <div class="mb-6 space-y-3">
                     <!-- 비밀번호 재설정 -->
@@ -495,6 +525,24 @@
                 </div>
                 
                 <div class="max-h-[300px] overflow-y-auto pr-2 space-y-2 custom-scrollbar" id="admin-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- [신규] 강제 시험 모달창 (학생 뷰를 완전히 덮음) -->
+    <div id="test-mode-view" class="fixed inset-0 bg-slate-900 z-[9999] hidden flex-col items-center justify-start p-4 sm:p-8 overflow-y-auto custom-scrollbar">
+        <div class="bg-white rounded-3xl p-6 sm:p-10 w-full max-w-2xl shadow-2xl relative my-auto">
+            <div class="text-center mb-8">
+                <div class="text-5xl mb-2 animate-bounce">🚨</div>
+                <h2 class="text-3xl font-black text-red-600 mb-2">로켓단의 기습 테스트!</h2>
+                <p class="text-slate-500 font-bold text-sm sm:text-base" id="test-mode-desc">단원 단어 시험이 시작되었습니다.<br>빈칸에 알맞은 영어 스펠링을 입력하세요.</p>
+            </div>
+            <div id="test-paper-list" class="space-y-4 mb-8">
+                <!-- 시험 문제 렌더링 영역 -->
+            </div>
+            <button id="btn-submit-test" onclick="window.submitTest()" class="w-full bg-red-600 hover:bg-red-700 text-white py-4 rounded-2xl font-black text-xl shadow-lg transition-transform active:scale-95">제출하기</button>
+            <div id="test-submit-msg" class="hidden text-center text-lg font-bold text-indigo-600 mt-4 p-4 bg-indigo-50 rounded-xl border border-indigo-200">
+                ✅ 제출 완료! 선생님의 시험 종료를 기다리세요.
             </div>
         </div>
     </div>
@@ -864,7 +912,7 @@
         window.state = {
             user: null, 
             authUid: null,
-            gameData: { level: 1, exp: 0, count: 0, wins: 0, caughtWords: {}, victories: {}, partnerWord: null, usedPokemonCooldown: {}, savedEncounters: {} },
+            gameData: { level: 1, exp: 0, count: 0, wins: 0, caughtWords: {}, victories: {}, partnerWord: null, usedPokemonCooldown: {}, savedEncounters: {}, defenseLogs: [], testScores: {} },
             quizzes: [],
             currentQuiz: null,
             currentChapter: 1,
@@ -997,13 +1045,14 @@
                         await setDoc(docRef, { forceLogout: false }, { merge: true });
                     }
 
-                    window.state.gameData = data.gameStats || { level: 1, exp: 0, count: 0, caughtWords: {}, wins: 0, victories: {}, partnerWord: null, usedPokemonCooldown: {}, savedEncounters: {} };
+                    window.state.gameData = data.gameStats || { level: 1, exp: 0, count: 0, caughtWords: {}, wins: 0, victories: {}, partnerWord: null, usedPokemonCooldown: {}, savedEncounters: {}, defenseLogs: [], testScores: {} };
                     if(window.state.gameData.wins === undefined) window.state.gameData.wins = 0;
                     if(window.state.gameData.victories === undefined) window.state.gameData.victories = {};
                     if(window.state.gameData.partnerWord === undefined) window.state.gameData.partnerWord = null;
                     if(window.state.gameData.usedPokemonCooldown === undefined) window.state.gameData.usedPokemonCooldown = {};
                     if(window.state.gameData.savedEncounters === undefined) window.state.gameData.savedEncounters = {};
                     if(window.state.gameData.defenseLogs === undefined) window.state.gameData.defenseLogs = [];
+                    if(window.state.gameData.testScores === undefined) window.state.gameData.testScores = {};
                     setStatus("접속 성공!");
                     enterGame(idInput);
                 } else {
@@ -1125,9 +1174,31 @@
             });
 
             unsubscribeStudent = onSnapshot(getStudentDoc(window.state.user), (docSnap) => {
-                if (docSnap.exists() && docSnap.data().forceLogout) {
-                    window.showCustomAlert("⚠️ 데이터 동기화 및 업데이트를 위해 자동으로 로그아웃됩니다.");
-                    setTimeout(() => location.reload(), 2500);
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    if (data.forceLogout) {
+                        window.showCustomAlert("⚠️ 데이터 동기화 및 업데이트를 위해 자동으로 로그아웃됩니다.");
+                        setTimeout(() => location.reload(), 2500);
+                    }
+
+                    // Test Mode 감지 로직
+                    if (data.testMode && data.testMode.active) {
+                        if (document.getElementById('test-mode-view').style.display !== 'flex') {
+                            window.state.currentTestChapter = data.testMode.chapter;
+                            window.renderTestPaper(data.testMode.chapter);
+                            document.getElementById('test-mode-view').style.display = 'flex';
+                        }
+                    } else {
+                        document.getElementById('test-mode-view').style.display = 'none';
+                        const submitBtn = document.getElementById('btn-submit-test');
+                        if (submitBtn) {
+                            submitBtn.style.display = 'block';
+                            submitBtn.disabled = false;
+                            submitBtn.classList.replace('bg-slate-400', 'bg-red-600');
+                        }
+                        const msgEl = document.getElementById('test-submit-msg');
+                        if (msgEl) msgEl.style.display = 'none';
+                    }
                 }
             });
             
@@ -1312,8 +1383,14 @@
         window.toggleAdmin = () => {
             const adminView = document.getElementById('admin-view');
             const gameView = document.getElementById('game-view');
-            if (adminView.style.display === 'block') { adminView.style.display = 'none'; gameView.style.display = 'block'; } 
-            else { adminView.style.display = 'block'; gameView.style.display = 'none'; }
+            if (adminView.style.display === 'block') { 
+                adminView.style.display = 'none'; 
+                gameView.style.display = 'block'; 
+            } else { 
+                adminView.style.display = 'block'; 
+                gameView.style.display = 'none'; 
+                window.renderTestScores();
+            }
         };
 
         window.enterStage = (chapter) => {
@@ -1343,6 +1420,154 @@
             window.AudioManager.playBGM('town');
         };
 
+        // --- 시험 관련 함수 추가 ---
+        window.renderTestPaper = (chapter) => {
+            document.getElementById('test-mode-desc').innerHTML = `<span class="text-indigo-600">${chapter}단원</span> 단어 시험이 시작되었습니다.<br>빈칸에 알맞은 영어 스펠링을 입력하세요.`;
+            const listEl = document.getElementById('test-paper-list');
+            const targetQuizzes = window.state.quizzes.filter(q => (q.chapter || 1) == chapter);
+            
+            const shuffled = targetQuizzes.sort(() => 0.5 - Math.random());
+            
+            let html = '';
+            shuffled.forEach((q, idx) => {
+                html += `
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between bg-slate-50 p-4 rounded-xl border border-slate-200 gap-3">
+                    <div class="font-bold text-slate-700 text-lg flex-1"><span class="text-red-500 mr-2">${idx + 1}.</span>${q.meaning}</div>
+                    <input type="text" class="test-answer-input flex-1 p-3 border-2 border-slate-300 rounded-xl outline-none font-bold text-lg focus:border-red-400 bg-white" data-word="${q.word}" autocomplete="off" spellcheck="false" placeholder="스펠링 입력" onpaste="return false;" ondrop="return false;">
+                </div>
+                `;
+            });
+            listEl.innerHTML = html || '<p class="text-center text-slate-500 font-bold py-6">해당 단원에 등록된 단어가 없습니다.</p>';
+        };
+
+        window.submitTest = async () => {
+            const inputs = document.querySelectorAll('.test-answer-input');
+            let score = 0;
+            let total = inputs.length;
+            
+            inputs.forEach(input => {
+                const correctWord = input.getAttribute('data-word').toLowerCase().trim();
+                const userWord = input.value.toLowerCase().trim();
+                
+                if (correctWord === userWord) {
+                    score++;
+                    input.classList.add('bg-green-100', 'border-green-400', 'text-green-700');
+                } else {
+                    input.classList.add('bg-red-100', 'border-red-400', 'text-red-700');
+                    input.value = `${input.value} (정답: ${correctWord})`;
+                }
+                input.disabled = true;
+            });
+            
+            const chapter = window.state.currentTestChapter;
+            if (!window.state.gameData.testScores) window.state.gameData.testScores = {};
+            window.state.gameData.testScores[chapter] = { score, total };
+            
+            await window.saveProgress();
+            
+            const btn = document.getElementById('btn-submit-test');
+            btn.disabled = true;
+            btn.classList.replace('bg-red-600', 'bg-slate-400');
+            btn.style.display = 'none';
+            document.getElementById('test-submit-msg').style.display = 'block';
+        };
+
+        window.startTest = async () => {
+            const chapter = parseInt(document.getElementById('test-chapter-select').value);
+            if(await window.showCustomConfirm(`정말로 모든 학생에게 [${chapter}단원] 강제 시험을 시작하시겠습니까?\n진행 중인 게임 화면이 중단됩니다.`)) {
+                try {
+                    window.showCustomAlert("시험 시작 신호를 전송 중입니다...");
+                    const snap = await getDocs(getStudentsCollection());
+                    const promises = [];
+                    snap.forEach(docSnap => {
+                        const id = docSnap.id;
+                        if (!['마스터', '선생님', '테스트', '테스트2'].includes(id)) {
+                            promises.push(setDoc(docSnap.ref, { testMode: { active: true, chapter: chapter } }, { merge: true }));
+                        }
+                    });
+                    await Promise.all(promises);
+                    window.showCustomAlert(`[${chapter}단원] 시험이 시작되었습니다!`);
+                } catch(e) { console.error(e); }
+            }
+        };
+
+        window.endTest = async () => {
+            if(await window.showCustomConfirm(`시험을 종료하시겠습니까?\n학생들은 원래 화면으로 복귀합니다.`)) {
+                try {
+                    window.showCustomAlert("시험 종료 신호를 전송 중입니다...");
+                    const snap = await getDocs(getStudentsCollection());
+                    const promises = [];
+                    snap.forEach(docSnap => {
+                        const id = docSnap.id;
+                        if (!['마스터', '선생님', '테스트', '테스트2'].includes(id)) {
+                            promises.push(setDoc(docSnap.ref, { testMode: { active: false } }, { merge: true }));
+                        }
+                    });
+                    await Promise.all(promises);
+                    window.showCustomAlert("시험이 종료되었습니다.");
+                    window.renderTestScores(); 
+                } catch(e) { console.error(e); }
+            }
+        };
+
+        window.renderTestScores = async () => {
+            const tbody = document.getElementById('test-scores-tbody');
+            if(!tbody) return;
+            
+            const theadTr = tbody.previousElementSibling.querySelector('tr');
+            if (theadTr.children.length === 1) {
+                for(let i=1; i<=12; i++) {
+                    const th = document.createElement('th');
+                    th.className = "p-3 text-center border-b border-emerald-200";
+                    th.innerText = `${i}단원`;
+                    theadTr.appendChild(th);
+                }
+            }
+
+            tbody.innerHTML = `<tr><td colspan="13" class="text-center py-4">데이터를 불러오는 중...</td></tr>`;
+            
+            try {
+                const snap = await getDocs(getStudentsCollection());
+                let students = [];
+                snap.forEach(docSnap => {
+                    const id = docSnap.id;
+                    if (!['마스터', '선생님', '테스트', '테스트2'].includes(id)) {
+                        students.push({ id, data: docSnap.data() });
+                    }
+                });
+                
+                students.sort((a, b) => {
+                    const getNum = (id) => {
+                        const num = parseInt(id.split('.')[0]);
+                        return isNaN(num) ? 999 : num;
+                    };
+                    return getNum(a.id) - getNum(b.id);
+                });
+
+                let html = '';
+                students.forEach(student => {
+                    const scores = student.data.gameStats?.testScores || {};
+                    let row = `<tr class="border-b border-emerald-50 hover:bg-emerald-50/50 transition-colors"><td class="p-3 font-bold text-slate-700 bg-white sticky left-0 border-r border-emerald-50">${student.id}</td>`;
+                    for(let i=1; i<=12; i++) {
+                        if(scores[i]) {
+                            const isPerfect = scores[i].score === scores[i].total && scores[i].total > 0;
+                            row += `<td class="p-3 text-center font-bold ${isPerfect ? 'text-blue-600' : 'text-slate-600'}">${scores[i].score}/${scores[i].total}</td>`;
+                        } else {
+                            row += `<td class="p-3 text-center text-slate-300">-</td>`;
+                        }
+                    }
+                    row += `</tr>`;
+                    html += row;
+                });
+                tbody.innerHTML = html || '<tr><td colspan="13" class="text-center py-4">학생 데이터가 없습니다.</td></tr>';
+
+            } catch(e) {
+                console.error(e);
+                tbody.innerHTML = '<tr><td colspan="13" class="text-center py-4 text-red-500">오류 발생</td></tr>';
+            }
+        };
+        // -----------------------
+
         window.resetAllStudentsData = async () => {
             const confirmed = await window.showCustomConfirm("정말로 모든 학생의 게임 데이터를 초기화하시겠습니까? (비밀번호는 유지됩니다)");
             if (!confirmed) return;
@@ -1350,7 +1575,7 @@
             try {
                 window.showCustomAlert("데이터 초기화 중입니다... 잠시만 기다려주세요.");
                 const snap = await getDocs(getStudentsCollection());
-                const emptyStats = { level: 1, exp: 0, count: 0, caughtWords: {}, wins: 0, victories: {}, partnerWord: null, usedPokemonCooldown: {}, savedEncounters: {}, defenseLogs: [] };
+                const emptyStats = { level: 1, exp: 0, count: 0, caughtWords: {}, wins: 0, victories: {}, partnerWord: null, usedPokemonCooldown: {}, savedEncounters: {}, defenseLogs: [], testScores: {} };
                 
                 const promises = [];
                 snap.forEach(docSnap => {
@@ -2058,7 +2283,7 @@
             document.getElementById('arena-battle-view').style.display = 'none';
             document.getElementById('arena-battle-view').classList.remove('flex');
             window.loadArena();
-            window.AudioManager.playBGM('battle');
+            window.AudioManager.playBGM('town');
         };
 
         const renderTeamSelection = () => {
