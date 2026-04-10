@@ -1254,6 +1254,9 @@
                 window.state.quizzes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 window.refreshQuiz();
                 window.updateAdminList();
+                if (document.getElementById('prison-mode-view').style.display === 'flex') {
+                    window.renderPrisonPaper();
+                }
             });
 
             unsubscribeStudent = onSnapshot(getStudentDoc(window.state.user), (docSnap) => {
@@ -1675,7 +1678,9 @@
             let html = '';
             const words = window.state.prisonWords || {};
             
-            for (const [word, count] of Object.entries(words)) {
+            const sortedWords = Object.entries(words).sort((a, b) => a[0].localeCompare(b[0]));
+            
+            for (const [word, count] of sortedWords) {
                 const quiz = window.state.quizzes.find(q => q.word.toLowerCase() === word.toLowerCase());
                 const meaning = quiz ? quiz.meaning : "알 수 없음";
 
@@ -1686,7 +1691,10 @@
                         <span class="bg-purple-600 text-white text-xs px-2 py-1 rounded-lg font-bold shadow-sm">남은 횟수: ${count}</span>
                     </div>
                     <div class="text-sm font-bold text-purple-500 mb-1">정답: ${word}</div>
-                    <input type="text" class="w-full p-3 border-2 border-slate-300 rounded-xl outline-none font-bold text-lg focus:border-purple-500 bg-white" placeholder="단어를 정확히 입력하세요" onkeyup="if(event.key==='Enter')window.checkPrisonWord(this, '${word}')" onpaste="return false;" ondrop="return false;" autocomplete="off" spellcheck="false">
+                    <div class="flex gap-2">
+                        <input type="text" class="flex-1 p-3 border-2 border-slate-300 rounded-xl outline-none font-bold text-lg focus:border-purple-500 bg-white" placeholder="단어를 정확히 입력하세요" onkeyup="if(event.key==='Enter')window.checkPrisonWord(this, '${word}')" onpaste="return false;" ondrop="return false;" autocomplete="off" spellcheck="false">
+                        <button onclick="window.checkPrisonWord(this.previousElementSibling, '${word}')" class="bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl px-4 shrink-0 transition-colors shadow-sm">입력하기</button>
+                    </div>
                 </div>
                 `;
             }
