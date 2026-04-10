@@ -599,7 +599,8 @@
     </div>
 
     <!-- 강제 시험 모달창 -->
-    <div id="test-mode-view" class="fixed inset-0 bg-slate-900 z-[9999] hidden flex-col items-center justify-start p-4 sm:p-8 overflow-y-auto custom-scrollbar">
+    <!-- 강제 시험 모달창 -->
+<div id="test-mode-view" translate="no" class="notranslate fixed inset-0 bg-slate-900 z-[9999] hidden flex-col items-center justify-start p-4 sm:p-8 overflow-y-auto custom-scrollbar">
         <div class="bg-white rounded-3xl p-6 sm:p-10 w-full max-w-2xl shadow-2xl relative my-auto">
             <div class="text-center mb-8">
                 <div class="text-5xl mb-2 animate-bounce">🚨</div>
@@ -1614,7 +1615,12 @@
                 html += `
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between bg-slate-50 p-4 rounded-xl border border-slate-200 gap-3">
                     <div class="font-bold text-slate-700 text-lg flex-1"><span class="text-red-500 mr-2">${idx + 1}.</span>${q.meaning}</div>
-                    <input type="text" class="test-answer-input flex-1 p-3 border-2 border-slate-300 rounded-xl outline-none font-bold text-lg focus:border-red-400 bg-white" data-word="${q.word}" autocomplete="off" spellcheck="false" placeholder="스펠링 입력" onpaste="return false;" ondrop="return false;">
+                    <div class="relative flex-1">
+                        <input type="password" class="test-answer-input w-full p-3 border-2 border-slate-300 rounded-xl outline-none font-bold text-lg focus:border-red-400 bg-white relative z-0" style="color: transparent; caret-color: #334155;" data-word="${q.word}" autocomplete="new-password" spellcheck="false" autocorrect="off" autocapitalize="off" onpaste="return false;" ondrop="return false;" oninput="this.nextElementSibling.textContent = this.value || '스펠링 입력'; this.nextElementSibling.style.color = this.value ? '#334155' : '#9ca3af';">
+                        <div class="absolute inset-0 flex items-center pointer-events-none z-10 px-4 overflow-hidden">
+                            <span class="text-slate-400 text-lg font-bold whitespace-pre truncate">스펠링 입력</span>
+                        </div>
+                    </div>
                 </div>
                 `;
             });
@@ -1639,6 +1645,9 @@
                     input.classList.add('bg-red-100', 'border-red-400', 'text-red-700');
                     input.value = userWord === "" ? `미입력 (정답: ${correctWord})` : `${userWord} (정답: ${correctWord})`;
                 }
+                input.type = 'text';
+                input.style.color = 'inherit';
+                input.nextElementSibling.style.display = 'none';
                 input.disabled = true;
             });
             
@@ -1742,8 +1751,13 @@
                     </div>
                     <div class="text-sm font-bold text-purple-500 mb-1">정답: ${word}</div>
                     <div class="flex gap-2">
-                        <input type="text" class="flex-1 p-3 border-2 border-slate-300 rounded-xl outline-none font-bold text-lg focus:border-purple-500 bg-white" placeholder="단어를 정확히 입력하세요" onkeyup="if(event.key==='Enter')window.checkPrisonWord(this, '${word}')" onpaste="return false;" ondrop="return false;" autocomplete="off" spellcheck="false">
-                        <button onclick="window.checkPrisonWord(this.previousElementSibling, '${word}')" class="bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl px-4 shrink-0 transition-colors shadow-sm">입력하기</button>
+                        <div class="relative flex-1">
+                            <input type="password" class="w-full p-3 border-2 border-slate-300 rounded-xl outline-none font-bold text-lg focus:border-purple-500 bg-white relative z-0" style="color: transparent; caret-color: #334155;" onkeyup="if(event.key==='Enter')window.checkPrisonWord(this, '${word}')" onpaste="return false;" ondrop="return false;" autocomplete="new-password" spellcheck="false" autocorrect="off" autocapitalize="off" oninput="this.nextElementSibling.textContent = this.value || '단어를 정확히 입력하세요'; this.nextElementSibling.style.color = this.value ? '#334155' : '#9ca3af';">
+                            <div class="absolute inset-0 flex items-center pointer-events-none z-10 px-4 overflow-hidden">
+                                <span class="text-slate-400 text-lg font-bold whitespace-pre truncate">단어를 정확히 입력하세요</span>
+                            </div>
+                        </div>
+                        <button onclick="window.checkPrisonWord(this.previousElementSibling.querySelector('input'), '${word}')" class="bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl px-4 shrink-0 transition-colors shadow-sm">입력하기</button>
                     </div>
                 </div>
                 `;
@@ -1758,6 +1772,7 @@
             const val = inputEl.value.trim().toLowerCase();
             if (val === targetWord.toLowerCase()) {
                 inputEl.value = '';
+                if(inputEl.nextElementSibling) { inputEl.nextElementSibling.textContent = '단어를 정확히 입력하세요'; inputEl.nextElementSibling.style.color = '#9ca3af'; }
                 inputEl.classList.add('bg-green-100', 'border-green-400');
                 setTimeout(() => { inputEl.classList.remove('bg-green-100', 'border-green-400'); }, 300);
 
