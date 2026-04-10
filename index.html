@@ -284,7 +284,7 @@
                 </div>
 
                 <!-- 사냥터 배틀 뷰 -->
-                <div id="hunt-battle-view" class="hidden flex-col md:flex-row gap-4 relative mt-10">
+                <div id="hunt-battle-view" translate="no" class="notranslate hidden flex-col md:flex-row gap-4 relative mt-10">
                     <div class="absolute -top-10 left-2 z-10 flex gap-2">
                         <button onclick="window.exitStage()" class="text-sm font-bold text-slate-500 hover:text-red-500 bg-white border border-slate-200 px-4 py-1.5 rounded-full shadow-sm transition-colors">🏃 지도로 도망가기</button>
                         <button onclick="window.showCheatSheet()" class="text-sm font-bold text-indigo-500 hover:text-indigo-600 bg-indigo-50 border border-indigo-200 px-4 py-1.5 rounded-full shadow-sm transition-colors">📜 족보 보기</button>
@@ -1258,6 +1258,9 @@
                 if (document.getElementById('prison-mode-view').style.display === 'flex') {
                     window.renderPrisonPaper();
                 }
+                if (document.getElementById('test-mode-view').style.display === 'flex') {
+                    window.renderTestPaper(window.state.currentTestChapter);
+                }
             });
 
             unsubscribeStudent = onSnapshot(getStudentDoc(window.state.user), (docSnap) => {
@@ -1639,10 +1642,10 @@
                 
                 if (correctWord === userWord.toLowerCase()) {
                     score++;
-                    input.classList.add('bg-green-100', 'border-green-400', 'text-green-700');
+                    input.classList.add('bg-green-400', 'border-green-400', 'text-green-700');
                 } else {
                     wrongWords.push(correctWord); 
-                    input.classList.add('bg-red-100', 'border-red-400', 'text-red-700');
+                    input.classList.add('bg-red-400', 'border-red-400', 'text-red-700');
                     input.value = userWord === "" ? `미입력 (정답: ${correctWord})` : `${userWord} (정답: ${correctWord})`;
                 }
                 input.type = 'text';
