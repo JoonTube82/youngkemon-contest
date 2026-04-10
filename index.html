@@ -1288,11 +1288,23 @@
                     }
 
                     // Prison Mode (오답 노트) 감지 로직
-                    if (data.prisonMode && data.prisonMode.active && Object.keys(data.prisonMode.wordsToType || {}).length > 0) {
-                        window.state.prisonWords = data.prisonMode.wordsToType;
-                        if (document.getElementById('prison-mode-view').style.display !== 'flex') {
-                            document.getElementById('prison-mode-view').style.display = 'flex';
-                            window.renderPrisonPaper();
+                    if (data.prisonMode && data.prisonMode.active) {
+                        let activeWords = {};
+                        let hasWords = false;
+                        for (let w in (data.prisonMode.wordsToType || {})) {
+                            if (data.prisonMode.wordsToType[w] > 0) {
+                                activeWords[w] = data.prisonMode.wordsToType[w];
+                                hasWords = true;
+                            }
+                        }
+                        if (hasWords) {
+                            window.state.prisonWords = activeWords;
+                            if (document.getElementById('prison-mode-view').style.display !== 'flex') {
+                                document.getElementById('prison-mode-view').style.display = 'flex';
+                                window.renderPrisonPaper();
+                            }
+                        } else {
+                            document.getElementById('prison-mode-view').style.display = 'none';
                         }
                     } else {
                         document.getElementById('prison-mode-view').style.display = 'none';
@@ -1607,7 +1619,7 @@
             const chapter = window.state.currentTestChapter;
             if (!window.state.gameData.testScores) window.state.gameData.testScores = {};
             
-            window.state.gameData.testScores[chapter] = { score, total, wrongWords };
+            window.state.gameData.testScores[chapter] = { score, total, wrongWords, unsubmitted: false };
             
             await window.saveProgress();
             
@@ -1632,7 +1644,14 @@
                     snap.forEach(docSnap => {
                         const id = docSnap.id;
                         if (checkedBoxes.includes(id)) {
-                            promises.push(setDoc(docSnap.ref, { testMode: { active: true, chapter: chapter } }, { merge: true }));
+                            let stats = docSnap.data().gameStats || {};
+                            if (!stats.testScores) stats.testScores = {};
+                            stats.testScores[chapter] = { score: 0, total: 0, wrongWords: [], unsubmitted: true };
+
+                            promises.push(setDoc(docSnap.ref, { 
+                                testMode: { active: true, chapter: chapter },
+                                gameStats: stats
+                            }, { merge: true }));
                         }
                     });
                     await Promise.all(promises);
@@ -1652,13 +1671,18 @@
                         if (data.testMode && data.testMode.active) {
                             const chapter = data.testMode.chapter;
                             const scores = data.gameStats?.testScores?.[chapter];
+                            
+                            const oldWords = data.prisonMode?.wordsToType || {};
+                            let wordsToType = {};
+                            for (let w in oldWords) wordsToType[w] = 0; 
+                            
                             let updates = { testMode: { active: false } };
                             
-                            // 제출 기록이 있고 틀린 단어가 있다면 감옥 모드 활성화
-                            if (scores && scores.wrongWords && scores.wrongWords.length > 0) {
-                                let wordsToType = {};
+                            if (scores && !scores.unsubmitted && scores.wrongWords && scores.wrongWords.length > 0) {
                                 scores.wrongWords.forEach(w => { wordsToType[w] = 3; });
                                 updates.prisonMode = { active: true, wordsToType: wordsToType };
+                            } else {
+                                updates.prisonMode = { active: false, wordsToType: wordsToType };
                             }
                             
                             promises.push(setDoc(docSnap.ref, updates, { merge: true }));
@@ -1678,7 +1702,7 @@
             let html = '';
             const words = window.state.prisonWords || {};
             
-            const sortedWords = Object.entries(words).sort((a, b) => a[0].localeCompare(b[0]));
+            const sortedWords = Object.entries(words).filter(w => w[1] > 0).sort((a, b) => a[0].localeCompare(b[0]));
             
             for (const [word, count] of sortedWords) {
                 const quiz = window.state.quizzes.find(q => q.word.toLowerCase() === word.toLowerCase());
@@ -1712,12 +1736,14 @@
                 setTimeout(() => { inputEl.classList.remove('bg-green-100', 'border-green-400'); }, 300);
 
                 window.state.prisonWords[targetWord]--;
-                if (window.state.prisonWords[targetWord] <= 0) {
-                    delete window.state.prisonWords[targetWord];
+                
+                let remainingCount = 0;
+                for (let w in window.state.prisonWords) {
+                    if (window.state.prisonWords[w] > 0) remainingCount++;
                 }
                 
-                if (Object.keys(window.state.prisonWords).length === 0) {
-                    await setDoc(getStudentDoc(window.state.user), { prisonMode: { active: false } }, { merge: true });
+                if (remainingCount === 0) {
+                    await setDoc(getStudentDoc(window.state.user), { prisonMode: { active: false, wordsToType: window.state.prisonWords } }, { merge: true });
                     document.getElementById('prison-mode-view').style.display = 'none';
                     window.showCustomAlert("🎉 감옥에서 무사히 탈출했습니다!");
                 } else {
@@ -1741,8 +1767,18 @@
                 let prisoners = [];
                 snap.forEach(docSnap => {
                     const data = docSnap.data();
-                    if (data.prisonMode && data.prisonMode.active && Object.keys(data.prisonMode.wordsToType || {}).length > 0) {
-                        prisoners.push({ id: docSnap.id, words: data.prisonMode.wordsToType });
+                    if (data.prisonMode && data.prisonMode.active) {
+                        let activeWords = {};
+                        let hasWords = false;
+                        for (let w in (data.prisonMode.wordsToType || {})) {
+                            if (data.prisonMode.wordsToType[w] > 0) {
+                                activeWords[w] = data.prisonMode.wordsToType[w];
+                                hasWords = true;
+                            }
+                        }
+                        if (hasWords) {
+                            prisoners.push({ id: docSnap.id, words: activeWords });
+                        }
                     }
                 });
                 
@@ -1773,7 +1809,12 @@
         // 로켓단 감옥 강제 탈출 (관리자용)
         window.forceEscape = async (studentId) => {
             if (await window.showCustomConfirm(`${studentId} 학생을 감옥에서 강제로 탈출시키겠습니까?`)) {
-                await setDoc(getStudentDoc(studentId), { prisonMode: { active: false } }, { merge: true });
+                const docSnap = await getDoc(getStudentDoc(studentId));
+                const oldWords = docSnap.data().prisonMode?.wordsToType || {};
+                let wordsToType = {};
+                for (let w in oldWords) wordsToType[w] = 0;
+                
+                await setDoc(getStudentDoc(studentId), { prisonMode: { active: false, wordsToType: wordsToType } }, { merge: true });
                 window.showCustomAlert(`${studentId} 학생 강제 탈출 처리 완료!`);
                 window.renderPrisonList();
             }
@@ -1817,8 +1858,8 @@
                         chaptersTaken.forEach((ch, index) => {
                             const scoreData = scores[ch];
                             const isPerfect = scoreData.score === scoreData.total && scoreData.total > 0;
-                            const wrongList = scoreData.wrongWords && scoreData.wrongWords.length > 0 ? scoreData.wrongWords.join(', ') : '없음 (만점!)';
-                            const wrongClass = isPerfect ? 'text-emerald-400 font-bold' : 'text-red-400 font-bold';
+                            const wrongList = scoreData.wrongWords && scoreData.wrongWords.length > 0 ? scoreData.wrongWords.join(', ') : (scoreData.unsubmitted ? '미제출' : '없음 (만점!)');
+                            const wrongClass = isPerfect ? 'text-emerald-400 font-bold' : (scoreData.unsubmitted ? 'text-slate-500' : 'text-red-400 font-bold');
                             
                             html += `<tr class="border-b border-slate-600 hover:bg-slate-700 transition-colors">
                                 ${index === 0 ? `<td class="p-3 font-bold text-emerald-300 bg-slate-800 border-r border-slate-600 align-middle" rowspan="${chaptersTaken.length}">${student.id}</td>` : ''}
@@ -1870,7 +1911,7 @@
                         hasData = true;
                         chaptersTaken.forEach(ch => {
                             const scoreData = scores[ch];
-                            const wrongList = scoreData.wrongWords && scoreData.wrongWords.length > 0 ? scoreData.wrongWords.join(', ') : '없음';
+                            const wrongList = scoreData.wrongWords && scoreData.wrongWords.length > 0 ? scoreData.wrongWords.join(', ') : (scoreData.unsubmitted ? '미제출' : '없음');
                             const safeWrongList = `"${wrongList.replace(/"/g, '""')}"`;
                             csvContent += `${student.id},${ch},${scoreData.score},${scoreData.total},${safeWrongList}\n`;
                         });
