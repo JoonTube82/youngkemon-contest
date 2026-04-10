@@ -1268,6 +1268,11 @@
                         return;
                     }
 
+                    // [버그 수정 2번] 서버의 시험 데이터 로컬 강제 동기화 (과거 점수 덮어씌움 방지)
+                    if (data.gameStats && data.gameStats.testScores) {
+                        window.state.gameData.testScores = data.gameStats.testScores;
+                    }
+
                     // Test Mode 감지 로직
                     if (data.testMode && data.testMode.active) {
                         if (document.getElementById('test-mode-view').style.display !== 'flex') {
@@ -1276,8 +1281,29 @@
                             document.getElementById('test-mode-view').style.display = 'flex';
                         }
                     } else {
-                        document.getElementById('test-mode-view').style.display = 'none';
+                        // [버그 수정 1번] 시험 종료 시, 아직 제출하지 않은 학생의 답안 자동 제출 및 감옥 처리
+                        const testView = document.getElementById('test-mode-view');
                         const submitBtn = document.getElementById('btn-submit-test');
+                        
+                        if (testView.style.display === 'flex' && submitBtn && !submitBtn.disabled) {
+                            const inputs = document.querySelectorAll('.test-answer-input');
+                            let wrongWords = [];
+                            inputs.forEach(input => {
+                                const correctWord = input.getAttribute('data-word').toLowerCase().trim();
+                                if (input.value.trim().toLowerCase() !== correctWord) wrongWords.push(correctWord);
+                            });
+                            
+                            window.submitTest(); // 자동 제출 진행
+                            
+                            // 자동 제출했는데 틀린 단어가 있다면 즉시 감옥행 처리
+                            if (wrongWords.length > 0) {
+                                let wordsToType = {};
+                                wrongWords.forEach(w => { wordsToType[w] = 3; });
+                                setDoc(getStudentDoc(window.state.user), { prisonMode: { active: true, wordsToType: wordsToType } }, { merge: true });
+                            }
+                        }
+
+                        document.getElementById('test-mode-view').style.display = 'none';
                         if (submitBtn) {
                             submitBtn.style.display = 'block';
                             submitBtn.disabled = false;
@@ -1560,7 +1586,7 @@
             if (!container) return;
             let html = '';
             STUDENT_LIST.forEach(name => {
-                if (!['마스터', '선생님', '테스트', '테스트2'].includes(name)) {
+                if (!['마스터', '선생님'].includes(name)) {
                     html += `
                     <label class="flex items-center gap-1.5 p-1.5 bg-slate-700 border border-slate-600 rounded-lg cursor-pointer hover:bg-slate-600">
                         <input type="checkbox" value="${name}" class="test-student-cb w-4 h-4 text-emerald-500 bg-slate-800 border-slate-500 rounded focus:ring-emerald-500 cursor-pointer" checked>
@@ -1831,7 +1857,7 @@
                 let students = [];
                 snap.forEach(docSnap => {
                     const id = docSnap.id;
-                    if (!['마스터', '선생님', '테스트', '테스트2'].includes(id)) {
+                    if (!['마스터', '선생님'].includes(id)) {
                         students.push({ id, data: docSnap.data() });
                     }
                 });
@@ -1885,7 +1911,7 @@
                 let students = [];
                 snap.forEach(docSnap => {
                     const id = docSnap.id;
-                    if (!['마스터', '선생님', '테스트', '테스트2'].includes(id)) {
+                    if (!['마스터', '선생님'].includes(id)) {
                         students.push({ id, data: docSnap.data() });
                     }
                 });
