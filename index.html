@@ -1616,7 +1616,7 @@
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between bg-slate-50 p-4 rounded-xl border border-slate-200 gap-3">
                     <div class="font-bold text-slate-700 text-lg flex-1"><span class="text-red-500 mr-2">${idx + 1}.</span>${q.meaning}</div>
                     <div class="relative flex-1">
-                        <input type="password" class="test-answer-input w-full p-3 border-2 border-slate-300 rounded-xl outline-none font-bold text-lg focus:border-red-400 bg-white relative z-0" style="color: transparent; caret-color: #334155;" data-word="${q.word}" autocomplete="new-password" spellcheck="false" autocorrect="off" autocapitalize="off" onpaste="return false;" ondrop="return false;" oninput="this.nextElementSibling.textContent = this.value || '스펠링 입력'; this.nextElementSibling.style.color = this.value ? '#334155' : '#9ca3af';">
+                        <input type="password" class="test-answer-input w-full p-3 border-2 border-slate-600 rounded-xl outline-none font-bold text-lg focus:border-red-400 bg-slate-800 relative z-0" style="color: transparent; caret-color: white;" data-word="${q.word}" autocomplete="new-password" spellcheck="false" autocorrect="off" autocapitalize="off" onpaste="return false;" ondrop="return false;" oninput="this.nextElementSibling.firstElementChild.textContent = this.value || '스펠링 입력'; this.nextElementSibling.firstElementChild.style.color = this.value ? 'white' : '#9ca3af';">
                         <div class="absolute inset-0 flex items-center pointer-events-none z-10 px-4 overflow-hidden">
                             <span class="text-slate-400 text-lg font-bold whitespace-pre truncate">스펠링 입력</span>
                         </div>
@@ -1752,7 +1752,7 @@
                     <div class="text-sm font-bold text-purple-500 mb-1">정답: ${word}</div>
                     <div class="flex gap-2">
                         <div class="relative flex-1">
-                            <input type="password" class="w-full p-3 border-2 border-slate-300 rounded-xl outline-none font-bold text-lg focus:border-purple-500 bg-white relative z-0" style="color: transparent; caret-color: #334155;" onkeyup="if(event.key==='Enter')window.checkPrisonWord(this, '${word}')" onpaste="return false;" ondrop="return false;" autocomplete="new-password" spellcheck="false" autocorrect="off" autocapitalize="off" oninput="this.nextElementSibling.textContent = this.value || '단어를 정확히 입력하세요'; this.nextElementSibling.style.color = this.value ? '#334155' : '#9ca3af';">
+                            <input type="password" class="w-full p-3 border-2 border-slate-600 rounded-xl outline-none font-bold text-lg focus:border-purple-500 bg-slate-800 relative z-0" style="color: transparent; caret-color: white;" onkeyup="if(event.key==='Enter')window.checkPrisonWord(this, '${word}')" onpaste="return false;" ondrop="return false;" autocomplete="new-password" spellcheck="false" autocorrect="off" autocapitalize="off" oninput="this.nextElementSibling.firstElementChild.textContent = this.value || '단어를 정확히 입력하세요'; this.nextElementSibling.firstElementChild.style.color = this.value ? 'white' : '#9ca3af';">
                             <div class="absolute inset-0 flex items-center pointer-events-none z-10 px-4 overflow-hidden">
                                 <span class="text-slate-400 text-lg font-bold whitespace-pre truncate">단어를 정확히 입력하세요</span>
                             </div>
@@ -1772,7 +1772,7 @@
             const val = inputEl.value.trim().toLowerCase();
             if (val === targetWord.toLowerCase()) {
                 inputEl.value = '';
-                if(inputEl.nextElementSibling) { inputEl.nextElementSibling.textContent = '단어를 정확히 입력하세요'; inputEl.nextElementSibling.style.color = '#9ca3af'; }
+                if(inputEl.nextElementSibling) { inputEl.nextElementSibling.firstElementChild.textContent = '단어를 정확히 입력하세요'; inputEl.nextElementSibling.firstElementChild.style.color = '#9ca3af'; }
                 inputEl.classList.add('bg-green-100', 'border-green-400');
                 setTimeout(() => { inputEl.classList.remove('bg-green-100', 'border-green-400'); }, 300);
 
