@@ -586,12 +586,12 @@
                         </div>
                         <button onclick="window.renderTestScores()" class="w-full mb-6 bg-emerald-900/50 text-emerald-400 border border-emerald-500/30 py-2.5 rounded-xl font-bold text-xs hover:bg-emerald-800 transition-colors">🔄 성적표 새로고침</button>
 
-                        <!-- [신규] 로켓단의 감옥 관리 -->
-                        <h4 class="text-xs font-bold text-emerald-400 mb-2 mt-6">🚨 로켓단의 감옥 (오답 노트) 관리</h4>
+                        <!-- [신규] 로켓단의 함정 관리 -->
+                        <h4 class="text-xs font-bold text-emerald-400 mb-2 mt-6">🚨 로켓단의 함정 (오답 노트) 관리</h4>
                         <div class="bg-slate-800 rounded-xl border border-slate-600 shadow-inner p-3 max-h-48 overflow-y-auto custom-scrollbar mb-2" id="prison-management-list">
                             <!-- 데이터 렌더링 -->
                         </div>
-                        <button onclick="window.renderPrisonList()" class="w-full bg-slate-700 text-slate-300 border border-slate-600 py-2.5 rounded-xl font-bold text-xs hover:bg-slate-600 transition-colors">🔄 감옥 명단 새로고침</button>
+                        <button onclick="window.renderPrisonList()" class="w-full bg-slate-700 text-slate-300 border border-slate-600 py-2.5 rounded-xl font-bold text-xs hover:bg-slate-600 transition-colors">🔄 함정 명단 새로고침</button>
                     </div>
                 </div>
             </div>
@@ -617,16 +617,16 @@
         </div>
     </div>
 
-    <!-- [신규] 로켓단의 감옥(오답 노트) 모달창 -->
+    <!-- [신규] 로켓단의 함정(오답 노트) 모달창 -->
     <div id="prison-mode-view" class="fixed inset-0 bg-purple-900 z-[9998] hidden flex-col items-center justify-start p-4 sm:p-8 overflow-y-auto custom-scrollbar">
         <div class="bg-slate-800 rounded-3xl p-6 sm:p-10 w-full max-w-2xl shadow-2xl relative my-auto border-8 border-purple-950">
             <div class="text-center mb-6">
                 <div class="text-6xl mb-2 drop-shadow-md">⛓️</div>
-                <h2 class="text-3xl font-black text-purple-400 mb-2">로켓단의 감옥</h2>
+                <h2 class="text-3xl font-black text-purple-400 mb-2">로켓단의 함정</h2>
                 <p class="text-slate-300 font-bold text-sm sm:text-base">오답을 3번씩 올바르게 입력해야 탈출할 수 있습니다!</p>
             </div>
             <div id="prison-paper-list" class="space-y-4 mb-6 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
-                <!-- 감옥 문제 렌더링 영역 -->
+                <!-- 함정 문제 렌더링 영역 -->
             </div>
         </div>
     </div>
@@ -1285,7 +1285,7 @@
                             document.getElementById('test-mode-view').style.display = 'flex';
                         }
                     } else {
-                        // [버그 수정 1번] 시험 종료 시, 아직 제출하지 않은 학생의 답안 자동 제출 및 감옥 처리
+                        // [버그 수정 1번] 시험 종료 시, 아직 제출하지 않은 학생의 답안 자동 제출 및 함정 처리
                         const testView = document.getElementById('test-mode-view');
                         const submitBtn = document.getElementById('btn-submit-test');
                         
@@ -1299,7 +1299,7 @@
                             
                             window.submitTest(); // 자동 제출 진행
                             
-                            // 자동 제출했는데 틀린 단어가 있다면 즉시 감옥행 처리
+                            // 자동 제출했는데 틀린 단어가 있다면 즉시 함정행 처리
                             if (wrongWords.length > 0) {
                                 let wordsToType = {};
                                 wrongWords.forEach(w => { wordsToType[w] = 3; });
@@ -1699,7 +1699,7 @@
         };
 
         window.endTest = async () => {
-            if(await window.showCustomConfirm(`시험을 종료하시겠습니까?\n틀린 단어가 있는 학생은 오답 노트(감옥)로 이동합니다.`)) {
+            if(await window.showCustomConfirm(`시험을 종료하시겠습니까?\n틀린 단어가 있는 학생은 오답 노트(함정)로 이동합니다.`)) {
                 try {
                     window.showCustomAlert("시험 종료 신호를 전송 중입니다...");
                     const snap = await getDocs(getStudentsCollection());
@@ -1734,7 +1734,7 @@
             }
         };
 
-        // 로켓단의 감옥 렌더링 (학생용)
+        // 로켓단의 함정 렌더링 (학생용)
         window.renderPrisonPaper = () => {
             const listEl = document.getElementById('prison-paper-list');
             let html = '';
@@ -1770,7 +1770,7 @@
             if (firstInput) firstInput.focus();
         };
 
-        // 로켓단의 감옥 정답 체크 로직 (학생용)
+        // 로켓단의 함정 정답 체크 로직 (학생용)
         window.checkPrisonWord = async (inputEl, targetWord) => {
             const val = inputEl.value.trim().toLowerCase();
             if (val === targetWord.toLowerCase()) {
@@ -1789,7 +1789,7 @@
                 if (remainingCount === 0) {
                     await setDoc(getStudentDoc(window.state.user), { prisonMode: { active: false, wordsToType: window.state.prisonWords } }, { merge: true });
                     document.getElementById('prison-mode-view').style.display = 'none';
-                    window.showCustomAlert("🎉 감옥에서 무사히 탈출했습니다!");
+                    window.showCustomAlert("🎉 함정에서 무사히 탈출했습니다!");
                 } else {
                     await setDoc(getStudentDoc(window.state.user), { prisonMode: { active: true, wordsToType: window.state.prisonWords } }, { merge: true });
                     window.renderPrisonPaper();
@@ -1800,7 +1800,7 @@
             }
         };
 
-        // 로켓단 감옥 명단 렌더링 (관리자용)
+        // 로켓단 함정 명단 렌더링 (관리자용)
         window.renderPrisonList = async () => {
             const listEl = document.getElementById('prison-management-list');
             if (!listEl) return;
@@ -1827,7 +1827,7 @@
                 });
                 
                 if (prisoners.length === 0) {
-                    listEl.innerHTML = '<p class="text-center text-slate-400 text-sm py-4 font-bold">감옥에 갇힌 학생이 없습니다.</p>';
+                    listEl.innerHTML = '<p class="text-center text-slate-400 text-sm py-4 font-bold">함정에 갇힌 학생이 없습니다.</p>';
                     return;
                 }
                 
@@ -1850,9 +1850,9 @@
             }
         };
 
-        // 로켓단 감옥 강제 탈출 (관리자용)
+        // 로켓단 함정 강제 탈출 (관리자용)
         window.forceEscape = async (studentId) => {
-            if (await window.showCustomConfirm(`${studentId} 학생을 감옥에서 강제로 탈출시키겠습니까?`)) {
+            if (await window.showCustomConfirm(`${studentId} 학생을 함정에서 강제로 탈출시키겠습니까?`)) {
                 const docSnap = await getDoc(getStudentDoc(studentId));
                 const oldWords = docSnap.data().prisonMode?.wordsToType || {};
                 let wordsToType = {};
