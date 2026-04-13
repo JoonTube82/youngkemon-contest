@@ -1,0 +1,83 @@
+        @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
+        
+        /* 다크모드 베이스 설정 */
+        body { font-family: 'Jua', sans-serif; background-color: #121212; color: #e5e7eb; }
+        .magic-card { background: #1f2937; border-radius: 2.5rem; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5); border: 4px solid #374151; }
+        .spell-input { border: 3px solid #374151; background: #111827; color: #f9fafb; border-radius: 1.5rem; padding: 1.2rem; width: 100%; text-align: center; font-size: 1.8rem; outline: none; transition: all 0.2s; }
+        .spell-input:focus { border-color: #ef4444; box-shadow: 0 0 20px rgba(239, 68, 68, 0.3); }
+        .btn-magic { background: linear-gradient(135deg, #ef4444, #f87171); color: white; border-radius: 1.5rem; padding: 1.2rem; font-size: 1.4rem; font-weight: bold; width: 100%; box-shadow: 0 6px 0 #991b1b; transition: all 0.1s; cursor: pointer; border: none; }
+        .btn-magic:active { transform: translateY(4px); box-shadow: 0 2px 0 #991b1b; }
+        .btn-magic:disabled { opacity: 0.6; cursor: wait; }
+        canvas { image-rendering: pixelated; border-radius: 2rem; width: 100%; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 999; padding: 20px; }
+        .modal-box { background: #1f2937; padding: 40px; border-radius: 2.5rem; text-align: center; max-width: 400px; width: 100%; border: 6px solid #374151; box-shadow: 0 25px 50px rgba(0,0,0,0.7); }
+        
+        .admin-view-container { display: none; }
+        .game-view-container { display: none; }
+        .login-view-container { display: block; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .tab-btn { transition: all 0.2s; }
+        .tab-btn.active { background-color: #ef4444 !important; color: white !important; border-color: #ef4444 !important;}
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #1f2937; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 10px; }
+
+        /* 배틀 이펙트 */
+        @keyframes battleHit {
+            0% { transform: translate(0, 0) scale(1); filter: brightness(1); }
+            25% { transform: translate(-10px, 10px) scale(1.1); filter: brightness(2) sepia(1) hue-rotate(-50deg); }
+            50% { transform: translate(10px, -10px) scale(1); filter: brightness(1); }
+            75% { transform: translate(-10px, -10px) scale(1.1); filter: brightness(2) sepia(1) hue-rotate(-50deg); }
+            100% { transform: translate(0, 0) scale(1); filter: brightness(1); }
+        }
+        .animate-hit { animation: battleHit 0.3s ease-in-out; }
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-50px) scale(1.5); }
+        }
+        .dmg-text { animation: floatUp 1s forwards; position: absolute; font-weight: 900; z-index: 50; text-shadow: 2px 2px 0 #000; }
+
+        /* 다크모드용 티어 UI */
+        .tier-iron { background: linear-gradient(135deg, #1e293b, #334155) !important; border-bottom-color: #475569 !important; }
+        .tier-bronze { background: linear-gradient(135deg, #451a03, #78350f) !important; border-bottom-color: #92400e !important; }
+        .tier-silver { background: linear-gradient(135deg, #334155, #475569) !important; border-bottom-color: #64748b !important; }
+        .tier-gold { background: linear-gradient(135deg, #713f12, #a16207) !important; border-bottom-color: #ca8a04 !important; box-shadow: 0 10px 25px rgba(202, 138, 4, 0.2) !important; }
+        .tier-platinum { background: linear-gradient(135deg, #064e3b, #047857) !important; border-bottom-color: #059669 !important; box-shadow: 0 10px 25px rgba(5, 150, 105, 0.2) !important; }
+        .tier-diamond { background: linear-gradient(135deg, #0c4a6e, #0369a1) !important; border-bottom-color: #0284c7 !important; box-shadow: 0 10px 25px rgba(2, 132, 199, 0.2) !important; }
+        .tier-master { background: linear-gradient(135deg, #3b0764, #6b21a8) !important; border-bottom-color: #7e22ce !important; box-shadow: 0 10px 30px rgba(126, 34, 206, 0.4) !important; animation: masterGlow 2s infinite alternate; }
+        
+        @keyframes masterGlow {
+            from { box-shadow: 0 0 10px rgba(126, 34, 206, 0.4); }
+            to { box-shadow: 0 0 30px rgba(126, 34, 206, 0.8); }
+        }
+        .name-master { background: linear-gradient(to right, #d8b4fe, #fbcfe8); -webkit-background-clip: text; color: transparent; text-shadow: 0 0 10px rgba(236,72,153,0.3); }
+
+        /* 다크모드 강제 적용 오버라이드 */
+        .bg-white { background-color: #1f2937 !important; }
+        .bg-slate-100 { background-color: #374151 !important; }
+        .bg-slate-50 { background-color: #111827 !important; }
+        .text-slate-800, .text-slate-700 { color: #f9fafb !important; }
+        .text-slate-600, .text-slate-500 { color: #d1d5db !important; }
+        .text-slate-400 { color: #9ca3af !important; }
+        .border-slate-100, .border-slate-200, .border-slate-300 { border-color: #4b5563 !important; }
+        .border-white { border-color: #1f2937 !important; }
+        
+        /* 파스텔톤 배경 톤다운 */
+        .bg-red-50 { background-color: #450a0a !important; border-color: #7f1d1d !important; }
+        .bg-blue-50 { background-color: #082f49 !important; border-color: #075985 !important; }
+        .bg-green-50 { background-color: #052e16 !important; border-color: #065f46 !important; }
+        .bg-orange-50 { background-color: #431407 !important; border-color: #7c2d12 !important; }
+        .bg-purple-50 { background-color: #2e1065 !important; border-color: #4c1d95 !important; }
+        .bg-yellow-50 { background-color: #422006 !important; border-color: #713f12 !important; }
+        .bg-indigo-50 { background-color: #1e1b4b !important; border-color: #312e81 !important; }
+        
+        .border-red-100, .border-red-200 { border-color: #7f1d1d !important; }
+        .border-blue-100, .border-blue-200 { border-color: #075985 !important; }
+        .border-green-100, .border-green-200 { border-color: #065f46 !important; }
+        .border-orange-100, .border-orange-200 { border-color: #5c3015 !important; }
+        .border-purple-100, .border-purple-200 { border-color: #4c1d95 !important; }
+        .border-yellow-100, .border-yellow-200 { border-color: #713f12 !important; }
+        .border-indigo-100, .border-indigo-300 { border-color: #312e81 !important; }
