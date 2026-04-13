@@ -790,7 +790,7 @@ window.renderRanking = async () => {
 
 
 // ==========================================
-// 8. 아레나(배틀) 관련 로직
+// 8. 아레나(배틀) 관련 로직 (스킬 게이지 및 체력 보정 추가)
 // ==========================================
 const checkDailyLimit = () => {
     const myId = window.state.user;
@@ -810,7 +810,7 @@ const checkDailyLimit = () => {
     return studentWins >= 3 && masterWin && teacherWin;
 };
 
-window.battleState = { active: false, oppId: null, oppStats: null, mySelection: [], myTeam: [], oppTeam: [], myIdx: 0, oppIdx: 0, oppTimer: null };
+window.battleState = { active: false, oppId: null, oppStats: null, mySelection: [], myTeam: [], oppTeam: [], myIdx: 0, oppIdx: 0, oppTimer: null, myEnergy: 0, oppEnergy: 0, energyMax: 35 };
 
 window.showOppMonDetail = (word, count) => {
     const pInfo = getPokemonInfoForWord(word, count);
@@ -1009,7 +1009,9 @@ window.prepareBattle = async (oppId) => {
 
 window.cancelBattleSelect = () => {
     if(window.battleState.oppTimer) clearInterval(window.battleState.oppTimer);
+    clearTimeout(window.battleState.quizTimeout);
     window.battleState.active = false;
+    document.getElementById('battle-quiz-modal').style.display = 'none';
     document.getElementById('arena-list-view').style.display = 'block'; document.getElementById('arena-team-view').style.display = 'none';
     document.getElementById('arena-battle-view').style.display = 'none'; document.getElementById('arena-battle-view').classList.remove('flex');
     window.loadArena(); window.AudioManager.playBGM('town');
@@ -1091,20 +1093,30 @@ window.startRealBattle = () => {
     battleView.style.display = 'flex'; battleView.classList.add('flex');
 
     const myCaught = window.state.gameData.caughtWords || {}; const myLevel = window.state.gameData.level || 1;
-    window.battleState.myTeam = window.battleState.mySelection.map(w => createBattleMon(w, myCaught[w], myLevel));
+    window.battleState.myTeam = window.battleState.mySelection.map(w => {
+        let mon = createBattleMon(w, myCaught[w], myLevel);
+        // 💡 아레나 전용 체력 5배 뻥튀기! (순식간에 안 죽게 만듭니다)
+        mon.hp *= 5; mon.maxHp *= 5; 
+        return mon;
+    });
     
-    const oppCaught = window.battleState.oppStats.caughtWords || {}; const oppLevel = window.battleState.oppStats.level || 1;
+    // [방법 B] 방어자 레벨 상한선 설정 (내 레벨 + 5)
+    const oppCaught = window.battleState.oppStats.caughtWords || {}; 
+    const oppLevel = Math.min((window.battleState.oppStats.level || 1), myLevel + 5);
     let oppDefenseWords = window.battleState.oppStats.defenseTeam || [];
     oppDefenseWords = oppDefenseWords.filter(w => oppCaught[w] >= 10);
     if (oppDefenseWords.length === 0) oppDefenseWords = Object.keys(oppCaught).sort((a,b)=>oppCaught[b]-oppCaught[a]).slice(0,3);
     
     window.battleState.oppTeam = oppDefenseWords.map(w => {
-        const mon = createBattleMon(w, oppCaught[w], oppLevel);
-        mon.hp = Math.floor(mon.hp * 1.3); mon.maxHp = Math.floor(mon.maxHp * 1.3); mon.atk = Math.floor(mon.atk * 1.3);
+        let mon = createBattleMon(w, oppCaught[w], oppLevel);
+        // 💡 방어팀은 조금 더 단단하게 보정 (6배 뻥튀기)
+        mon.hp = Math.floor(mon.hp * 6); mon.maxHp = Math.floor(mon.maxHp * 6); mon.atk = Math.floor(mon.atk * 1.2);
         return mon;
     });
 
-    window.battleState.myIdx = 0; window.battleState.oppIdx = 0; window.battleState.active = true;
+    window.battleState.myIdx = 0; window.battleState.oppIdx = 0; 
+    window.battleState.myEnergy = 0; window.battleState.oppEnergy = 0; window.battleState.energyMax = 35; // 35대 때리면 게이지 꽉 참
+    window.battleState.active = true;
     updateBattleUI(); logBattleMsg(`배틀 시작! 가랏, ${window.battleState.myTeam[0].word}!`);
     if(window.battleState.oppTimer) clearInterval(window.battleState.oppTimer);
     window.battleState.oppTimer = setInterval(() => { if(window.battleState.active) opponentAttack(); }, 200);
@@ -1124,6 +1136,14 @@ const updateBattleUI = () => {
     document.getElementById('opp-b-hp').style.width = `${Math.max(0, (oppMon.hp / oppMon.maxHp) * 100)}%`;
     const oppTypeInfo = TYPE_COLORS[oppMon.type] || TYPE_COLORS['normal'];
     document.getElementById('opp-b-type').innerText = oppTypeInfo.name; document.getElementById('opp-b-type').style.backgroundColor = oppTypeInfo.color;
+
+    // 💡 게이지 바 UI 업데이트
+    document.getElementById('my-b-energy').style.width = `${(window.battleState.myEnergy / window.battleState.energyMax) * 100}%`;
+    document.getElementById('opp-b-energy').style.width = `${(window.battleState.oppEnergy / window.battleState.energyMax) * 100}%`;
+
+    const ultBtn = document.getElementById('btn-ultimate');
+    if (window.battleState.myEnergy >= window.battleState.energyMax) ultBtn.classList.add('ultimate-ready');
+    else ultBtn.classList.remove('ultimate-ready');
 };
 
 const logBattleMsg = (msg, isStrong = false) => {
@@ -1155,16 +1175,21 @@ window.tapAttack = () => {
     if (isCrit) dmg = Math.floor(dmg * 1.5);
     oppMon.hp -= dmg; showDmgText(dmg, true, isCrit);
 
+    // 💡 게이지 채우기
+    window.battleState.myEnergy = Math.min(window.battleState.energyMax, window.battleState.myEnergy + 1);
+
     const oppImg = document.getElementById('opp-b-img');
     oppImg.classList.remove('animate-hit'); void oppImg.offsetWidth; oppImg.classList.add('animate-hit');
 
     if(isCrit) logBattleMsg("크리티컬 히트!!", true);
     else if(multiplier > 1) logBattleMsg("효과가 굉장했다!", true);
     else if(multiplier < 1) logBattleMsg("효과가 별로인 것 같다...", false);
+    
     updateBattleUI(); checkFaint();
 };
 
 const opponentAttack = () => {
+    if(!window.battleState.active) return;
     const myMon = window.battleState.myTeam[window.battleState.myIdx]; const oppMon = window.battleState.oppTeam[window.battleState.oppIdx];
     
     const multiplier = getMatchup(oppMon.type, myMon.type);
@@ -1175,23 +1200,136 @@ const opponentAttack = () => {
     if (isCrit) dmg = Math.floor(dmg * 1.5);
     myMon.hp -= dmg; showDmgText(dmg, false, isCrit);
 
+    // 💡 상대 게이지 채우기 (목표치를 energyMax + 10 으로 늘림!)
+    window.battleState.oppEnergy = Math.min(window.battleState.energyMax + 10, window.battleState.oppEnergy + 1);
+
     const myImg = document.getElementById('my-b-img');
     myImg.classList.remove('animate-hit'); void myImg.offsetWidth; myImg.classList.add('animate-hit');
 
     if(isCrit) logBattleMsg("상대방의 크리티컬 히트!!", true);
-    updateBattleUI(); checkFaint();
+    
+    // 💡 10번을 더 때려야(energyMax + 10) 필살기 발동!
+    if (window.battleState.oppEnergy >= window.battleState.energyMax + 10) {
+        triggerOpponentUltimate();
+    } else {
+        updateBattleUI(); checkFaint();
+    }
 };
 
 const checkFaint = () => {
     const myMon = window.battleState.myTeam[window.battleState.myIdx]; const oppMon = window.battleState.oppTeam[window.battleState.oppIdx];
     if(oppMon.hp <= 0) {
         window.battleState.oppIdx++;
-        if(window.battleState.oppIdx >= window.battleState.oppTeam.length) { endBattle(true); } 
+        if(window.battleState.oppIdx >= window.battleState.oppTeam.length) { endBattle(true); return true; } 
         else { logBattleMsg(`상대의 ${window.battleState.oppTeam[window.battleState.oppIdx].word}(이)가 나왔다!`); updateBattleUI(); }
     } else if (myMon.hp <= 0) {
         window.battleState.myIdx++;
-        if(window.battleState.myIdx >= window.battleState.myTeam.length) { endBattle(false); } 
+        if(window.battleState.myIdx >= window.battleState.myTeam.length) { endBattle(false); return true; } 
         else { logBattleMsg(`가랏, ${window.battleState.myTeam[window.battleState.myIdx].word}!`); updateBattleUI(); }
+    }
+    return false;
+};
+
+// ==========================================
+// 💡 [신규] 스페셜 어택 및 실드(방어) 로직
+// ==========================================
+window.useUltimate = () => {
+    if (window.battleState.myEnergy < window.battleState.energyMax || !window.battleState.active) return;
+    
+    window.battleState.active = false; // 배틀 일시정지!
+    clearInterval(window.battleState.oppTimer);
+    window.battleState.myEnergy = 0; 
+    updateBattleUI();
+
+    const oppMon = window.battleState.oppTeam[window.battleState.oppIdx];
+    const quiz = window.state.quizzes.find(q => q.word.toLowerCase() === oppMon.word.toLowerCase());
+    const meaning = quiz ? quiz.meaning : "알 수 없음";
+
+    document.getElementById('b-quiz-title').innerText = "⚡ 스페셜 어택!";
+    document.getElementById('b-quiz-desc').innerText = "제한 시간 10초! 정확한 영단어를 입력하세요!";
+    document.getElementById('b-quiz-word').innerText = meaning;
+    document.getElementById('b-spell-in').value = '';
+    document.getElementById('b-fake-text').textContent = '스펠링 입력';
+    document.getElementById('b-fake-text').style.color = '#9ca3af';
+
+    document.getElementById('battle-quiz-modal').style.display = 'flex';
+    document.getElementById('b-spell-in').focus();
+    
+    window.battleState.expectedWord = oppMon.word;
+    window.battleState.isShieldMode = false;
+    startQuizTimer(10000); // 10초 타이머
+};
+
+const triggerOpponentUltimate = () => {
+    window.battleState.active = false; // 배틀 일시정지!
+    clearInterval(window.battleState.oppTimer);
+    window.battleState.oppEnergy = 0;
+    updateBattleUI();
+
+    const myMon = window.battleState.myTeam[window.battleState.myIdx];
+    const quiz = window.state.quizzes.find(q => q.word.toLowerCase() === myMon.word.toLowerCase());
+    const meaning = quiz ? quiz.meaning : "알 수 없음";
+
+    document.getElementById('b-quiz-title').innerText = "🛡️ 방어 태세 (실드)!";
+    document.getElementById('b-quiz-desc').innerText = "적의 필살기가 날아옵니다! 10초 안에 내 파트너의 단어를 입력해 막아내세요!";
+    document.getElementById('b-quiz-word').innerText = meaning;
+    document.getElementById('b-spell-in').value = '';
+    document.getElementById('b-fake-text').textContent = '스펠링 입력';
+    document.getElementById('b-fake-text').style.color = '#9ca3af';
+
+    document.getElementById('battle-quiz-modal').style.display = 'flex';
+    document.getElementById('b-spell-in').focus();
+    
+    window.battleState.expectedWord = myMon.word;
+    window.battleState.isShieldMode = true;
+    startQuizTimer(10000); // 10초 타이머
+};
+
+const startQuizTimer = (duration) => {
+    const bar = document.getElementById('b-timer-bar');
+    bar.style.transition = 'none'; bar.style.width = '100%';
+    void bar.offsetWidth; // 강제 새로고침
+    bar.style.transition = `width ${duration}ms linear`;
+    bar.style.width = '0%';
+
+    window.battleState.quizTimeout = setTimeout(() => {
+        window.submitBattleQuiz(true); // 시간 초과
+    }, duration);
+};
+
+window.submitBattleQuiz = (isTimeout = false) => {
+    clearTimeout(window.battleState.quizTimeout);
+    document.getElementById('battle-quiz-modal').style.display = 'none';
+    
+    const inputVal = document.getElementById('b-spell-in').value.trim().toLowerCase();
+    const correctWord = window.battleState.expectedWord.toLowerCase();
+    const success = (!isTimeout && inputVal === correctWord);
+
+    const myMon = window.battleState.myTeam[window.battleState.myIdx];
+    const oppMon = window.battleState.oppTeam[window.battleState.oppIdx];
+
+    if (window.battleState.isShieldMode) {
+        if (success) { logBattleMsg("🛡️ 완벽한 방어! 데미지를 입지 않았다!", true); } 
+        else {
+            let dmg = Math.floor(oppMon.atk * 7); // 방어 실패 시 7배 데미지
+            myMon.hp -= dmg; showDmgText(dmg, false, true);
+            logBattleMsg("💥 방어 실패! 엄청난 데미지를 입었다!", true);
+        }
+    } else {
+        if (success) {
+            let dmg = Math.floor(myMon.atk * 7); // 공격 성공 시 7배 데미지
+            oppMon.hp -= dmg; showDmgText(dmg, true, true);
+            logBattleMsg("⚡ 스페셜 어택 명중! 효과가 굉장했다!", true);
+        } else { logBattleMsg("💦 스펠링을 틀려 스페셜 어택이 빗나갔다...", false); }
+    }
+
+    updateBattleUI();
+    const isGameOver = checkFaint();
+    
+    if(!isGameOver) {
+        // 배틀 다시 재생!
+        window.battleState.active = true;
+        window.battleState.oppTimer = setInterval(() => { if(window.battleState.active) opponentAttack(); }, 200);
     }
 };
 

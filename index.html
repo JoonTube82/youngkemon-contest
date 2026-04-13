@@ -6,10 +6,9 @@
     <title>6학년 영켓몬</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.tailwindcss.com"></script>
-    </head>
+</head>
 <body class="p-4 flex items-center justify-center min-h-screen">
     <div id="app-wrapper" class="w-full max-w-[480px] mx-auto transition-all duration-500">
-        <!-- 1. 로그인 뷰 -->
         <div id="login-view" class="login-view-container magic-card p-10 text-center border-red-500">
             <div class="text-6xl mb-4">🧢</div>
             <h1 class="text-4xl text-red-600 mb-2 font-black italic">6학년 영켓몬</h1>
@@ -24,7 +23,6 @@
             <p id="login-status" class="text-slate-300 text-xs mt-4 min-h-[1rem]">도감 서버와 연결 중...</p>
         </div>
 
-        <!-- 2. 게임 뷰 -->
         <div id="game-view" class="game-view-container">
             <div id="profile-card" class="bg-white rounded-3xl p-5 mb-4 shadow-lg flex justify-between items-start border-b-4 border-slate-200 transition-all duration-500">
                 <div>
@@ -52,7 +50,6 @@
                 </div>
             </div>
 
-            <!-- 네비게이션 탭 -->
             <div class="flex gap-1 mb-4 bg-white p-2 rounded-2xl shadow-sm">
                 <button onclick="window.switchTab('rank')" id="tab-rank" class="tab-btn active flex-1 py-3 text-xs sm:text-sm rounded-xl font-bold bg-slate-100 text-slate-500 truncate">🏆 커뮤니티</button>
                 <button onclick="window.switchTab('hunt')" id="tab-hunt" class="tab-btn flex-1 py-3 text-xs sm:text-sm rounded-xl font-bold bg-slate-100 text-slate-500 truncate">🗡️ 풀숲</button>
@@ -60,7 +57,6 @@
                 <button onclick="window.switchTab('arena')" id="tab-arena" class="tab-btn flex-1 py-3 text-xs sm:text-sm rounded-xl font-bold bg-slate-100 text-slate-500 truncate">⚔️ 배틀</button>
             </div>
             
-            <!-- 탭 1: 사냥터 -->
             <div id="content-hunt" class="tab-content">
                 <div id="hunt-map-view" class="magic-card p-6 shadow-xl min-h-[400px]">
                     <div class="text-center mb-6">
@@ -69,7 +65,6 @@
                     </div>
                     <div class="space-y-5 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar pb-4">
                         
-                        <!-- Region 1: 스타팅 포레스트 -->
                         <div class="bg-green-50 border-2 border-green-200 rounded-3xl p-4 shadow-sm relative overflow-hidden">
                             <div class="absolute -right-4 -top-2 text-6xl opacity-20">🌲</div>
                             <h4 class="font-bold text-green-700 mb-3 text-sm"><span class="bg-green-500 text-white px-2 py-0.5 rounded-lg text-xs mr-1">지역 1</span> 초심자의 숲</h4>
@@ -101,7 +96,6 @@
                             </div>
                         </div>
 
-                        <!-- Region 2: 블루 오션 해안 -->
                         <div class="bg-blue-50 border-2 border-blue-200 rounded-3xl p-4 shadow-sm relative overflow-hidden">
                             <div class="absolute -right-4 -top-2 text-6xl opacity-20">🌊</div>
                             <h4 class="font-bold text-blue-700 mb-3 text-sm"><span class="bg-blue-500 text-white px-2 py-0.5 rounded-lg text-xs mr-1">지역 2</span> 푸른 바다 해안</h4>
@@ -133,7 +127,6 @@
                             </div>
                         </div>
 
-                        <!-- Region 3: 미지의 화산 유적 -->
                         <div class="bg-orange-50 border-2 border-orange-200 rounded-3xl p-4 shadow-sm relative overflow-hidden">
                             <div class="absolute -right-4 -top-2 text-6xl opacity-20">🌋</div>
                             <h4 class="font-bold text-orange-700 mb-3 text-sm"><span class="bg-orange-500 text-white px-2 py-0.5 rounded-lg text-xs mr-1">지역 3</span> 뜨거운 화산 유적</h4>
@@ -165,7 +158,6 @@
                             </div>
                         </div>
 
-                        <!-- Region 4: 영켓몬 리그 시티 -->
                         <div class="bg-purple-50 border-2 border-purple-200 rounded-3xl p-4 shadow-sm relative overflow-hidden">
                             <div class="absolute -right-4 -top-2 text-6xl opacity-20">🏙️</div>
                             <h4 class="font-bold text-purple-700 mb-3 text-sm"><span class="bg-purple-500 text-white px-2 py-0.5 rounded-lg text-xs mr-1">지역 4</span> 영켓몬 리그 대도시</h4>
@@ -199,7 +191,6 @@
                     </div>
                 </div>
 
-                <!-- 사냥터 배틀 뷰 -->
                 <div id="hunt-battle-view" translate="no" class="notranslate hidden flex-col md:flex-row gap-4 relative mt-10">
                     <div class="absolute -top-10 left-2 z-10 flex gap-2">
                         <button onclick="window.exitStage()" class="text-sm font-bold text-slate-500 hover:text-red-500 bg-white border border-slate-200 px-4 py-1.5 rounded-full shadow-sm transition-colors">🏃 지도로 도망가기</button>
@@ -231,7 +222,6 @@
                 </div>
             </div>
 
-            <!-- 탭 2: 내 도감 -->
             <div id="content-dex" class="tab-content">
                 <div class="magic-card p-6 shadow-xl min-h-[400px]">
                     <h3 class="text-xl font-bold text-red-600 mb-4 flex justify-between items-center">
@@ -244,10 +234,8 @@
                 </div>
             </div>
 
-            <!-- 탭 3: 투기장 -->
             <div id="content-arena" class="tab-content">
                 
-                <!-- 뷰 3-1: 상대방 선택 목록 -->
                 <div id="arena-list-view" class="magic-card p-6 shadow-xl min-h-[400px]">
                     <div class="text-center mb-6">
                         <h3 class="text-xl font-bold text-red-500 mb-1 flex items-center justify-center gap-2 flex-wrap">
@@ -272,7 +260,6 @@
                     </div>
                 </div>
 
-                <!-- 뷰 3-2: 내 출전 엔트리 구성 -->
                 <div id="arena-team-view" class="hidden magic-card p-6 shadow-xl min-h-[400px] border-4 border-indigo-100 relative">
                     <button onclick="window.cancelBattleSelect()" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 font-bold text-sm bg-slate-100 px-3 py-1 rounded-lg">돌아가기</button>
                     <div class="text-center mb-4">
@@ -280,24 +267,24 @@
                         <p class="text-xs text-slate-500">배틀에 내보낼 영켓몬을 최대 3마리 선택하세요. (현재 <span id="team-sel-cnt" class="text-indigo-600 font-bold text-sm">0</span>/3)</p>
                     </div>
                     <div id="arena-team-list" class="grid grid-cols-3 gap-2 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar mb-4">
-                        <!-- 선택 가능한 내 포켓몬 목록 -->
-                    </div>
+                        </div>
                     <button id="btn-start-real-battle" onclick="window.startRealBattle()" class="w-full bg-slate-300 text-slate-500 py-3 rounded-2xl font-bold text-lg shadow-sm transition-all" disabled>선택 완료 (배틀 시작)</button>
                 </div>
 
-                <!-- 뷰 3-3: 실시간 터치 배틀 필드 -->
                 <div id="arena-battle-view" class="hidden flex-col gap-2 relative">
                     <button onclick="window.cancelBattleSelect()" class="absolute -top-10 left-2 text-sm font-bold text-slate-500 hover:text-red-500 bg-white border border-slate-200 px-4 py-1.5 rounded-full shadow-sm z-50">🏃 도망치기</button>
                     
-                    <!-- 상대방 진영 (Top) -->
                     <div class="bg-red-50 rounded-3xl p-4 border-2 border-red-200 shadow-md relative overflow-hidden flex justify-between items-center h-32">
                         <div class="z-10 w-2/3">
                             <div class="flex items-center gap-2 mb-1">
                                 <span class="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded font-bold uppercase" id="opp-b-type">TYPE</span>
                                 <span class="font-black text-slate-800 text-lg" id="opp-b-name">Enemy</span>
                             </div>
-                            <div class="w-full bg-slate-200 h-3 rounded-full overflow-hidden border border-slate-300">
+                            <div class="w-full bg-slate-200 h-3 rounded-full overflow-hidden border border-slate-300 mb-1">
                                 <div id="opp-b-hp" class="h-full bg-red-500 transition-all duration-200" style="width: 100%"></div>
+                            </div>
+                            <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden border border-slate-600 flex justify-end">
+                                <div id="opp-b-energy" class="h-full bg-sky-400 transition-all duration-200" style="width: 0%"></div>
                             </div>
                         </div>
                         <div class="relative w-24 h-24 flex items-center justify-center shrink-0">
@@ -305,31 +292,39 @@
                         </div>
                     </div>
 
-                    <!-- 실시간 배틀 로그 -->
                     <div id="battle-log" class="text-center font-bold text-sm h-6 text-red-500 animate-pulse">상성을 파악하여 화면을 빠르게 탭하세요!</div>
 
-                    <!-- 내 진영 (Bottom) & 공격 터치 영역 -->
                     <div onclick="window.tapAttack()" class="bg-indigo-50 rounded-3xl p-4 border-4 border-indigo-300 shadow-lg relative overflow-hidden flex justify-between items-center h-48 cursor-pointer active:scale-[0.98] transition-transform select-none">
                         <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-10">
                             <span class="text-4xl font-black tracking-widest">TAP TO ATTACK</span>
                         </div>
-                        <div class="relative w-32 h-32 flex items-center justify-center shrink-0">
+                        
+                        <div class="relative w-28 h-28 sm:w-32 sm:h-32 flex items-center justify-center shrink-0">
                             <img id="my-b-img" class="max-w-full max-h-full drop-shadow-lg scale-125" style="image-rendering: pixelated;" src="">
                         </div>
-                        <div class="z-10 w-2/3 text-right">
+
+                        <div class="flex-1 flex justify-center items-center z-50">
+                            <button id="btn-ultimate" onclick="event.stopPropagation(); window.useUltimate()" class="relative bg-gradient-to-br from-yellow-400 to-orange-500 text-white font-black w-16 h-16 rounded-full border-4 border-yellow-200 transition-all opacity-50 pointer-events-none flex flex-col items-center justify-center leading-none shadow-2xl scale-90 sm:scale-100">
+                                <span class="text-2xl mb-0.5">⚡</span>
+                            </button>
+                        </div>
+
+                        <div class="z-10 w-[45%] text-right">
                             <div class="flex items-center justify-end gap-2 mb-1">
-                                <span class="font-black text-slate-800 text-xl" id="my-b-name">My Pokemon</span>
-                                <span class="bg-indigo-500 text-white text-[10px] px-2 py-0.5 rounded font-bold uppercase" id="my-b-type">TYPE</span>
+                                <span class="font-black text-slate-800 text-lg sm:text-xl truncate" id="my-b-name">My Pokemon</span>
+                                <span class="bg-indigo-500 text-white text-[10px] px-2 py-0.5 rounded font-bold uppercase shrink-0" id="my-b-type">TYPE</span>
                             </div>
-                            <div class="w-full bg-slate-200 h-4 rounded-full overflow-hidden border border-slate-300 flex justify-end">
+                            <div class="w-full bg-slate-200 h-4 rounded-full overflow-hidden border border-slate-300 flex justify-end mb-1">
                                 <div id="my-b-hp" class="h-full bg-green-400 transition-all duration-200" style="width: 100%"></div>
+                            </div>
+                            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden border border-slate-600 flex justify-end">
+                                <div id="my-b-energy" class="h-full bg-yellow-400 transition-all duration-200" style="width: 0%"></div>
                             </div>
                             <p class="text-xs text-slate-500 mt-1 font-bold">내 남은 포켓몬: <span id="my-b-remain">3</span></p>
                         </div>
                     </div>
                 </div>
 
-                <!-- 뷰 3-4: 방어 팀 설정 -->
                 <div id="arena-defense-view" class="hidden magic-card p-6 shadow-xl min-h-[400px] border-4 border-green-100 relative">
                     <button onclick="window.cancelDefenseSelect()" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 font-bold text-sm bg-slate-100 px-3 py-1 rounded-lg">돌아가기</button>
                     <div class="text-center mb-4">
@@ -337,13 +332,11 @@
                         <p class="text-xs text-slate-500">배틀에서 체육관을 방어할 영켓몬을 최대 3마리 선택하세요.<br>(10회 이상 포획한 포켓몬만 선택 가능합니다. 현재 <span id="defense-sel-cnt" class="text-green-600 font-bold text-sm">0</span>/3)</p>
                     </div>
                     <div id="arena-defense-list" class="grid grid-cols-3 gap-2 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar mb-4">
-                        <!-- 선택 가능한 방어 포켓몬 목록 -->
-                    </div>
+                        </div>
                     <button id="btn-save-defense" onclick="window.saveDefenseTeam()" class="w-full bg-slate-300 text-slate-500 py-3 rounded-2xl font-bold text-lg shadow-sm transition-all" disabled>방어 팀 저장하기</button>
                 </div>
             </div>
 
-            <!-- 탭 4: 커뮤니티 -->
             <div id="content-rank" class="tab-content active">
                 <div class="magic-card p-6 shadow-xl min-h-[400px]">
                     <div class="text-center mb-6">
@@ -357,7 +350,6 @@
             </div>
         </div>
 
-        <!-- 3. 관리자 뷰 -->
         <div id="admin-view" class="admin-view-container">
             <div class="magic-card p-8 border-4 border-red-500 shadow-2xl">
                 <div class="flex justify-between items-center mb-6">
@@ -365,7 +357,6 @@
                     <button onclick="window.toggleAdmin()" class="bg-slate-100 px-4 py-2 rounded-xl text-xs font-bold text-red-600 hover:bg-slate-200">닫기</button>
                 </div>
 
-                <!-- 메인 메뉴 (2x2 격자) -->
                 <div id="admin-main-menu" class="grid grid-cols-2 gap-4">
                     <button onclick="window.showAdminSection('admin-sec-dex')" class="bg-red-900/30 border-2 border-red-500/30 p-5 rounded-2xl flex flex-col items-center justify-center hover:bg-red-900/50 hover:border-red-400 transition-all shadow-md group">
                         <span class="text-4xl mb-2 group-hover:scale-110 transition-transform drop-shadow-md">📖</span>
@@ -389,7 +380,6 @@
                     </button>
                 </div>
 
-                <!-- 세부 컨테이너 1: 도감 관리 -->
                 <div id="admin-sec-dex" class="hidden">
                     <button onclick="window.showAdminMainMenu()" class="text-slate-400 hover:text-white text-sm font-bold mb-4 flex items-center gap-1 transition-colors">◀ 메인 메뉴로 돌아가기</button>
                     <div class="space-y-3 mb-6 bg-red-900/30 p-4 rounded-2xl border border-red-500/30">
@@ -417,7 +407,6 @@
                     <div class="max-h-[300px] overflow-y-auto pr-2 space-y-2 custom-scrollbar" id="admin-list"></div>
                 </div>
 
-                <!-- 세부 컨테이너 2: 학생 관리 -->
                 <div id="admin-sec-student" class="hidden">
                     <button onclick="window.showAdminMainMenu()" class="text-slate-400 hover:text-white text-sm font-bold mb-4 flex items-center gap-1 transition-colors">◀ 메인 메뉴로 돌아가기</button>
                     <div class="bg-blue-900/30 p-4 rounded-2xl border border-blue-500/30">
@@ -432,7 +421,6 @@
                     </div>
                 </div>
 
-                <!-- 세부 컨테이너 3: 서버 관리 -->
                 <div id="admin-sec-server" class="hidden">
                     <button onclick="window.showAdminMainMenu()" class="text-slate-400 hover:text-white text-sm font-bold mb-4 flex items-center gap-1 transition-colors">◀ 메인 메뉴로 돌아가기</button>
                     <div class="space-y-4">
@@ -449,13 +437,11 @@
                     </div>
                 </div>
 
-                <!-- 세부 컨테이너 4: 테스트 관리 -->
                 <div id="admin-sec-test" class="hidden">
                     <button onclick="window.showAdminMainMenu()" class="text-slate-400 hover:text-white text-sm font-bold mb-4 flex items-center gap-1 transition-colors">◀ 메인 메뉴로 돌아가기</button>
                     <div class="bg-emerald-900/30 p-4 rounded-2xl border border-emerald-500/30 mb-6">
                         <h3 class="text-sm font-bold text-emerald-400 mb-2">📝 단원별 단어 시험 관리</h3>
                         
-                        <!-- [신규] 테스트 대상 학생 선택 UI -->
                         <div class="bg-slate-800 p-3 rounded-xl border border-slate-600 mb-3 shadow-sm">
                             <div class="flex justify-between items-center mb-2">
                                 <span class="text-xs font-bold text-emerald-300">🎯 대상 학생 선택</span>
@@ -465,8 +451,7 @@
                                 </div>
                             </div>
                             <div id="test-student-checkboxes" class="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-32 overflow-y-auto custom-scrollbar p-1">
-                                <!-- 렌더링 -->
-                            </div>
+                                </div>
                         </div>
 
                         <div class="flex gap-2 mb-3">
@@ -496,17 +481,14 @@
                                     </tr>
                                 </thead>
                                 <tbody id="test-scores-tbody" class="text-slate-300">
-                                    <!-- 데이터 동적 렌더링 -->
-                                </tbody>
+                                    </tbody>
                             </table>
                         </div>
                         <button onclick="window.renderTestScores()" class="w-full mb-6 bg-emerald-900/50 text-emerald-400 border border-emerald-500/30 py-2.5 rounded-xl font-bold text-xs hover:bg-emerald-800 transition-colors">🔄 성적표 새로고침</button>
 
-                        <!-- [신규] 로켓단의 함정 관리 -->
                         <h4 class="text-xs font-bold text-emerald-400 mb-2 mt-6">🚨 로켓단의 함정 (오답 노트) 관리</h4>
                         <div class="bg-slate-800 rounded-xl border border-slate-600 shadow-inner p-3 max-h-48 overflow-y-auto custom-scrollbar mb-2" id="prison-management-list">
-                            <!-- 데이터 렌더링 -->
-                        </div>
+                            </div>
                         <button onclick="window.renderPrisonList()" class="w-full bg-slate-700 text-slate-300 border border-slate-600 py-2.5 rounded-xl font-bold text-xs hover:bg-slate-600 transition-colors">🔄 함정 명단 새로고침</button>
                     </div>
                 </div>
@@ -514,9 +496,7 @@
         </div>
     </div>
 
-    <!-- 강제 시험 모달창 -->
-    <!-- 강제 시험 모달창 -->
-<div id="test-mode-view" translate="no" class="notranslate fixed inset-0 bg-slate-900 z-[9999] hidden flex-col items-center justify-start p-4 sm:p-8 overflow-y-auto custom-scrollbar">
+    <div id="test-mode-view" translate="no" class="notranslate fixed inset-0 bg-slate-900 z-[9999] hidden flex-col items-center justify-start p-4 sm:p-8 overflow-y-auto custom-scrollbar">
         <div class="bg-white rounded-3xl p-6 sm:p-10 w-full max-w-2xl shadow-2xl relative my-auto">
             <div class="text-center mb-8">
                 <div class="text-5xl mb-2 animate-bounce">🚨</div>
@@ -524,8 +504,7 @@
                 <p class="text-slate-500 font-bold text-sm sm:text-base" id="test-mode-desc">단원 단어 시험이 시작되었습니다.<br>빈칸에 알맞은 영어 스펠링을 입력하세요.</p>
             </div>
             <div id="test-paper-list" class="space-y-4 mb-8">
-                <!-- 시험 문제 렌더링 영역 -->
-            </div>
+                </div>
             <button id="btn-submit-test" onclick="window.submitTest()" class="w-full bg-red-600 hover:bg-red-700 text-white py-4 rounded-2xl font-black text-xl shadow-lg transition-transform active:scale-95">제출하기</button>
             <div id="test-submit-msg" class="hidden text-center text-lg font-bold text-indigo-600 mt-4 p-4 bg-indigo-50 rounded-xl border border-indigo-200">
                 ✅ 제출 완료! 선생님의 시험 종료를 기다리세요.
@@ -533,7 +512,6 @@
         </div>
     </div>
 
-    <!-- [신규] 로켓단의 함정(오답 노트) 모달창 -->
     <div id="prison-mode-view" class="fixed inset-0 bg-purple-900 z-[9998] hidden flex-col items-center justify-start p-4 sm:p-8 overflow-y-auto custom-scrollbar">
         <div class="bg-slate-800 rounded-3xl p-6 sm:p-10 w-full max-w-2xl shadow-2xl relative my-auto border-8 border-purple-950">
             <div class="text-center mb-6">
@@ -542,12 +520,10 @@
                 <p class="text-slate-300 font-bold text-sm sm:text-base">오답을 3번씩 올바르게 입력해야 탈출할 수 있습니다!</p>
             </div>
             <div id="prison-paper-list" class="space-y-4 mb-6 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
-                <!-- 함정 문제 렌더링 영역 -->
-            </div>
+                </div>
         </div>
     </div>
 
-    <!-- 모달들 -->
     <div id="custom-alert" class="modal-overlay">
         <div class="modal-box border-red-500">
             <h2 class="text-2xl font-bold mb-4 text-red-600">📢 알림</h2>
@@ -555,6 +531,7 @@
             <button onclick="window.closeCustomAlert()" class="btn-magic text-sm py-3">확인</button>
         </div>
     </div>
+
     <div id="custom-confirm" class="modal-overlay">
         <div class="modal-box border-blue-500">
             <h2 class="text-2xl font-bold mb-4 text-blue-600">📝 확인</h2>
@@ -565,6 +542,7 @@
             </div>
         </div>
     </div>
+
     <div id="modal" class="fixed inset-0 bg-red-900/80 hidden items-center justify-center z-50 p-6 backdrop-blur-md">
         <div class="bg-white rounded-[3rem] p-10 text-center shadow-2xl scale-110">
             <div class="text-7xl mb-4 animate-bounce">🎊</div>
@@ -578,12 +556,10 @@
         <div class="modal-box border-indigo-500 relative !p-8 !max-w-[450px]">
             <button onclick="window.closeTrainerProfile()" class="absolute top-4 right-5 text-slate-400 hover:text-white font-bold text-3xl">&times;</button>
             <div id="trainer-modal-content">
-                <!-- 동적 렌더링 영역 -->
-            </div>
+                </div>
         </div>
     </div>
 
-    <!-- Tip 모달창 (상성표) -->
     <div id="tip-modal" class="modal-overlay">
         <div class="modal-box border-indigo-500 relative !p-6 sm:!p-8 !max-w-[700px] max-h-[85vh] overflow-y-auto custom-scrollbar bg-slate-800">
             <button onclick="window.closeTipModal()" class="absolute top-4 right-5 text-slate-400 hover:text-white font-bold text-3xl">&times;</button>
@@ -598,11 +574,9 @@
                     <h4 class="text-base sm:text-lg font-bold text-indigo-400 mb-3 border-b border-slate-700 pb-2 flex items-center gap-2">⚔️ 모든 속성 상성표 (공격 기준)</h4>
                     <p class="text-xs text-slate-400 mb-4 leading-relaxed">(* 2배 데미지를 주는 유리한 속성 목록입니다.)</p>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] sm:text-xs font-bold">
-                        <!-- 노말 -->
                         <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
                             <span class="bg-[#A8A77A] text-white px-2 py-0.5 rounded drop-shadow-sm">노말</span> <span class="text-slate-500 mx-0.5">▶</span> <span class="text-slate-500 font-normal">(없음)</span>
                         </div>
-                        <!-- 불꽃 -->
                         <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
                             <span class="bg-[#EE8130] text-white px-2 py-0.5 rounded drop-shadow-sm">불꽃</span> <span class="text-slate-500 mx-0.5">▶</span> 
                             <span class="bg-[#7AC74C] text-white px-1.5 py-0.5 rounded">풀</span>
@@ -610,27 +584,23 @@
                             <span class="bg-[#A6B91A] text-white px-1.5 py-0.5 rounded">벌레</span>
                             <span class="bg-[#B7B7CE] text-white px-1.5 py-0.5 rounded">강철</span>
                         </div>
-                        <!-- 물 -->
                         <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
                             <span class="bg-[#6390F0] text-white px-2 py-0.5 rounded drop-shadow-sm">물</span> <span class="text-slate-500 mx-0.5">▶</span> 
                             <span class="bg-[#EE8130] text-white px-1.5 py-0.5 rounded">불꽃</span>
                             <span class="bg-[#E2BF65] text-white px-1.5 py-0.5 rounded">땅</span>
                             <span class="bg-[#B6A136] text-white px-1.5 py-0.5 rounded">바위</span>
                         </div>
-                        <!-- 전기 -->
                         <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
                             <span class="bg-[#F7D02C] text-slate-800 px-2 py-0.5 rounded drop-shadow-sm">전기</span> <span class="text-slate-500 mx-0.5">▶</span> 
                             <span class="bg-[#6390F0] text-white px-1.5 py-0.5 rounded">물</span>
                             <span class="bg-[#A98FF3] text-white px-1.5 py-0.5 rounded">비행</span>
                         </div>
-                        <!-- 풀 -->
                         <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
                             <span class="bg-[#7AC74C] text-white px-2 py-0.5 rounded drop-shadow-sm">풀</span> <span class="text-slate-500 mx-0.5">▶</span> 
                             <span class="bg-[#6390F0] text-white px-1.5 py-0.5 rounded">물</span>
                             <span class="bg-[#E2BF65] text-white px-1.5 py-0.5 rounded">땅</span>
                             <span class="bg-[#B6A136] text-white px-1.5 py-0.5 rounded">바위</span>
                         </div>
-                        <!-- 얼음 -->
                         <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
                             <span class="bg-[#96D9D6] text-slate-800 px-2 py-0.5 rounded drop-shadow-sm">얼음</span> <span class="text-slate-500 mx-0.5">▶</span> 
                             <span class="bg-[#7AC74C] text-white px-1.5 py-0.5 rounded">풀</span>
@@ -638,7 +608,6 @@
                             <span class="bg-[#A98FF3] text-white px-1.5 py-0.5 rounded">비행</span>
                             <span class="bg-[#6F35FC] text-white px-1.5 py-0.5 rounded">드래곤</span>
                         </div>
-                        <!-- 격투 -->
                         <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
                             <span class="bg-[#C22E28] text-white px-2 py-0.5 rounded drop-shadow-sm">격투</span> <span class="text-slate-500 mx-0.5">▶</span> 
                             <span class="bg-[#A8A77A] text-white px-1.5 py-0.5 rounded">노말</span>
@@ -647,13 +616,11 @@
                             <span class="bg-[#705746] text-white px-1.5 py-0.5 rounded">악</span>
                             <span class="bg-[#B7B7CE] text-white px-1.5 py-0.5 rounded">강철</span>
                         </div>
-                        <!-- 독 -->
                         <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
                             <span class="bg-[#A33EA1] text-white px-2 py-0.5 rounded drop-shadow-sm">독</span> <span class="text-slate-500 mx-0.5">▶</span> 
                             <span class="bg-[#7AC74C] text-white px-1.5 py-0.5 rounded">풀</span>
                             <span class="bg-[#D685AD] text-white px-1.5 py-0.5 rounded">페어리</span>
                         </div>
-                        <!-- 땅 -->
                         <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
                             <span class="bg-[#E2BF65] text-white px-2 py-0.5 rounded drop-shadow-sm">땅</span> <span class="text-slate-500 mx-0.5">▶</span> 
                             <span class="bg-[#EE8130] text-white px-1.5 py-0.5 rounded">불꽃</span>
@@ -662,27 +629,23 @@
                             <span class="bg-[#B6A136] text-white px-1.5 py-0.5 rounded">바위</span>
                             <span class="bg-[#B7B7CE] text-white px-1.5 py-0.5 rounded">강철</span>
                         </div>
-                        <!-- 비행 -->
                         <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
                             <span class="bg-[#A98FF3] text-white px-2 py-0.5 rounded drop-shadow-sm">비행</span> <span class="text-slate-500 mx-0.5">▶</span> 
                             <span class="bg-[#7AC74C] text-white px-1.5 py-0.5 rounded">풀</span>
                             <span class="bg-[#C22E28] text-white px-1.5 py-0.5 rounded">격투</span>
                             <span class="bg-[#A6B91A] text-white px-1.5 py-0.5 rounded">벌레</span>
                         </div>
-                        <!-- 에스퍼 -->
                         <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
                             <span class="bg-[#F95587] text-white px-2 py-0.5 rounded drop-shadow-sm">에스퍼</span> <span class="text-slate-500 mx-0.5">▶</span> 
                             <span class="bg-[#C22E28] text-white px-1.5 py-0.5 rounded">격투</span>
                             <span class="bg-[#A33EA1] text-white px-1.5 py-0.5 rounded">독</span>
                         </div>
-                        <!-- 벌레 -->
                         <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
                             <span class="bg-[#A6B91A] text-white px-2 py-0.5 rounded drop-shadow-sm">벌레</span> <span class="text-slate-500 mx-0.5">▶</span> 
                             <span class="bg-[#7AC74C] text-white px-1.5 py-0.5 rounded">풀</span>
                             <span class="bg-[#F95587] text-white px-1.5 py-0.5 rounded">에스퍼</span>
                             <span class="bg-[#705746] text-white px-1.5 py-0.5 rounded">악</span>
                         </div>
-                        <!-- 바위 -->
                         <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
                             <span class="bg-[#B6A136] text-white px-2 py-0.5 rounded drop-shadow-sm">바위</span> <span class="text-slate-500 mx-0.5">▶</span> 
                             <span class="bg-[#EE8130] text-white px-1.5 py-0.5 rounded">불꽃</span>
@@ -690,31 +653,26 @@
                             <span class="bg-[#A98FF3] text-white px-1.5 py-0.5 rounded">비행</span>
                             <span class="bg-[#A6B91A] text-white px-1.5 py-0.5 rounded">벌레</span>
                         </div>
-                        <!-- 고스트 -->
                         <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
                             <span class="bg-[#735797] text-white px-2 py-0.5 rounded drop-shadow-sm">고스트</span> <span class="text-slate-500 mx-0.5">▶</span> 
                             <span class="bg-[#F95587] text-white px-1.5 py-0.5 rounded">에스퍼</span>
                             <span class="bg-[#735797] text-white px-1.5 py-0.5 rounded">고스트</span>
                         </div>
-                        <!-- 드래곤 -->
                         <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
                             <span class="bg-[#6F35FC] text-white px-2 py-0.5 rounded drop-shadow-sm">드래곤</span> <span class="text-slate-500 mx-0.5">▶</span> 
                             <span class="bg-[#6F35FC] text-white px-1.5 py-0.5 rounded">드래곤</span>
                         </div>
-                        <!-- 악 -->
                         <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
                             <span class="bg-[#705746] text-white px-2 py-0.5 rounded drop-shadow-sm">악</span> <span class="text-slate-500 mx-0.5">▶</span> 
                             <span class="bg-[#F95587] text-white px-1.5 py-0.5 rounded">에스퍼</span>
                             <span class="bg-[#735797] text-white px-1.5 py-0.5 rounded">고스트</span>
                         </div>
-                        <!-- 강철 -->
                         <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
                             <span class="bg-[#B7B7CE] text-white px-2 py-0.5 rounded drop-shadow-sm">강철</span> <span class="text-slate-500 mx-0.5">▶</span> 
                             <span class="bg-[#96D9D6] text-slate-800 px-1.5 py-0.5 rounded">얼음</span>
                             <span class="bg-[#B6A136] text-white px-1.5 py-0.5 rounded">바위</span>
                             <span class="bg-[#D685AD] text-white px-1.5 py-0.5 rounded">페어리</span>
                         </div>
-                        <!-- 페어리 -->
                         <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
                             <span class="bg-[#D685AD] text-white px-2 py-0.5 rounded drop-shadow-sm">페어리</span> <span class="text-slate-500 mx-0.5">▶</span> 
                             <span class="bg-[#C22E28] text-white px-1.5 py-0.5 rounded">격투</span>
@@ -728,7 +686,6 @@
         </div>
     </div>
 
-    <!-- 티어표 모달창 -->
     <div id="tier-modal" class="modal-overlay">
         <div class="modal-box border-amber-500 relative !p-8 !max-w-[450px] max-h-[85vh] overflow-y-auto custom-scrollbar bg-slate-800">
             <button onclick="window.closeTierModal()" class="absolute top-4 right-5 text-slate-400 hover:text-white font-bold text-3xl">&times;</button>
@@ -756,7 +713,6 @@
         </div>
     </div>
 
-    <!-- 족보 모달창 -->
     <div id="cheat-sheet-modal" class="modal-overlay select-none" oncontextmenu="return false" onselectstart="return false" ondragstart="return false">
         <div class="modal-box border-indigo-500 relative !p-6 !max-w-[360px] max-h-[85vh] flex flex-col bg-slate-800">
             <button onclick="window.closeCheatSheet()" class="absolute top-4 right-4 text-slate-400 hover:text-white font-bold text-2xl">&times;</button>
@@ -767,14 +723,12 @@
             </div>
             
             <div id="cheat-sheet-list" class="space-y-2 overflow-y-auto custom-scrollbar flex-1 mb-4 text-left pr-2">
-                <!-- 동적 렌더링 영역 -->
-            </div>
+                </div>
             
             <button onclick="window.closeCheatSheet()" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white py-3 rounded-xl font-black text-sm shadow-md transition-transform active:scale-95 mt-auto shrink-0 pointer-events-auto">확인 완료</button>
         </div>
     </div>
 
-    <!-- [신규] 파트너 진화 단계 선택 모달창 -->
     <div id="partner-stage-modal" class="modal-overlay">
         <div class="modal-box border-yellow-500 relative !p-8 !max-w-[450px] bg-slate-800">
             <button onclick="window.closePartnerStageModal()" class="absolute top-4 right-5 text-slate-400 hover:text-white font-bold text-3xl">&times;</button>
@@ -784,12 +738,10 @@
                 <p class="text-xs sm:text-sm text-slate-400">커뮤니티에 전시될 파트너의 진화 단계를 선택하세요.</p>
             </div>
             <div id="partner-stage-list" class="flex justify-center gap-3 mb-2">
-                <!-- 동적 렌더링 영역 -->
-            </div>
+                </div>
         </div>
     </div>
 
-    <!-- [신규] 방어 기록 모달창 -->
     <div id="defense-log-modal" class="modal-overlay">
         <div class="modal-box border-pink-500 relative !p-6 sm:!p-8 !max-w-[500px] max-h-[85vh] flex flex-col bg-slate-800">
             <button onclick="window.closeDefenseLogs()" class="absolute top-4 right-5 text-slate-400 hover:text-white font-bold text-3xl">&times;</button>
@@ -799,16 +751,34 @@
                 <p class="text-xs sm:text-sm text-slate-400">다른 트레이너들의 도전 결과를 확인하세요.</p>
             </div>
             <div id="defense-log-list" class="space-y-3 text-left overflow-y-auto custom-scrollbar flex-1 pr-2">
-                <!-- 동적 렌더링 영역 -->
+                </div>
+        </div>
+    </div>
+
+    <div id="battle-quiz-modal" translate="no" class="notranslate fixed inset-0 bg-black/90 z-[9999] hidden flex-col items-center justify-center p-4 backdrop-blur-sm">
+        <div id="b-quiz-box" class="bg-slate-800 rounded-3xl p-8 w-full max-w-md shadow-[0_0_50px_rgba(0,0,0,0.8)] border-4 border-indigo-500 text-center relative overflow-hidden transition-colors duration-300">
+            <div class="relative z-10">
+                <h2 id="b-quiz-title" class="text-3xl font-black text-white mb-2 tracking-widest drop-shadow-md">⚡ 스페셜 어택!</h2>
+                <p id="b-quiz-desc" class="text-slate-300 font-bold mb-6 text-sm">제한 시간 안에 영단어를 입력하세요!</p>
+                <div class="bg-black/50 rounded-2xl p-6 mb-6 border border-slate-600 shadow-inner">
+                    <span id="b-quiz-label" class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1 block">단어 뜻</span>
+                    <h3 id="b-quiz-word" class="text-4xl text-yellow-400 font-black break-keep leading-tight">사과</h3>
+                </div>
+                <div class="relative w-full mb-4">
+                    <input type="password" id="b-spell-in" class="spell-input w-full relative z-0 !text-2xl !p-3" style="color: transparent; caret-color: white;" autocomplete="new-password" autocorrect="off" spellcheck="false" autocapitalize="off" onkeyup="if(event.key==='Enter')window.submitBattleQuiz()" oninput="document.getElementById('b-fake-text').textContent = this.value || '스펠링 입력'; document.getElementById('b-fake-text').style.color = this.value ? '#f9fafb' : '#9ca3af';">
+                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10 overflow-hidden px-4">
+                        <span id="b-fake-text" class="text-slate-400 text-2xl font-bold whitespace-pre truncate">스펠링 입력</span>
+                    </div>
+                </div>
+                <div class="w-full bg-slate-700 h-3 rounded-full overflow-hidden border border-slate-600">
+                    <div id="b-timer-bar" class="h-full bg-red-500 w-full transition-none"></div>
+                </div>
             </div>
         </div>
     </div>
 
-<script type="module" src="firebase.js"></script>
+    <script type="module" src="firebase.js"></script>
     <script type="module" src="admin.js"></script>
     <script type="module" src="game.js"></script>
-
-</body>
-</html>
 </body>
 </html>

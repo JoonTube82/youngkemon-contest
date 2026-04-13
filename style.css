@@ -81,3 +81,15 @@
         .border-purple-100, .border-purple-200 { border-color: #4c1d95 !important; }
         .border-yellow-100, .border-yellow-200 { border-color: #713f12 !important; }
         .border-indigo-100, .border-indigo-300 { border-color: #312e81 !important; }
+
+        /* [신규] 배틀 필살기 버튼 애니메이션 */
+        @keyframes ultimateGlow {
+            0% { box-shadow: 0 0 10px rgba(250,204,21,0.4); transform: scale(1); }
+            100% { box-shadow: 0 0 35px rgba(250,204,21,1); transform: scale(1.15); border-color: #fff; }
+        }
+        .ultimate-ready {
+            opacity: 1 !important;
+            pointer-events: auto !important;
+            animation: ultimateGlow 0.6s infinite alternate !important;
+            cursor: pointer;
+        }
