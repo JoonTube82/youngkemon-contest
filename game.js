@@ -831,7 +831,7 @@ window.loadArena = async () => {
     }
 
     if (checkDailyLimit()) {
-        listEl.innerHTML = `<div class="text-center py-10"><div class="text-5xl mb-4">💤</div><h3 class="text-xl font-bold text-indigo-400 mb-2">오박사님의 휴식 권고</h3><p class="text-sm text-slate-400">오늘의 배틀 에너지를 모두 소모했습니다! (학생 3승 + 관장 2승 달성)<br>풀숲에서 영단어를 더 포획하며 내일을 준비하세요!</p></div>`; return;
+        listEl.innerHTML = `<div class="text-center py-10"><div class="text-5xl mb-4">💤</div><h3 class="text-xl font-bold text-indigo-400 mb-2">영어 마스터님의 휴식 권고</h3><p class="text-sm text-slate-400">오늘의 배틀 에너지를 모두 소모했습니다! (학생 3승 + 관장 2승 달성)<br>풀숲에서 영단어를 더 포획하며 내일을 준비하세요!</p></div>`; return;
     }
 
     listEl.innerHTML = '<p class="text-center text-indigo-400 py-10 text-sm animate-pulse">상대를 찾고 있습니다...</p>';
