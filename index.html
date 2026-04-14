@@ -38,6 +38,7 @@
                 </div>
                 <div class="text-right flex flex-col items-end">
                     <div class="flex items-center gap-3 mb-1">
+                        <input type="range" min="0" max="1" step="0.1" value="0.5" oninput="window.AudioManager.setVolume(this.value)" class="w-16 sm:w-20 accent-slate-400 cursor-pointer" title="소리 조절">
                         <button id="btn-mute" onclick="window.AudioManager.toggleMute()" class="text-slate-300 hover:text-indigo-400 transition-colors text-xl leading-none" title="BGM 끄기/켜기">🎵</button>
                         <button onclick="window.handleLogout()" class="text-slate-300 hover:text-red-400 transition-colors" title="로그아웃">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
@@ -206,8 +207,10 @@
                     
                     <div class="bg-red-50 rounded-[2.5rem] p-8 shadow-inner border-2 border-red-100 text-center flex-1 flex flex-col justify-center">
                         <span class="text-red-400 text-xs uppercase tracking-widest font-bold">단어 뜻(Meaning)</span>
-                        <h3 id="quiz-txt" class="text-3xl text-red-600 font-bold mt-1 mb-6 leading-tight break-keep">단어장을 불러오는 중...</h3>
-                        
+<div class="flex justify-center items-center gap-2 mt-1 mb-6">
+    <h3 id="quiz-txt" class="text-3xl text-red-600 font-bold leading-tight break-keep">단어장을 불러오는 중...</h3>
+    <button onclick="window.speakWord()" class="bg-red-100 hover:bg-red-200 text-red-500 rounded-full w-10 h-10 flex items-center justify-center text-xl transition-transform active:scale-90 shadow-sm" title="발음 듣기">🔊</button>
+</div>
                         <div class="flex flex-col gap-3 relative">
                             <div class="relative w-full">
                                 <input type="password" id="spell-in" class="spell-input border-red-200 w-full relative z-0" style="color: transparent; caret-color: white;" autocomplete="new-password" autocorrect="off" spellcheck="false" autocapitalize="off" onkeyup="if(event.key==='Enter')window.checkMagic()" oninput="document.getElementById('fake-text').textContent = this.value || '영단어를 입력하세요'; document.getElementById('fake-text').style.color = this.value ? '#f9fafb' : '#9ca3af';" onpaste="return false;" ondrop="return false;">
@@ -399,8 +402,8 @@
                             <option value="12">12단원: We Should Save the World</option>
                         </select>
                         <div class="grid grid-cols-2 gap-2">
-                            <input type="text" id="new-w" class="p-3 border rounded-xl outline-none text-sm focus:border-red-400 text-slate-800" placeholder="영단어" autocomplete="off">
-                            <input type="text" id="new-m" class="p-3 border rounded-xl outline-none text-sm focus:border-red-400 text-slate-800" placeholder="뜻" autocomplete="off" onkeyup="if(event.key==='Enter')window.addWord()">
+                            <input type="text" id="new-w" class="p-3 border rounded-xl outline-none text-sm focus:border-red-400 text-black" placeholder="영단어" autocomplete="off">
+                            <input type="text" id="new-m" class="p-3 border rounded-xl outline-none text-sm focus:border-red-400 text-black" placeholder="뜻" autocomplete="off" onkeyup="if(event.key==='Enter')window.addWord()">
                         </div>
                         <button onclick="window.addWord()" class="w-full bg-red-600 text-white py-3 rounded-xl font-bold text-sm shadow-lg active:scale-95 transition-transform hover:bg-red-700">도감 데이터 추가</button>
                     </div>
@@ -760,9 +763,12 @@
             <div class="relative z-10">
                 <h2 id="b-quiz-title" class="text-3xl font-black text-white mb-2 tracking-widest drop-shadow-md">⚡ 스페셜 어택!</h2>
                 <p id="b-quiz-desc" class="text-slate-300 font-bold mb-6 text-sm">제한 시간 안에 영단어를 입력하세요!</p>
-                <div class="bg-black/50 rounded-2xl p-6 mb-6 border border-slate-600 shadow-inner">
+               <div class="bg-black/50 rounded-2xl p-6 mb-6 border border-slate-600 shadow-inner">
                     <span id="b-quiz-label" class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1 block">단어 뜻</span>
-                    <h3 id="b-quiz-word" class="text-4xl text-yellow-400 font-black break-keep leading-tight">사과</h3>
+                    <div class="flex justify-center items-center gap-3">
+                        <h3 id="b-quiz-word" class="text-4xl text-yellow-400 font-black break-keep leading-tight">사과</h3>
+                        <button onclick="window.speakWord(window.battleState.expectedWord, event)" class="bg-slate-700 hover:bg-slate-600 text-white rounded-full w-10 h-10 flex items-center justify-center text-xl transition-transform active:scale-90 shadow-sm border border-slate-500" title="발음 힌트 듣기">🔊</button>
+                    </div>
                 </div>
                 <div class="relative w-full mb-4">
                     <input type="password" id="b-spell-in" class="spell-input w-full relative z-0 !text-2xl !p-3" style="color: transparent; caret-color: white;" autocomplete="new-password" autocorrect="off" spellcheck="false" autocapitalize="off" onkeyup="if(event.key==='Enter')window.submitBattleQuiz()" oninput="document.getElementById('b-fake-text').textContent = this.value || '스펠링 입력'; document.getElementById('b-fake-text').style.color = this.value ? '#f9fafb' : '#9ca3af';">

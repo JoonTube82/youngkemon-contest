@@ -38,13 +38,12 @@ export const initAdminStudentSelect = () => {
 
 // 선생님의 진짜 파이어베이스 정보
 const firebaseConfig = {
-    apiKey: "AIzaSyCxfI0Zh4mxbY13WigsFlNLDmA3ikkAIjE",
-    authDomain: "grade6-english-rpg.firebaseapp.com",
-    projectId: "grade6-english-rpg",
-    storageBucket: "grade6-english-rpg.firebasestorage.app",
-    messagingSenderId: "98075257077",
-    appId: "1:98075257077:web:af48cfeda2300df967fdbc",
-    measurementId: "G-DCBTPQ5T0N"
+  apiKey: "AIzaSyBpU9kkUtAtEyAxcjuWFvz2Z0gU--MWAgY",
+  authDomain: "vocamon-award.firebaseapp.com",
+  projectId: "vocamon-award",
+  storageBucket: "vocamon-award.firebasestorage.app",
+  messagingSenderId: "1048535638025",
+  appId: "1:1048535638025:web:7b5712078d3aab525098d8"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -52,8 +51,8 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 
 // 데이터베이스 통신 함수들도 외부에서 쓰도록 내보내기
-export const getStudentsCollection = () => collection(db, 'students');
-export const getStudentDoc = (studentId) => doc(db, 'students', studentId);
+export const getStudentsCollection = () => collection(db, 'contest_data');
+export const getStudentDoc = (studentId) => doc(db, 'contest_data', studentId);
 export const getWordListCollection = () => collection(db, 'wordList');
 export const getWordDoc = (wordId) => doc(db, 'wordList', wordId);
 initStudentSelect();

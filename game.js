@@ -14,8 +14,22 @@ window.AudioManager = {
     },
     currentType: null,
     isMuted: false,
+    volume: 0.5, // ⭐ 기본 소리 크기 (0.0 ~ 1.0)
     init: function() {
-        Object.values(this.bgms).forEach(audio => { audio.loop = true; });
+        Object.values(this.bgms).forEach(audio => { 
+            audio.loop = true; 
+            audio.volume = this.volume; // 로딩 시 볼륨 적용
+        });
+    },
+    // ⭐ 소리 크기를 실시간으로 조절하는 함수 추가
+    setVolume: function(val) {
+        this.volume = parseFloat(val);
+        Object.values(this.bgms).forEach(audio => { 
+            audio.volume = this.volume; 
+        });
+        // 볼륨이 0이 되면 음소거 아이콘으로 변경
+        const btn = document.getElementById('btn-mute');
+        if(btn) btn.innerText = this.volume === 0 ? '🔇' : '🎵';
     },
     playBGM: function(type) {
         if (this.currentType === type) return;
@@ -25,6 +39,7 @@ window.AudioManager = {
         }
         this.currentType = type;
         if (!this.isMuted && this.bgms[type]) {
+            this.bgms[type].volume = this.volume; // 재생 전 볼륨 확인
             this.bgms[type].play().catch(e => console.log("BGM 재생 대기 중:", e));
         }
     },
@@ -35,12 +50,29 @@ window.AudioManager = {
             if (this.currentType && this.bgms[this.currentType]) this.bgms[this.currentType].pause();
             if (btn) btn.innerText = '🔇';
         } else {
-            if (this.currentType && this.bgms[this.currentType]) this.bgms[this.currentType].play().catch(e => console.log(e));
+            if (this.currentType && this.bgms[this.currentType]) {
+                this.bgms[this.currentType].volume = this.volume;
+                this.bgms[this.currentType].play().catch(e => console.log(e));
+            }
             if (btn) btn.innerText = '🎵';
         }
     }
 };
 window.AudioManager.init();
+// ==========================================
+// ★ 단어 읽어주기 (TTS) 기능 추가
+// ==========================================
+window.speakWord = (text, event) => {
+    if (event) event.stopPropagation(); // 버튼 누를 때 다른 이벤트 겹침 방지
+    if (!text && window.state.currentQuiz) text = window.state.currentQuiz.word;
+    if (!text) return;
+    
+    window.speechSynthesis.cancel(); // 기존에 읽고 있던 소리 취소
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US'; // 미국 영어 발음
+    utterance.rate = 0.85;    // 6학년 학생들을 위해 기본 속도보다 아주 살짝 느리게 설정
+    window.speechSynthesis.speak(utterance);
+};
 
 window.state = {
     user: null, 
@@ -477,10 +509,13 @@ window.showCheatSheet = () => {
     if (filteredQuizzes.length === 0) listEl.innerHTML = '<p class="text-center text-slate-400 py-10 text-sm">등록된 영단어가 없습니다.</p>';
     else {
         let html = '';
-        filteredQuizzes.forEach(q => {
+       filteredQuizzes.forEach(q => {
             html += `
-            <div class="bg-slate-900/80 rounded-xl p-3 border border-slate-700 shadow-inner flex flex-col gap-1 select-none pointer-events-none">
-                <div class="font-black text-indigo-400 text-lg">${q.word}</div>
+            <div class="bg-slate-900/80 rounded-xl p-3 border border-slate-700 shadow-inner flex flex-col gap-1 select-none">
+                <div class="font-black text-indigo-400 text-lg flex items-center justify-between">
+                    ${q.word}
+                    <button onclick="window.speakWord('${q.word}', event)" class="hover:scale-125 transition-transform" title="발음 듣기">🔊</button>
+                </div>
                 <div class="text-sm text-slate-300 font-bold">${q.meaning}</div>
             </div>`;
         });
@@ -553,7 +588,6 @@ window.refreshQuiz = () => {
     window.state.monster.tier = pInfo.tier;
     window.state.monster.auraLevel = pInfo.auraLevel;
     window.monsterImg = new Image();
-    window.monsterImg.crossOrigin = "Anonymous";
     window.monsterImg.src = pInfo.imgSrc;
 };
 
@@ -691,8 +725,11 @@ window.renderDex = async () => {
             <div class="h-24 w-24 flex items-center justify-center my-1 relative ${auraBg} rounded-full p-1 transition-all">
                 <img src="${item.pInfo.imgSrc}" crossorigin="anonymous" class="max-w-full max-h-full object-contain" style="image-rendering: pixelated;" />
             </div>
-            <div class="w-full text-center bg-white rounded-xl py-2 mt-2 shadow-sm">
-                <div class="font-black text-slate-800 text-base capitalize truncate px-1">${item.word}</div>
+<div class="w-full text-center bg-white rounded-xl py-2 mt-2 shadow-sm">
+                <div class="font-black text-slate-800 text-base capitalize truncate px-1 flex justify-center items-center gap-1">
+                    ${item.word}
+                    <button onclick="window.speakWord('${item.word}', event)" class="hover:scale-125 transition-transform text-sm" title="발음 듣기">🔊</button>
+                </div>
                 <div class="text-slate-500 text-xs truncate px-1">${item.meaning}</div>
                 <div class="mt-1 flex items-center justify-center gap-1">
                     <span class="text-[9px] text-white ${typeInfo.bg} rounded px-1 font-bold shadow-sm">${typeInfo.name}</span>
@@ -755,7 +792,7 @@ window.renderRanking = async () => {
                     pInfo = getPokemonInfoForWord(student.bestWord, fakeCount);
                 } else pInfo = getPokemonInfoForWord(student.bestWord, student.bestCount);
                 
-                pInfoHtml = `<img src="${pInfo.imgSrc}" crossorigin="anonymous" class="max-w-full max-h-full object-contain drop-shadow-md scale-150" style="image-rendering:pixelated;">`;
+                pInfoHtml = `<img src="${pInfo.imgSrc}" class="max-w-full max-h-full object-contain drop-shadow-md" style="image-rendering:pixelated;">`;
                 chapterBadge = `<div class="absolute -bottom-2 -right-3 text-[11px] sm:text-xs bg-indigo-600 text-white px-2 py-0.5 rounded-md font-bold shadow-sm border border-indigo-400 z-10">${student.maxCh}단원</div>`;
             }
 
@@ -787,7 +824,6 @@ window.renderRanking = async () => {
         listEl.innerHTML = html || '<p class="text-center py-10 col-span-full">랭킹 정보가 없습니다.</p>';
     } catch (e) { listEl.innerHTML = '<p class="text-center text-red-500 py-10 col-span-full">네트워크 오류</p>'; }
 };
-
 
 // ==========================================
 // 8. 아레나(배틀) 관련 로직 (스킬 게이지 및 체력 보정 추가)
@@ -895,7 +931,7 @@ window.loadArena = async () => {
                 oppDefenseWords.forEach(word => {
                     const count = oppCaughtWords[word];
                     const pInfo = getPokemonInfoForWord(word, count);
-                    top3Html += `<div onclick="window.showOppMonDetail('${word}', ${count})" class="cursor-pointer w-12 h-12 sm:w-14 sm:h-14 bg-black/30 hover:bg-black/50 rounded-full flex items-center justify-center border border-white/20 p-1.5 transition-transform hover:scale-110 shadow-inner" title="${word} 상세정보"><img src="${pInfo.imgSrc}" crossorigin="anonymous" class="max-w-full max-h-full object-contain drop-shadow-md scale-125" style="image-rendering:pixelated;"></div>`;
+                    top3Html += `<div onclick="window.showOppMonDetail('${word}', ${count})" class="cursor-pointer w-12 h-12 sm:w-14 sm:h-14 bg-black/30 hover:bg-black/50 rounded-full flex items-center justify-center border border-white/20 p-1.5 transition-transform hover:scale-110 shadow-inner" title="${word} 상세정보"><img src="${pInfo.imgSrc}" crossorigin="anonymous" class="max-w-full max-h-full object-contain drop-shadow-md scale-100" style="image-rendering:pixelated;"></div>`;
                 });
             } else top3Html += `<span class="text-xs text-slate-400 pl-2">포획 없음</span>`;
             top3Html += '</div>';
@@ -1462,7 +1498,7 @@ function gameLoop() {
     const mns = (Math.random()-0.5)*window.state.monster.shake; if(window.state.monster.shake>0) window.state.monster.shake*=0.8;
     ctx.save(); ctx.translate(280+mns, 220); 
     if (window.monsterImg?.complete) {
-        const scale = 1 + (window.state.monster.tier*0.4); const w = 96*scale, h = 96*scale;
+        const scale = 1 + (window.state.monster.tier*0.4); const w = 48*scale, h = 48*scale;
         ctx.imageSmoothingEnabled = false;
         if (window.state.monster.auraLevel > 0) {
             const auraSize = Math.max(w,h)*0.6;
@@ -1484,7 +1520,7 @@ function gameLoop() {
 }
 
 // ==========================================
-// 10. 포켓몬 데이터베이스 매핑
+// 10. 오리지널 보카몬(VocaMon) 매핑 로직
 // ==========================================
 function getPokemonInfoForWord(word, count) {
     const sorted = [...window.state.quizzes].sort((a,b)=>((a.createdAt||0)-(b.createdAt||0))||a.word.localeCompare(b.word));
@@ -1493,40 +1529,34 @@ function getPokemonInfoForWord(word, count) {
         let hash = 0; for (let i = 0; i < word.length; i++) hash = word.charCodeAt(i) + ((hash << 5) - hash);
         idx = Math.abs(hash);
     }
+
+    // 1. 진화 단계 설정 (5회 2단계, 10회 3단계)
     const tier = count >= 10 ? 3 : (count >= 5 ? 2 : 1);
-    const EVOLUTION_LINES = [
-        [1,2,3], [4,5,6], [7,8,9], [10,11,12], [13,14,15], [16,17,18], [19,20], [21,22], [23,24], [25,26], 
-        [27,28], [29,30,31], [32,33,34], [35,36], [37,38], [39,40], [41,42,169], [43,44,45], [46,47], [48,49], 
-        [50,51], [52,53], [54,55], [56,57], [58,59], [60,61,62], [63,64,65], [66,67,68], [69,70,71], [72,73], 
-        [74,75,76], [77,78], [79,80], [81,82], [83], [84,85], [86,87], [88,89], [90,91], [92,93,94], 
-        [95,208], [96,97], [98,99], [100,101], [102,103], [104,105], [106,107], [108], [109,110], [111,112], 
-        [113,242], [114], [115], [116,117], [118,119], [120,121], [122], [123,212], [124], [125], 
-        [126], [127], [128], [129,130], [131], [132], [133,134], [137,233], [138,139], [140,141], 
-        [142], [143], [144], [145], [146], [147,148,149], [150], [151], [152,153,154], [155,156,157], 
-        [158,159,160], [161,162], [163,164], [165,166], [167,168], [170,171], [175,176,468], [177,178], [179,180,181], 
-        [183,184], [185], [187,188,189], [190], [191,192], [193], [194,195], [198], [200], [201], [202], 
-        [203], [204,205], [206], [207], [209,210], [211], [213], [214], [215], [216,217], [218,219], 
-        [220,221,473], [222], [223,224], [225], [226], [227], [228,229], [231,232], [234], [235], 
-        [241], [243], [244], [245], [246,247,248], [249], [250], [251], [252,253,254], [255,256,257], [258,259,260], 
-        [261,262], [263,264], [265,266,267], [268,269], [270,271,272], [273,274,275], [276,277], [278,279], [280,281,282], 
-        [283,284], [285,286], [287,288,289], [290,291], [293,294,295], [296,297], [299], [300,301], [302], 
-        [303], [304,305,306], [307,308], [309,310], [311], [312], [313], [314], [315,407], [316,317], 
-        [318,319], [320,321], [322,323], [324], [325,326], [328,329,330], [331,332], [333,334], [335], 
-        [336], [337], [338], [339,340], [341,342], [343,344], [345,346], [347,348], [349,350], [351], 
-        [352], [353,354], [355,356], [357], [358], [359], [361,362], [363,364,365], [366,367], [369], 
-        [370], [371,372,373], [374,375,376], [377], [378], [379], [380], [381], [382], [383], 
-        [384], [385], [387,388,389], [390,391,392], [393,394,395], [396,397,398], [399,400], [401,402], [403,404,405], 
-        [408,409], [410,411], [412,413,414], [415,416], [417], [418,419], [420,421], [422,423], [425,426], 
-        [427,428], [431,432], [434,435], [436,437], [441,442], [443,444,445], [447,448], [449,450], [451,452], 
-        [453,454], [456,457], [459,460], [479]
-    ];
-    const line = EVOLUTION_LINES[idx % EVOLUTION_LINES.length];
-    const pIdx = Math.min(tier-1, line.length-1);
-    const fid = line[pIdx];
-    return { id: fid, tier: tier, auraLevel: Math.max(0, tier-line.length), imgSrc: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${fid}.png` };
+
+    // 2. ⭐ 준비한 오리지널 몬스터 세트(진화 라인) 개수
+    // (현재 파란 몬스터, 불꽃 용 등 2세트 = 총 6장만 있다면 이 숫자를 2로 설정)
+    // 나중에 20세트(60장)를 만드시면 이 숫자를 20으로 꼭 바꿔주세요!
+    const TOTAL_SETS = 1; 
+
+    // 3. 단어 스펠링을 바탕으로 몬스터 종류 무작위 고정 배정
+    const lineIndex = idx % TOTAL_SETS;
+
+    // 4. 실제 불러올 이미지 번호 자동 계산
+    // 예: 0번 세트의 1단계는 mon_1, 1번 세트의 3단계는 mon_6
+    const imageNumber = (lineIndex * 3) + tier;
+
+    return {
+        id: imageNumber,
+        tier: tier,
+        auraLevel: Math.max(0, tier - 3),
+        imgSrc: `./media/mon_${imageNumber}.png` // ⭐ USB 제출용 로컬 폴더로 경로 변경 완벽 적용
+    };
 }
 
-const DB_STR = "1:이상해씨:grass|2:이상해풀:grass|3:이상해꽃:grass|4:파이리:fire|5:리자드:fire|6:리자몽:fire|7:꼬부기:water|8:어니부기:water|9:거북왕:water|10:캐터피:bug|11:단데기:bug|12:버터플:bug|13:뿔충이:bug|14:딱충이:bug|15:독침붕:bug|16:구구:flying|17:피죤:flying|18:피죤투:flying|19:꼬렛:normal|20:레트라:normal|21:깨비참:flying|22:깨비드릴조:flying|23:아보:poison|24:아보크:poison|25:피카츄:electric|26:라이츄:electric|27:모래두지:ground|28:고지:ground|29:니드런♀:poison|30:니드리나:poison|31:니드퀸:poison|32:니드런♂:poison|33:니드리노:poison|34:니드킹:poison|35:삐삐:fairy|36:픽시:fairy|37:식스테일:fire|38:나인테일:fire|39:푸린:normal|40:푸크린:normal|41:주뱃:poison|42:골뱃:poison|169:크로뱃:poison|43:뚜벅쵸:grass|44:냄새꼬:grass|45:라플레시아:grass|46:파라스:bug|47:파라섹트:bug|48:콘팡:bug|49:도나리:bug|50:디그다:ground|51:닥트리오:ground|52:나옹:normal|53:페르시온:normal|54:고라파덕:water|55:골덕:water|56:망키:fighting|57:성원숭:fighting|58:가디:fire|59:윈디:fire|60:발챙이:water|61:슈륙챙이:water|62:강챙이:water|63:캐이시:psychic|64:윤겔라:psychic|65:후딘:psychic|66:알통몬:fighting|67:근육몬:fighting|68:괴력몬:fighting|69:모다피:grass|70:우츠동:grass|71:우츠보트:grass|72:왕눈해:water|73:독파리:water|74:꼬마돌:rock|75:데구리:rock|76:딱구리:rock|77:포니타:fire|78:날쌩마:fire|79:야돈:water|80:야도란:water|81:코일:electric|82:레어코일:electric|83:파오리:flying|84:두두:flying|85:두트리오:flying|86:쥬쥬:water|87:쥬레곤:water|88:질퍽이:poison|89:질뻐기:poison|90:셀러:water|91:파르셀:water|92:고오스:ghost|93:고우스트:ghost|94:팬텀:ghost|95:롱스톤:rock|208:강철톤:steel|96:슬리프:psychic|97:슬리퍼:psychic|98:크랩:water|99:킹크랩:water|100:찌리리공:electric|101:붐볼:electric|102:아라리:grass|103:나시:grass|104:탕구리:ground|105:텅구리:ground|106:시라소몬:fighting|107:홍수몬:fighting|108:내루미:normal|109:또가스:poison|110:또도가스:poison|111:뿔카노:ground|112:코뿌리:ground|113:럭키:normal|242:해피너스:normal|114:덩쿠리:grass|115:캥카:normal|116:쏘드라:water|117:시드라:water|118:콘치:water|119:왕콘치:water|120:별가사리:water|121:아쿠스타:water|122:마임맨:psychic|123:스라크:bug|212:핫삼:bug|124:루주라:ice|125:에레브:electric|126:마그마:fire|127:쁘사이저:bug|128:켄타로스:normal|129:잉어킹:water|130:갸라도스:water|131:라프라스:water|132:메타몽:normal|133:이브이:normal|134:샤미드:water|137:폴리곤:normal|233:폴리곤2:normal|138:암나이트:rock|139:암스타:rock|140:투구:rock|141:투구푸스:rock|142:프테라:rock|143:잠만보:normal|144:프리져:ice|145:썬더:electric|146:파이어:fire|147:미뇽:dragon|148:신뇽:dragon|149:망나뇽:dragon|150:뮤츠:psychic|151:뮤:psychic|152:치코리타:grass|153:베이리프:grass|154:메가니움:grass|155:브케인:fire|156:마그케인:fire|157:블레이범:fire|158:리아코:water|159:엘리게이:water|160:장크로다일:water|161:꼬리선:normal|162:다꼬리:normal|163:부우부:flying|164:야부엉:flying|165:레디바:bug|166:레디안:bug|167:페이검:bug|168:아리아도스:bug|170:초라기:water|171:랜턴:water|175:토게피:fairy|176:토게틱:fairy|468:토게키스:fairy|177:네이티:psychic|178:네이티오:psychic|179:메리프:electric|180:보송송:electric|181:전룡:electric|183:마릴:water|184:마릴리:water|185:꼬지모:rock|187:통통코:grass|188:두코:grass|189:솜솜코:grass|190:에이팜:normal|191:해너츠:grass|192:해루미:grass|193:왕자리:bug|194:우파:water|195:누오:water|198:니로우:dark|200:무우마:ghost|201:안농:psychic|202:마자용:psychic|203:키링키:normal|204:피콘:bug|205:쏘콘:bug|206:노고치:normal|207:글라이거:ground|209:블루:fairy|210:그랑블루:fairy|211:침바루:water|213:단단지:bug|214:헤라크로스:bug|215:포푸니:dark|216:깜지곰:normal|217:링곰:normal|218:마그마그:fire|219:마그카르고:fire|220:꾸꾸리:ice|221:메꾸리:ice|473:맘모꾸리:ice|222:코산호:water|223:총어:water|224:대포무노:water|225:딜리버드:ice|226:만타인:water|227:무장조:steel|228:델빌:dark|229:헬가:dark|231:코코리:ground|232:코리갑:ground|234:노라키:normal|235:루브도:normal|241:밀탱크:normal|243:라이코:electric|244:앤테이:fire|245:스이쿤:water|246:애버라스:rock|247:데기라스:rock|248:마기라스:rock|249:루기아:psychic|250:칠색조:fire|251:세레비:psychic|252:나무지기:grass|253:나무돌이:grass|254:나무킹:grass|255:아차모:fire|256:영치기:fire|257:번치코:fire|258:물짱이:water|259:늪짱이:water|260:대짱이:water|261:포챠나:dark|262:그라에나:dark|263:지그제구리:normal|264:직구리:normal|265:개무소:bug|266:실쿤:bug|267:뷰티플라이:bug|268:카스쿤:bug|269:독케일:bug|270:연꽃몬:water|271:로토스:water|272:로파파:water|273:도토링:grass|274:잎새코:grass|275:다탱구:grass|276:테일로:flying|277:스왈로:flying|278:갈모매:water|279:패리퍼:water|280:랄토스:psychic|281:킬리아:psychic|282:가디안:psychic|283:비구술:bug|284:아이스크:bug|285:버섯꼬:grass|286:버섯모:grass|287:게을로:normal|288:발바로:normal|289:게을킹:normal|290:토중몬:bug|291:아이스크:bug|293:소곤룡:normal|294:노공룡:normal|295:폭음룡:normal|296:마크탕:fighting|297:하리뭉:fighting|299:코코파스:rock|300:에나비:normal|301:델케티:normal|302:깜까미:dark|303:입치트:steel|304:가보리:steel|305:갱도라:steel|306:보스로라:steel|307:요가랑:fighting|308:요가램:fighting|309:썬더라이:electric|310:썬더볼트:electric|311:플러스플:electric|312:마이농:electric|313:볼비트:bug|314:네오비트:bug|315:로젤리아:grass|407:로즈레이드:grass|316:꿀꺽몬:poison|317:꼴깍몬:poison|318:샤프니아:water|319:샤크니아:water|320:고래왕자:water|321:고래왕:water|322:둔타:fire|323:폭타:fire|324:코터스:fire|325:피그점프:psychic|326:피그킹:psychic|328:톱치:ground|329:비브라바:ground|330:플라이곤:ground|331:선인왕:grass|332:밤선인:grass|333:파비코:flying|334:파비코리:dragon|335:쟝고:normal|336:세비퍼:poison|337:루나톤:rock|338:솔록:rock|339:미꾸리:water|340:메깅:water|341:가재군:water|342:가재장군:water|343:오뚝군:ground|344:점토도리:ground|345:릴링:rock|346:릴리요:rock|347:아노딥스:rock|348:아말도:rock|349:빈티나:water|350:밀로틱:water|351:캐스퐁:normal|352:켈리몬:normal|353:어둠대신:ghost|354:다크펫:ghost|355:해골몽:ghost|356:미라몽:ghost|357:트로피우스:grass|358:치렁:psychic|359:앱솔:dark|361:눈꼬마:ice|362:얼음귀신:ice|363:대굴레오:ice|364:씨레오:ice|365:씨카이저:ice|366:진주몽:water|367:헌테일:water|369:시라칸:water|370:사랑동이:water|371:아공이:dragon|372:쉘곤:dragon|373:보만다:dragon|374:메탕:steel|375:메탕구:steel|376:메타그로스:steel|377:레지락:rock|378:레지아이스:ice|379:레지스틸:steel|380:라티아스:dragon|381:라티오스:dragon|382:가이오가:water|383:그란돈:ground|384:레쿠쟈:dragon|385:지라치:steel|387:모부기:grass|388:수풀부기:grass|389:토대부기:grass|390:불꽃숭이:fire|391:파이숭이:fire|392:초염몽:fire|393:팽도리:water|394:팽태지:water|395:엠페르트:water|396:찌르꼬:flying|397:찌르버드:flying|398:찌르호크:flying|399:비버니:normal|400:비버통:normal|401:귀뚤뚜기:bug|402:귀뚤톡크:bug|403:꼬링크:electric|404:럭시오:electric|405:렌트라:electric|408:두개도스:rock|409:램펄드:rock|410:방패톱스:rock|411:바리톱스:rock|412:도미미:bug|413:도롱충이:bug|414:나메일:bug|415:세꿀버리:bug|416:비퀸:bug|417:파치리스:electric|418:브이젤:water|419:플로젤:water|420:체리버:grass|421:체림:grass|422:껍질몬:water|423:트리토돈:water|425:흔들풍손:ghost|426:둥실라이드:ghost|427:이어롤:normal|428:이어롭:normal|431:나옹마:normal|432:몬냥이:normal|434:스컹뿡:poison|435:스컹탱크:poison|436:동미러:steel|437:동탁군:steel|441:페라페:flying|442:화강돌:dark|443:딥상어동:dragon|444:한바이트:dragon|445:한카리아스:dragon|447:리오르:fighting|448:루카리오:fighting|449:히포포타스:ground|450:하마돈:ground|451:스콜피:poison|452:드래피온:poison|453:삐딱구리:poison|454:독개굴:poison|456:형광어:water|457:네오라이트:water|459:눈쓰개:ice|460:눈설왕:ice|479:로토무:electric";
+// ⭐ 오리지널 몬스터 이름 및 속성 설정
+// 형식 -> 이미지번호:이름:속성 (속성은 fire, water, grass, electric, dark, fairy 등)
+// 아래는 2세트(6번 이미지)까지의 예시입니다. 이미지를 추가할 때마다 이어서 적어주세요.
+const DB_STR = "1:물방울쥐:water|2:물보라쥐:water|3:해일마우스:water|4:불꽃용:fire|5:화염드래곤:fire|6:볼케이노드래곤:fire";
 
 const LOCAL_POKEMON_DB = (() => {
     const db = {};
