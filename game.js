@@ -534,7 +534,7 @@ window.refreshQuiz = () => {
 
     const chapterQuizzes = window.state.quizzes.filter(q => (q.chapter || 1) === window.state.currentChapter);
     if (chapterQuizzes.length === 0) {
-        document.getElementById('quiz-txt').innerText = "해당 단원에 포켓몬이 없습니다.";
+        document.getElementById('quiz-txt').innerText = "해당 단원에 보카몬이 없습니다.";
         if(input) input.disabled = true; return;
     }
     if(input) input.disabled = false;
@@ -953,7 +953,7 @@ const renderDefenseSelection = () => {
     const eligibleWords = Object.keys(caughtWords).filter(w => caughtWords[w] >= 10).sort((a,b) => caughtWords[b] - caughtWords[a]);
     
     if (eligibleWords.length === 0) {
-        listEl.innerHTML = '<p class="text-center text-slate-400 py-10 col-span-3 text-sm">10회 이상 포획한 포켓몬이 없습니다.<br>단어를 더 사냥하세요!</p>';
+        listEl.innerHTML = '<p class="text-center text-slate-400 py-10 col-span-3 text-sm">10회 이상 포획한 보카몬이 없습니다.<br>단어를 더 사냥하세요!</p>';
         document.getElementById('btn-save-defense').disabled = true;
         document.getElementById('btn-save-defense').className = "w-full bg-slate-300 text-slate-500 py-3 rounded-2xl font-bold text-lg shadow-sm transition-all";
         document.getElementById('defense-sel-cnt').innerText = "0"; return;
@@ -1382,7 +1382,7 @@ const endBattle = (isWin) => {
 
         msg = `🎉 배틀 승리!\n멋진 컨트롤이었습니다!\n출전한 파트너들은 오늘 하루 휴식합니다.\n총 🏆${window.state.gameData.wins}승 달성!${extraMsg}`;
         window.saveProgress(); window.updateUI();
-    } else { msg = `💥 배틀 패배...\n상대방의 포켓몬이 더 강합니다.\n단어를 더 잡아 레벨을 올리세요!`; }
+    } else { msg = `💥 배틀 패배...\n상대방의 보카몬이 더 강합니다.\n단어를 더 잡아 레벨을 올리세요!`; }
     
     recordDefenseLog(window.battleState.oppId, isWin);
     window.showCustomAlert(msg);
@@ -1418,7 +1418,7 @@ window.openDefenseLogs = () => {
             <div class="bg-red-900/30 border border-red-500/30 rounded-xl p-3 sm:p-4 shadow-sm">
                 <div class="text-[10px] text-red-400 font-bold mb-1">${timeStr}</div>
                 <div class="text-sm sm:text-base font-bold text-red-300">💔 ${log.attacker}에게 체육관이 돌파당했습니다...</div>
-                <div class="text-xs text-slate-300 mt-1">하지만 파트너 포켓몬이 끝까지 맞서 싸운 덕분에 위로 경험치를 얻었습니다!</div>
+                <div class="text-xs text-slate-300 mt-1">하지만 파트너 보카몬이 끝까지 맞서 싸운 덕분에 위로 경험치를 얻었습니다!</div>
                 ${rewardHtml}
             </div>`;
         }
