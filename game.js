@@ -90,24 +90,13 @@ window.state = {
 // 2. 포켓몬 전투 공식 및 타입 설정
 // ==========================================
 const TYPE_EFFECTIVENESS = {
-    normal: { rock: 0.5, ghost: 0, steel: 0.5 },
-    fire: { fire: 0.5, water: 0.5, grass: 2, ice: 2, bug: 2, rock: 0.5, dragon: 0.5, steel: 2 },
-    water: { fire: 2, water: 0.5, grass: 0.5, ground: 2, rock: 2, dragon: 0.5 },
-    electric: { water: 2, electric: 0.5, grass: 0.5, ground: 0, flying: 2, dragon: 0.5 },
-    grass: { fire: 0.5, water: 2, grass: 0.5, poison: 0.5, ground: 2, flying: 0.5, bug: 0.5, rock: 2, dragon: 0.5, steel: 0.5 },
-    ice: { fire: 0.5, water: 0.5, grass: 2, ice: 0.5, ground: 2, flying: 2, dragon: 2, steel: 0.5 },
-    fighting: { normal: 2, ice: 2, poison: 0.5, flying: 0.5, psychic: 0.5, bug: 0.5, rock: 2, ghost: 0, dark: 2, steel: 2, fairy: 0.5 },
-    poison: { grass: 2, poison: 0.5, ground: 0.5, rock: 0.5, ghost: 0.5, steel: 0, fairy: 2 },
-    ground: { fire: 2, electric: 2, grass: 0.5, poison: 2, flying: 0, bug: 0.5, rock: 2, steel: 2 },
-    flying: { electric: 0.5, grass: 2, fighting: 2, bug: 2, rock: 0.5, steel: 0.5 },
-    psychic: { fighting: 2, poison: 2, psychic: 0.5, dark: 0, steel: 0.5 },
-    bug: { fire: 0.5, grass: 2, fighting: 0.5, poison: 0.5, flying: 0.5, psychic: 2, ghost: 0.5, dark: 2, steel: 0.5, fairy: 0.5 },
-    rock: { fire: 2, ice: 2, fighting: 0.5, ground: 0.5, flying: 2, bug: 2, steel: 0.5 },
-    ghost: { normal: 0, psychic: 2, ghost: 2, dark: 0.5 },
-    dragon: { dragon: 2, steel: 0.5, fairy: 0 },
-    dark: { fighting: 0.5, psychic: 2, ghost: 2, dark: 0.5, fairy: 0.5 },
-    steel: { fire: 0.5, water: 0.5, electric: 0.5, ice: 2, rock: 2, steel: 0.5, fairy: 2 },
-    fairy: { fire: 0.5, fighting: 2, poison: 0.5, dragon: 2, dark: 2, steel: 0.5 }
+    normal: { }, // 노말은 무난하게 모두에게 1배 데미지
+    fire: { fire: 0.5, water: 0.5, grass: 2 }, // 불꽃은 풀에 강함, 물/불에 약함
+    water: { water: 0.5, grass: 0.5, fire: 2, ground: 2 }, // 물은 불/땅에 강함, 풀/물에 약함
+    grass: { grass: 0.5, fire: 0.5, water: 2, ground: 2 }, // 풀은 물/땅에 강함, 불/풀에 약함
+    ground: { grass: 0.5, fire: 2 }, // 땅은 불에 강함, 풀에 약함
+    dark: { dark: 0.5, light: 2, normal: 2 }, // 어둠은 빛/노말에 강함, 어둠에 약함
+    light: { light: 0.5, dark: 2 } // 빛은 어둠에 강함, 빛에 약함
 };
 
 const getMatchup = (atk, def) => {
@@ -119,21 +108,10 @@ const TYPE_COLORS = {
     normal: { bg: 'bg-[#A8A77A]', color: '#A8A77A', name: '노말' },
     fire: { bg: 'bg-[#EE8130]', color: '#EE8130', name: '불꽃' },
     water: { bg: 'bg-[#6390F0]', color: '#6390F0', name: '물' },
-    electric: { bg: 'bg-[#F7D02C]', color: '#F7D02C', name: '전기' },
     grass: { bg: 'bg-[#7AC74C]', color: '#7AC74C', name: '풀' },
-    ice: { bg: 'bg-[#96D9D6]', color: '#96D9D6', name: '얼음' },
-    fighting: { bg: 'bg-[#C22E28]', color: '#C22E28', name: '격투' },
-    poison: { bg: 'bg-[#A33EA1]', color: '#A33EA1', name: '독' },
     ground: { bg: 'bg-[#E2BF65]', color: '#E2BF65', name: '땅' },
-    flying: { bg: 'bg-[#A98FF3]', color: '#A98FF3', name: '비행' },
-    psychic: { bg: 'bg-[#F95587]', color: '#F95587', name: '에스퍼' },
-    bug: { bg: 'bg-[#A6B91A]', color: '#A6B91A', name: '벌레' },
-    rock: { bg: 'bg-[#B6A136]', color: '#B6A136', name: '바위' },
-    ghost: { bg: 'bg-[#735797]', color: '#735797', name: '고스트' },
-    dragon: { bg: 'bg-[#6F35FC]', color: '#6F35FC', name: '드래곤' },
-    dark: { bg: 'bg-[#705746]', color: '#705746', name: '악' },
-    steel: { bg: 'bg-[#B7B7CE]', color: '#B7B7CE', name: '강철' },
-    fairy: { bg: 'bg-[#D685AD]', color: '#D685AD', name: '페어리' }
+    dark: { bg: 'bg-[#705746]', color: '#705746', name: '어둠' },
+    light: { bg: 'bg-[#FEF08A]', color: '#CA8A04', name: '빛' }
 };
 
 // ==========================================
@@ -1520,7 +1498,7 @@ function gameLoop() {
 }
 
 // ==========================================
-// 10. 오리지널 보카몬(VocaMon) 매핑 로직
+// 10. 오리지널 보카몬(VocaMon) 매핑 로직 (144마리 완벽 분배판)
 // ==========================================
 function getPokemonInfoForWord(word, count) {
     const sorted = [...window.state.quizzes].sort((a,b)=>((a.createdAt||0)-(b.createdAt||0))||a.word.localeCompare(b.word));
@@ -1530,33 +1508,115 @@ function getPokemonInfoForWord(word, count) {
         idx = Math.abs(hash);
     }
 
-    // 1. 진화 단계 설정 (5회 2단계, 10회 3단계)
-    const tier = count >= 10 ? 3 : (count >= 5 ? 2 : 1);
+    const targetTier = count >= 10 ? 3 : (count >= 5 ? 2 : 1);
 
-    // 2. ⭐ 준비한 오리지널 몬스터 세트(진화 라인) 개수
-    // (현재 파란 몬스터, 불꽃 용 등 2세트 = 총 6장만 있다면 이 숫자를 2로 설정)
-    // 나중에 20세트(60장)를 만드시면 이 숫자를 20으로 꼭 바꿔주세요!
-    const TOTAL_SETS = 2; 
+    // ⭐ 총 75개의 진화 세트 (총 144마리)
+    // 한 단원(10~14개)에서 속성이 절대 겹치지 않도록 물->노말->불꽃->풀->땅->어둠->빛 순서로 완벽하게 교차(지그재그) 배치했습니다.
+    const VOCAMON_LINES = [
+        [1,2,3], [21,22,23], [42,43,44], [63,64,65], [84,85,86], [105,106,107], [125,126,127],
+        [4,5,6], [24,25,26], [45,46,47], [66,67,68], [87,88,89], [108,109,110], [128,129,130],
+        [7,8], [27,28], [48,49], [69,70,71], [90,91], [111,112], [131,132,133],
+        [9,10], [29,30], [50,51], [72,73], [92,93], [113,114], [134,135],
+        [11,12], [31,32], [52,53], [74,75], [94,95], [115,116], [136,137],
+        [13,14], [33,34], [54,55], [76,77], [96,97], [117,118], [138,139],
+        [15,16], [35,36], [56,57], [78,79], [98,99], [119,120], [140,141],
+        [17], [37,38], [58], [80,81], [100,101], [121], [142,143],
+        [18], [39], [59], [82], [102], [122], [144],
+        [19], [40], [60], [83], [103], [123],
+        [20], [41], [61], [104], [124],
+        [62]
+    ];
 
-    // 3. 단어 스펠링을 바탕으로 몬스터 종류 무작위 고정 배정
-    const lineIndex = idx % TOTAL_SETS;
+    const lineIndex = idx % VOCAMON_LINES.length;
+    const line = VOCAMON_LINES[lineIndex];
 
-    // 4. 실제 불러올 이미지 번호 자동 계산
-    // 예: 0번 세트의 1단계는 mon_1, 1번 세트의 3단계는 mon_6
-    const imageNumber = (lineIndex * 3) + tier;
+    const pIdx = Math.min(targetTier - 1, line.length - 1);
+    const imageNumber = line[pIdx];
+    const auraLevel = Math.max(0, targetTier - line.length);
 
     return {
         id: imageNumber,
-        tier: tier,
-        auraLevel: Math.max(0, tier - 3),
-        imgSrc: `./media/mon_${imageNumber}.png` // ⭐ USB 제출용 로컬 폴더로 경로 변경 완벽 적용
+        tier: Math.min(targetTier, line.length), 
+        auraLevel: auraLevel,
+        imgSrc: `./media/mon_${imageNumber}.png` 
     };
 }
 
-// ⭐ 오리지널 몬스터 이름 및 속성 설정
-// 형식 -> 이미지번호:이름:속성 (속성은 fire, water, grass, electric, dark, fairy 등)
-// 아래는 2세트(6번 이미지)까지의 예시입니다. 이미지를 추가할 때마다 이어서 적어주세요.
-const DB_STR = "1:물방울쥐:water|2:물보라쥐:water|3:해일마우스:water|4:파카몽:normal|5:파카파카몽:normal|6:알파카몽:normal";
+// ⭐ 144마리 생명체/자연 모티브 데이터베이스
+const DB_STR = 
+    // 💧 물 속성 (1~20번)
+    "1:물방울쥐:water|2:물보라쥐:water|3:해일마우스:water|" + 
+    "4:꼬마해마:water|5:파도해마:water|6:심연해마:water|" +
+    "7:조개동자:water|8:진주동자:water|" +
+    "9:이슬요정:water|10:시냇물요정:water|" +
+    "11:물장구오리:water|12:파도오리:water|" +
+    "13:구름해파리:water|14:독해파리:water|" +
+    "15:수달꼬마:water|16:잠수수달:water|" +
+    "17:심해고래:water|18:해달꼬마:water|19:얼음펭귄:water|20:소라게:water|" +
+
+    // 🐾 노말 속성 (21~41번)
+    "21:파카몽:normal|22:파카파카몽:normal|23:알파카몽:normal|" + 
+    "24:다람냥:normal|25:비행다람냥:normal|26:마스터다람냥:normal|" +
+    "27:솜털양:normal|28:구름양:normal|" +
+    "29:통통쥐:normal|30:뚱뚱쥐:normal|" +
+    "31:아기참새:normal|32:날쌘참새:normal|" +
+    "33:얼룩고양이:normal|34:호랑고양이:normal|" +
+    "35:바둑강쥐:normal|36:늠름하운드:normal|" +
+    "37:아기낙타:normal|38:사막낙타:normal|" +
+    "39:게으른곰:normal|40:찹쌀토끼:normal|41:꼬마팬더:normal|" +
+
+    // 🔥 불꽃 속성 (42~62번)
+    "42:불꽃여우:fire|43:화염여우:fire|44:마그마여우:fire|" +
+    "45:숯불강쥐:fire|46:화염강쥐:fire|47:마그마하운드:fire|" +
+    "48:아기불냥:fire|49:화염불냥:fire|" +
+    "50:불씨꼬꼬:fire|51:열기꼬꼬:fire|" +
+    "52:아기불숭이:fire|53:열기불숭이:fire|" +
+    "54:불도롱뇽:fire|55:화염도롱뇽:fire|" +
+    "56:화산거북:fire|57:폭발거북:fire|" +
+    "58:마그마도마뱀:fire|59:태양불새:fire|60:불꽃나방:fire|61:숯불송아지:fire|62:불꽃망아지:fire|" +
+
+    // 🌿 풀 속성 (63~83번)
+    "63:이끼거북:grass|64:덤불거북:grass|65:거목거북:grass|" +
+    "66:잎사귀벌레:grass|67:수풀벌레:grass|68:거목벌레:grass|" +
+    "69:씨앗동자:grass|70:새싹동자:grass|71:숲속정령:grass|" +
+    "72:덩굴뱀:grass|73:밀림뱀:grass|" +
+    "74:꽃잎새:grass|75:만개새:grass|" +
+    "76:풀피리새:grass|77:수호부엉이:grass|" +
+    "78:버섯돼지:grass|79:맹독돼지:grass|" +
+    "80:도토리다람쥐:grass|81:거목다람쥐:grass|" +
+    "82:네잎토끼:grass|83:신비사마귀:grass|" +
+
+    // 🪨 땅 속성 (84~104번)
+    "84:진흙개구리:ground|85:황토개구리:ground|86:바위개구리:ground|" +
+    "87:모래두더지:ground|88:사막두더지:ground|89:지진두더지:ground|" +
+    "90:찰흙곰:ground|91:단단곰:ground|" +
+    "92:돌멩게:ground|93:암석게:ground|" +
+    "94:사막여우:ground|95:황야여우:ground|" +
+    "96:흙먼지나방:ground|97:모래바람나방:ground|" +
+    "98:꼬마돌도치:ground|99:바위고도치:ground|" +
+    "100:황토뱀:ground|101:사막코브라:ground|" +
+    "102:고대공룡:ground|103:땅굴벌레:ground|104:모래거북:ground|" +
+
+    // 🌑 어둠 속성 (105~124번)
+    "105:흑염까마귀:dark|106:악몽까마귀:dark|107:파멸까마귀:dark|" +
+    "108:꼬마유령:dark|109:깜깜유령:dark|110:심연유령:dark|" +
+    "111:박쥐망령:dark|112:흡혈망령:dark|" +
+    "113:검은늑대:dark|114:재앙늑대:dark|" +
+    "115:흑마술고양이:dark|116:심연고양이:dark|" +
+    "117:어둠전갈:dark|118:맹독전갈:dark|" +
+    "119:그림자박쥐:dark|120:뱀파이어박쥐:dark|" +
+    "121:심연올빼미:dark|122:재앙의눈:dark|123:어둠거미:dark|124:칠흑도마뱀:dark|" +
+
+    // ✨ 빛 속성 (125~144번)
+    "125:꼬마전기쥐:light|126:섬광쥐:light|127:벼락쥐:light|" +
+    "128:별빛천사:light|129:달빛천사:light|130:태양천사:light|" +
+    "131:꼬마별:light|132:은하수별:light|133:우주대스타:light|" +
+    "134:빛의사슴:light|135:영롱사슴:light|" +
+    "136:혜성새:light|137:유성새:light|" +
+    "138:반딧불이:light|139:섬광반딧불이:light|" +
+    "140:빛돌이요정:light|141:섬광요정:light|" +
+    "142:오로라여우:light|143:무지개여우:light|" +
+    "144:프리즘사슴벌레:light";
 
 const LOCAL_POKEMON_DB = (() => {
     const db = {};
