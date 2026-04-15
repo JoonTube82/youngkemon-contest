@@ -1536,7 +1536,7 @@ function getPokemonInfoForWord(word, count) {
     // 2. ⭐ 준비한 오리지널 몬스터 세트(진화 라인) 개수
     // (현재 파란 몬스터, 불꽃 용 등 2세트 = 총 6장만 있다면 이 숫자를 2로 설정)
     // 나중에 20세트(60장)를 만드시면 이 숫자를 20으로 꼭 바꿔주세요!
-    const TOTAL_SETS = 1; 
+    const TOTAL_SETS = 2; 
 
     // 3. 단어 스펠링을 바탕으로 몬스터 종류 무작위 고정 배정
     const lineIndex = idx % TOTAL_SETS;
@@ -1556,7 +1556,7 @@ function getPokemonInfoForWord(word, count) {
 // ⭐ 오리지널 몬스터 이름 및 속성 설정
 // 형식 -> 이미지번호:이름:속성 (속성은 fire, water, grass, electric, dark, fairy 등)
 // 아래는 2세트(6번 이미지)까지의 예시입니다. 이미지를 추가할 때마다 이어서 적어주세요.
-const DB_STR = "1:물방울쥐:water|2:물보라쥐:water|3:해일마우스:water|4:불꽃용:fire|5:화염드래곤:fire|6:볼케이노드래곤:fire";
+const DB_STR = "1:물방울쥐:water|2:물보라쥐:water|3:해일마우스:water|4:파카몽:normal|5:파카파카몽:normal|6:알파카몽:normal";
 
 const LOCAL_POKEMON_DB = (() => {
     const db = {};
