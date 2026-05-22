@@ -157,7 +157,7 @@ initAuth();
 onAuthStateChanged(auth, (user) => {
     if (user) {
         window.state.authUid = user.uid;
-        setStatus("도감 서버 준비 완료! 트레이너를 선택하세요.");
+        setStatus("도감 서버 준비 완료! 모험가를 선택하세요.");
         document.getElementById('login-btn').disabled = false;
     } else {
         window.state.authUid = null;
@@ -171,9 +171,9 @@ window.handleLogin = async () => {
     const idInput = document.getElementById('user-id').value.trim();
     const pwInput = document.getElementById('user-pw').value.trim();
     const btn = document.getElementById('login-btn');
-    if (!idInput || !pwInput) return window.showCustomAlert("트레이너 이름과 비밀번호를 모두 입력하세요!");
+    if (!idInput || !pwInput) return window.showCustomAlert("모험가 이름과 비밀번호를 모두 입력하세요!");
     btn.disabled = true;
-    setStatus("트레이너 기록 조회 중...");
+    setStatus("모험가 기록 조회 중...");
     
     try {
         const docRef = getStudentDoc(idInput);
@@ -197,7 +197,7 @@ window.handleLogin = async () => {
             
             setStatus("접속 성공!"); enterGame(idInput);
         } else {
-            const isConfirmed = await window.showCustomConfirm(`'${idInput}' 트레이너님!\n비밀번호[${pwInput}]로 계정을 새로 생성할까요?`);
+            const isConfirmed = await window.showCustomConfirm(`'${idInput}' 모험가님!\n비밀번호[${pwInput}]로 계정을 새로 생성할까요?`);
             if (isConfirmed) {
                 await setDoc(docRef, { id: idInput, password: pwInput, gameStats: window.state.gameData, createdAt: new Date().toISOString(), forceLogout: false });
                 enterGame(idInput);
@@ -428,7 +428,7 @@ window.loadChapterDominators = async () => {
 
 window.showTrainerProfile = async (studentId) => {
     document.getElementById('trainer-modal').style.display = 'flex';
-    document.getElementById('trainer-modal-content').innerHTML = '<p class="text-slate-400 py-10 animate-pulse font-bold text-center text-lg">트레이너 정보를 불러오는 중...</p>';
+    document.getElementById('trainer-modal-content').innerHTML = '<p class="text-slate-400 py-10 animate-pulse font-bold text-center text-lg">모험가 정보를 불러오는 중...</p>';
 
     try {
         const docSnap = await getDoc(getStudentDoc(studentId));
@@ -516,9 +516,9 @@ window.closeCheatSheet = () => { document.getElementById('cheat-sheet-modal').st
 // ==========================================
 window.enterStage = (chapter) => {
     const currentLevel = window.state.gameData.level || 1;
-    if (chapter >= 4 && chapter <= 6 && currentLevel < 5) return window.showCustomAlert("이 지역은 트레이너 레벨 5 이상부터 진입할 수 있습니다!");
-    if (chapter >= 7 && chapter <= 9 && currentLevel < 10) return window.showCustomAlert("이 지역은 트레이너 레벨 10 이상부터 진입할 수 있습니다!");
-    if (chapter >= 10 && chapter <= 12 && currentLevel < 15) return window.showCustomAlert("이 지역은 트레이너 레벨 15 이상부터 진입할 수 있습니다!");
+    if (chapter >= 4 && chapter <= 6 && currentLevel < 5) return window.showCustomAlert("이 지역은 모험가 레벨 5 이상부터 진입할 수 있습니다!");
+    if (chapter >= 7 && chapter <= 9 && currentLevel < 10) return window.showCustomAlert("이 지역은 모험가 레벨 10 이상부터 진입할 수 있습니다!");
+    if (chapter >= 10 && chapter <= 12 && currentLevel < 15) return window.showCustomAlert("이 지역은 모험가 레벨 15 이상부터 진입할 수 있습니다!");
 
     window.state.currentChapter = chapter;
     document.getElementById('hunt-map-view').style.display = 'none';
@@ -617,7 +617,7 @@ function handleAttack() {
     if (window.state.gameData.exp >= reqExp) {
         window.state.gameData.exp -= reqExp; window.state.gameData.level++;
         document.getElementById('modal').style.display = 'flex';
-        document.getElementById('modal-desc').innerText = `레벨 ${window.state.gameData.level} 트레이너가 되었습니다!`;
+        document.getElementById('modal-desc').innerText = `레벨 ${window.state.gameData.level} 모험가가 되었습니다!`;
     }
     window.updateUI(); window.saveProgress();
 }
@@ -929,7 +929,7 @@ window.loadArena = async () => {
                 <div class="flex items-center gap-3 sm:gap-4 overflow-hidden">
                     <div class="text-3xl sm:text-4xl shrink-0 drop-shadow-md">${isBoss?'👑':'👦'}</div>
                     <div class="flex flex-col sm:flex-row sm:items-center shrink-0 min-w-0">
-                        <div class="min-w-[70px] truncate"><div class="font-bold text-white truncate text-base sm:text-lg">${oppId}</div><div class="text-xs sm:text-sm ${isBoss?'text-yellow-400':'text-slate-400'} font-bold mt-0.5">${isBoss?'체육관 관장':'트레이너'}</div></div>
+                        <div class="min-w-[70px] truncate"><div class="font-bold text-white truncate text-base sm:text-lg">${oppId}</div><div class="text-xs sm:text-sm ${isBoss?'text-yellow-400':'text-slate-400'} font-bold mt-0.5">${isBoss?'체육관 관장':'모험가'}</div></div>
                         ${top3Html}
                     </div>
                 </div>
@@ -1445,7 +1445,7 @@ window.claimDefenseReward = (timestamp) => {
     if (window.state.gameData.exp >= reqExp) {
         window.state.gameData.exp -= reqExp; window.state.gameData.level++;
         document.getElementById('modal').style.display = 'flex';
-        document.getElementById('modal-desc').innerText = `레벨 ${window.state.gameData.level} 트레이너가 되었습니다!`;
+        document.getElementById('modal-desc').innerText = `레벨 ${window.state.gameData.level} 모험가가 되었습니다!`;
     }
     window.updateUI(); window.saveProgress(); window.openDefenseLogs();
 };
