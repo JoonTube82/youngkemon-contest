@@ -157,7 +157,7 @@ initAuth();
 onAuthStateChanged(auth, (user) => {
     if (user) {
         window.state.authUid = user.uid;
-        setStatus("도감 서버 준비 완료! 모험가를 선택하세요.");
+        setStatus("서버 준비 완료! 모험가를 선택하세요.");
         document.getElementById('login-btn').disabled = false;
     } else {
         window.state.authUid = null;
