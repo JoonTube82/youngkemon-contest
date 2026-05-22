@@ -165,6 +165,7 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
+// ⭐ 에러 처리 피드백이 추가된 로그인 핸들러
 window.handleLogin = async () => {
     if (!window.state.authUid) return window.showCustomAlert("서버와 연결되지 않았습니다.");
     const idInput = document.getElementById('user-id').value.trim();
@@ -202,7 +203,13 @@ window.handleLogin = async () => {
                 enterGame(idInput);
             } else { btn.disabled = false; setStatus("취소됨", true); }
         }
-    } catch (error) { btn.disabled = false; }
+    } catch (error) { 
+        // ⭐ 이 부분에 에러 로그 및 사용자 알림이 추가되었습니다!
+        console.error("Login Error:", error);
+        btn.disabled = false; 
+        setStatus("서버 접속 오류", true);
+        window.showCustomAlert(`로그인 중 오류가 발생했습니다!\n에러: ${error.message}\n\n※ 만약 'Missing or insufficient permissions' 에러라면 Firebase Firestore Database의 [규칙(Rules)] 탭에서 읽기/쓰기 권한을 허용(true)으로 수정해야 합니다.`);
+    }
 };
 
 function enterGame(id) {
@@ -1511,7 +1518,6 @@ function getPokemonInfoForWord(word, count) {
     const targetTier = count >= 10 ? 3 : (count >= 5 ? 2 : 1);
 
     // ⭐ 총 75개의 진화 세트 (총 144마리)
-    // 한 단원(10~14개)에서 속성이 절대 겹치지 않도록 물->노말->불꽃->풀->땅->어둠->빛 순서로 완벽하게 교차(지그재그) 배치했습니다.
     const VOCAMON_LINES = [
         [1,2,3], [21,22,23], [42,43,44], [63,64,65], [84,85,86], [105,106,107], [125,126,127],
         [4,5,6], [24,25,26], [45,46,47], [66,67,68], [87,88,89], [108,109,110], [128,129,130],
