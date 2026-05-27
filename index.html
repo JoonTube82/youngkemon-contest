@@ -12,22 +12,22 @@
         <div id="login-view" class="login-view-container magic-card p-10 text-center border-red-500">
             <div class="text-6xl mb-4">🧢</div>
             <h1 class="text-4xl text-red-600 mb-2 font-black italic">6학년 보카몬</h1>
-            <p class="text-slate-400 mb-8 font-normal">모험가 이름을 선택하고 암호를 입력하세요</p>
+            <p class="text-slate-400 mb-8 font-normal">트레이너 이름을 선택하고 암호를 입력하세요</p>
             <div class="space-y-4">
                 <select id="user-id" class="spell-input text-xl p-4 border-2 bg-white cursor-pointer appearance-none text-center">
-                    <option value="" disabled selected>모험가 선택하기</option>
+                    <option value="" disabled selected>트레이너 선택하기</option>
                 </select>
                 <input type="password" id="user-pw" class="spell-input text-xl p-4 border-2" placeholder="비밀번호" onkeyup="if(event.key==='Enter')window.handleLogin()">
                 <button id="login-btn" onclick="window.handleLogin()" class="btn-magic mt-4">영어 마스터 연구소 입장하기</button>
             </div>
-            <p id="login-status" class="text-slate-300 text-xs mt-4 min-h-[1rem]">서버와 연결 중...</p>
+            <p id="login-status" class="text-slate-300 text-xs mt-4 min-h-[1rem]">도감 서버와 연결 중...</p>
         </div>
 
         <div id="game-view" class="game-view-container">
             <div id="profile-card" class="bg-white rounded-3xl p-5 mb-4 shadow-lg flex justify-between items-start border-b-4 border-slate-200 transition-all duration-500">
                 <div>
                     <div class="flex items-center gap-2 mb-1">
-                        <span id="rank-badge" class="text-[10px] px-2 py-0.5 rounded-full bg-red-100 text-red-600 font-bold uppercase tracking-wider">초보 모험가</span>
+                        <span id="rank-badge" class="text-[10px] px-2 py-0.5 rounded-full bg-red-100 text-red-600 font-bold uppercase tracking-wider">초보 트레이너</span>
                         <button id="admin-btn" onclick="window.toggleAdmin()" class="text-slate-300 text-xs hover:text-red-500 font-bold hidden">⚙️ 관리자</button>
                     </div>
                     <h2 class="text-3xl font-bold text-slate-800 mt-1 flex items-center">
@@ -213,7 +213,8 @@
 </div>
                         <div class="flex flex-col gap-3 relative">
                             <div class="relative w-full">
-                                <input type="password" id="spell-in" class="spell-input border-red-200 w-full relative z-0" style="color: transparent; caret-color: white;" autocomplete="new-password" autocorrect="off" spellcheck="false" autocapitalize="off" onkeyup="if(event.key==='Enter')window.checkMagic()" oninput="document.getElementById('fake-text').textContent = this.value || '영단어를 입력하세요'; document.getElementById('fake-text').style.color = this.value ? '#f9fafb' : '#9ca3af';" onpaste="return false;" ondrop="return false;">
+                                <!-- ⭐ 비밀번호 팝업 방지를 위해 type="text"로 변경 및 autocomplete="off" 적용 -->
+                                <input type="text" id="spell-in" class="spell-input border-red-200 w-full relative z-0" style="color: transparent; caret-color: white;" autocomplete="off" autocorrect="off" spellcheck="false" autocapitalize="off" onkeyup="if(event.key==='Enter')window.checkMagic()" oninput="document.getElementById('fake-text').textContent = this.value || '영단어를 입력하세요'; document.getElementById('fake-text').style.color = this.value ? '#f9fafb' : '#9ca3af';" onpaste="return false;" ondrop="return false;">
                                 <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10 overflow-hidden px-4">
                                     <span id="fake-text" class="text-slate-400 text-[1.8rem] whitespace-pre truncate">영단어를 입력하세요</span>
                                 </div>
@@ -242,7 +243,7 @@
                 <div id="arena-list-view" class="magic-card p-6 shadow-xl min-h-[400px]">
                     <div class="text-center mb-6">
                         <h3 class="text-xl font-bold text-red-500 mb-1 flex items-center justify-center gap-2 flex-wrap">
-                            모험가 배틀
+                            트레이너 배틀
                             <button onclick="window.showTipModal()" class="bg-indigo-500 hover:bg-indigo-400 text-white text-[10px] px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm transition-transform active:scale-95 border border-indigo-400">
                                 💡 Tip
                             </button>
@@ -256,10 +257,10 @@
                                 📜 방어 기록
                             </button>
                         </h3>
-                        <p class="text-xs text-slate-400">도감에서 강력한 3마리를 골라 체육관 배틀에 도전하세요!<br>승리하여 승수를 쌓고 최고의 모험가가 되어보세요.</p>
+                        <p class="text-xs text-slate-400">도감에서 강력한 3마리를 골라 체육관 배틀에 도전하세요!<br>승리하여 승수를 쌓고 최고의 트레이너가 되어보세요.</p>
                     </div>
                     <div id="arena-list" class="space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
-                        <p class="text-center text-slate-400 py-10 text-sm">상대 모험가를 찾고 있습니다...</p>
+                        <p class="text-center text-slate-400 py-10 text-sm">상대 트레이너를 찾고 있습니다...</p>
                     </div>
                 </div>
 
@@ -297,7 +298,8 @@
 
                     <div id="battle-log" class="text-center font-bold text-sm h-6 text-red-500 animate-pulse">상성을 파악하여 화면을 빠르게 탭하세요!</div>
 
-                    <div onclick="window.tapAttack()" class="bg-indigo-50 rounded-3xl p-4 border-4 border-indigo-300 shadow-lg relative overflow-hidden flex justify-between items-center h-48 cursor-pointer active:scale-[0.98] transition-transform select-none">
+                    <!-- ⭐ 모바일 터치 씹힘 해결: onclick -> onpointerdown 변경 및 터치 최적화 스타일 추가 -->
+                    <div onpointerdown="window.tapAttack()" class="bg-indigo-50 rounded-3xl p-4 border-4 border-indigo-300 shadow-lg relative overflow-hidden flex justify-between items-center h-48 cursor-pointer active:scale-[0.98] transition-transform select-none" style="touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none;">
                         <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-10">
                             <span class="text-4xl font-black tracking-widest">TAP TO ATTACK</span>
                         </div>
@@ -307,7 +309,8 @@
                         </div>
 
                         <div class="flex-1 flex justify-center items-center z-50">
-                            <button id="btn-ultimate" onclick="event.stopPropagation(); window.useUltimate()" class="relative bg-gradient-to-br from-yellow-400 to-orange-500 text-white font-black w-16 h-16 rounded-full border-4 border-yellow-200 transition-all opacity-50 pointer-events-none flex flex-col items-center justify-center leading-none shadow-2xl scale-90 sm:scale-100">
+                            <!-- ⭐ 필살기 버튼 터치 최적화 -->
+                            <button id="btn-ultimate" onpointerdown="event.stopPropagation(); window.useUltimate()" class="relative bg-gradient-to-br from-yellow-400 to-orange-500 text-white font-black w-16 h-16 rounded-full border-4 border-yellow-200 transition-all opacity-50 pointer-events-none flex flex-col items-center justify-center leading-none shadow-2xl scale-90 sm:scale-100" style="touch-action: manipulation;">
                                 <span class="text-2xl mb-0.5">⚡</span>
                             </button>
                         </div>
@@ -344,7 +347,7 @@
                 <div class="magic-card p-6 shadow-xl min-h-[400px]">
                     <div class="text-center mb-6">
                         <h3 class="text-2xl font-bold text-yellow-500 mb-1">🏆 커뮤니티</h3>
-                        <p class="text-sm text-slate-500">다른 모험가들의 정보와 강력한 파트너를 확인해보세요.</p>
+                        <p class="text-sm text-slate-500">다른 트레이너들의 정보와 강력한 파트너를 확인해보세요.</p>
                     </div>
                     <div id="rank-list" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar pb-4">
                         <p class="text-center text-slate-400 py-10 text-sm animate-pulse col-span-full">랭킹 정보를 불러오는 중...</p>
@@ -676,7 +679,7 @@
             <div class="text-center mb-6 shrink-0">
                 <div class="text-5xl mb-3 drop-shadow-md">🛡️</div>
                 <h2 class="text-2xl font-black text-pink-400 mb-2">체육관 방어 기록</h2>
-                <p class="text-xs sm:text-sm text-slate-400">다른 모험가들의 도전 결과를 확인하세요.</p>
+                <p class="text-xs sm:text-sm text-slate-400">다른 트레이너들의 도전 결과를 확인하세요.</p>
             </div>
             <div id="defense-log-list" class="space-y-3 text-left overflow-y-auto custom-scrollbar flex-1 pr-2">
                 </div>
@@ -696,7 +699,8 @@
                     </div>
                 </div>
                 <div class="relative w-full mb-4">
-                    <input type="password" id="b-spell-in" class="spell-input w-full relative z-0 !text-2xl !p-3" style="color: transparent; caret-color: white;" autocomplete="new-password" autocorrect="off" spellcheck="false" autocapitalize="off" onkeyup="if(event.key==='Enter')window.submitBattleQuiz()" oninput="document.getElementById('b-fake-text').textContent = this.value || '스펠링 입력'; document.getElementById('b-fake-text').style.color = this.value ? '#f9fafb' : '#9ca3af';">
+                    <!-- ⭐ 비밀번호 팝업 방지를 위해 type="text"로 변경 및 autocomplete="off" 적용 -->
+                    <input type="text" id="b-spell-in" class="spell-input w-full relative z-0 !text-2xl !p-3" style="color: transparent; caret-color: white;" autocomplete="off" autocorrect="off" spellcheck="false" autocapitalize="off" onkeyup="if(event.key==='Enter')window.submitBattleQuiz()" oninput="document.getElementById('b-fake-text').textContent = this.value || '스펠링 입력'; document.getElementById('b-fake-text').style.color = this.value ? '#f9fafb' : '#9ca3af';">
                     <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10 overflow-hidden px-4">
                         <span id="b-fake-text" class="text-slate-400 text-2xl font-bold whitespace-pre truncate">스펠링 입력</span>
                     </div>
