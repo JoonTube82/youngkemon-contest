@@ -1,3 +1,4 @@
+
 import { auth, getStudentsCollection, getStudentDoc, getWordListCollection, STUDENT_GENDER } from './firebase.js';
 import { signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getDoc, getDocs, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -14,20 +15,18 @@ window.AudioManager = {
     },
     currentType: null,
     isMuted: false,
-    volume: 0.5, // ⭐ 기본 소리 크기 (0.0 ~ 1.0)
+    volume: 0.5,
     init: function() {
         Object.values(this.bgms).forEach(audio => { 
             audio.loop = true; 
-            audio.volume = this.volume; // 로딩 시 볼륨 적용
+            audio.volume = this.volume; 
         });
     },
-    // ⭐ 소리 크기를 실시간으로 조절하는 함수 추가
     setVolume: function(val) {
         this.volume = parseFloat(val);
         Object.values(this.bgms).forEach(audio => { 
             audio.volume = this.volume; 
         });
-        // 볼륨이 0이 되면 음소거 아이콘으로 변경
         const btn = document.getElementById('btn-mute');
         if(btn) btn.innerText = this.volume === 0 ? '🔇' : '🎵';
     },
@@ -39,7 +38,7 @@ window.AudioManager = {
         }
         this.currentType = type;
         if (!this.isMuted && this.bgms[type]) {
-            this.bgms[type].volume = this.volume; // 재생 전 볼륨 확인
+            this.bgms[type].volume = this.volume;
             this.bgms[type].play().catch(e => console.log("BGM 재생 대기 중:", e));
         }
     },
@@ -59,19 +58,24 @@ window.AudioManager = {
     }
 };
 window.AudioManager.init();
+
 // ==========================================
 // ★ 단어 읽어주기 (TTS) 기능 추가
 // ==========================================
-window.speakWord = (text, event) => {
-    if (event) event.stopPropagation(); // 버튼 누를 때 다른 이벤트 겹침 방지
-    if (!text && window.state.currentQuiz) text = window.state.currentQuiz.word;
+window.speakText = (text, lang = 'en-US') => {
     if (!text) return;
-    
-    window.speechSynthesis.cancel(); // 기존에 읽고 있던 소리 취소
+    window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'en-US'; // 미국 영어 발음
-    utterance.rate = 0.85;    // 6학년 학생들을 위해 기본 속도보다 아주 살짝 느리게 설정
+    utterance.lang = lang; 
+    utterance.rate = 0.85; // 6학년 학생을 위해 살짝 느리게
     window.speechSynthesis.speak(utterance);
+};
+
+window.speakWord = (event) => {
+    if (event) event.stopPropagation(); 
+    if (window.state.currentQuiz) {
+        window.speakText(window.state.currentQuiz.word, 'en-US');
+    }
 };
 
 window.state = {
@@ -87,16 +91,30 @@ window.state = {
 };
 
 // ==========================================
+// 학습(Learn) 탭 전용 상태
+// ==========================================
+window.learnState = { 
+    list: [], 
+    index: 0, 
+    isPlaying: false, 
+    timer1: null, 
+    timer2: null,
+    quizList: [], 
+    quizIndex: 0, 
+    options: [] 
+};
+
+// ==========================================
 // 2. 포켓몬 전투 공식 및 타입 설정
 // ==========================================
 const TYPE_EFFECTIVENESS = {
-    normal: { }, // 노말은 무난하게 모두에게 1배 데미지
-    fire: { fire: 0.5, water: 0.5, grass: 2 }, // 불꽃은 풀에 강함, 물/불에 약함
-    water: { water: 0.5, grass: 0.5, fire: 2, ground: 2 }, // 물은 불/땅에 강함, 풀/물에 약함
-    grass: { grass: 0.5, fire: 0.5, water: 2, ground: 2 }, // 풀은 물/땅에 강함, 불/풀에 약함
-    ground: { grass: 0.5, fire: 2 }, // 땅은 불에 강함, 풀에 약함
-    dark: { dark: 0.5, light: 2, normal: 2 }, // 어둠은 빛/노말에 강함, 어둠에 약함
-    light: { light: 0.5, dark: 2 } // 빛은 어둠에 강함, 빛에 약함
+    normal: { }, 
+    fire: { fire: 0.5, water: 0.5, grass: 2 }, 
+    water: { water: 0.5, grass: 0.5, fire: 2, ground: 2 }, 
+    grass: { grass: 0.5, fire: 0.5, water: 2, ground: 2 }, 
+    ground: { grass: 0.5, fire: 2 }, 
+    dark: { dark: 0.5, light: 2, normal: 2 }, 
+    light: { light: 0.5, dark: 2 } 
 };
 
 const getMatchup = (atk, def) => {
@@ -157,7 +175,7 @@ initAuth();
 onAuthStateChanged(auth, (user) => {
     if (user) {
         window.state.authUid = user.uid;
-        setStatus("도감 서버 준비 완료! 트레이너를 선택하세요.");
+        setStatus("도감 서버 준비 완료! 모험가를 선택하세요.");
         document.getElementById('login-btn').disabled = false;
     } else {
         window.state.authUid = null;
@@ -165,15 +183,14 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-// ⭐ 에러 처리 피드백이 추가된 로그인 핸들러
 window.handleLogin = async () => {
     if (!window.state.authUid) return window.showCustomAlert("서버와 연결되지 않았습니다.");
     const idInput = document.getElementById('user-id').value.trim();
     const pwInput = document.getElementById('user-pw').value.trim();
     const btn = document.getElementById('login-btn');
-    if (!idInput || !pwInput) return window.showCustomAlert("트레이너 이름과 비밀번호를 모두 입력하세요!");
+    if (!idInput || !pwInput) return window.showCustomAlert("모험가 이름과 비밀번호를 모두 입력하세요!");
     btn.disabled = true;
-    setStatus("트레이너 기록 조회 중...");
+    setStatus("모험가 기록 조회 중...");
     
     try {
         const docRef = getStudentDoc(idInput);
@@ -197,7 +214,7 @@ window.handleLogin = async () => {
             
             setStatus("접속 성공!"); enterGame(idInput);
         } else {
-            const isConfirmed = await window.showCustomConfirm(`'${idInput}' 트레이너님!\n비밀번호[${pwInput}]로 계정을 새로 생성할까요?`);
+            const isConfirmed = await window.showCustomConfirm(`'${idInput}' 모험가님!\n비밀번호[${pwInput}]로 계정을 새로 생성할까요?`);
             if (isConfirmed) {
                 await setDoc(docRef, { id: idInput, password: pwInput, gameStats: window.state.gameData, createdAt: new Date().toISOString(), forceLogout: false });
                 enterGame(idInput);
@@ -233,6 +250,11 @@ window.switchTab = (tabName) => {
         return window.showCustomAlert("배틀 중에는 다른 탭으로 이동할 수 없습니다. 도망치기를 누르세요!");
     }
 
+    // 학습 모드 강제 종료 처리
+    if(tabName !== 'learn' && window.learnState.isPlaying) {
+        window.exitLearn();
+    }
+
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.remove('active', 'bg-red-500', 'text-white');
         btn.classList.add('bg-slate-100', 'text-slate-500');
@@ -256,10 +278,11 @@ window.switchTab = (tabName) => {
         window.loadArena();
     }
     if (tabName === 'rank') window.renderRanking();
+    if (tabName === 'learn') window.renderLearnChapterGrid();
 
     if (tabName === 'rank' || tabName === 'hunt') window.AudioManager.playBGM('town');
     else if (tabName === 'arena') window.AudioManager.playBGM('battle');
-    else if (tabName === 'dex') window.AudioManager.playBGM('dex');
+    else if (tabName === 'dex' || tabName === 'learn') window.AudioManager.playBGM('dex');
 };
 
 let unsubscribeWords = null;
@@ -356,6 +379,187 @@ window.saveProgress = async () => {
 };
 
 // ==========================================
+// ★ [신규] 학습(Learn) 탭 기능
+// ==========================================
+window.renderLearnChapterGrid = () => {
+    const container = document.querySelector('#learn-chapter-view > .grid');
+    if (!container) return;
+    let html = '';
+    for(let i=1; i<=12; i++) {
+        html += `
+        <button onclick="window.openLearnChapter(${i})" class="bg-white border-2 border-emerald-100 hover:border-emerald-400 p-4 rounded-2xl shadow-sm hover:shadow-md transition-all flex flex-col items-center justify-center group active:scale-95">
+            <span class="text-3xl mb-1 group-hover:scale-110 transition-transform drop-shadow-sm">📖</span>
+            <span class="font-black text-emerald-600 text-lg">${i}단원</span>
+        </button>`;
+    }
+    container.innerHTML = html;
+};
+
+window.openLearnChapter = (ch) => {
+    const chapterWords = window.state.quizzes.filter(q => (q.chapter || 1) === ch);
+    if(chapterWords.length === 0) return window.showCustomAlert(`${ch}단원에 등록된 단어가 없습니다.`);
+    
+    window.learnState.list = chapterWords;
+    window.learnState.index = 0;
+    
+    document.getElementById('learn-chapter-view').style.display = 'none';
+    document.getElementById('learn-play-view').style.display = 'flex';
+    document.getElementById('btn-learn-pause').innerText = '⏸ 일시정지';
+    
+    window.learnState.isPlaying = true;
+    playLearnWordStep1();
+};
+
+const playLearnWordStep1 = () => {
+    if (!window.learnState.isPlaying) return;
+    if (window.learnState.index >= window.learnState.list.length) {
+        startLearnQuiz();
+        return;
+    }
+    
+    document.getElementById('learn-progress-txt').innerText = `자동 재생 중... (${window.learnState.index + 1} / ${window.learnState.list.length})`;
+    
+    const wordObj = window.learnState.list[window.learnState.index];
+    document.getElementById('learn-en-word').innerText = wordObj.word;
+    document.getElementById('learn-kr-word').innerText = ""; 
+    
+    // 영어 읽어주기
+    window.speakText(wordObj.word, 'en-US');
+    
+    // 1.5초 대기 후 한글 뜻 보여주고 읽기
+    window.learnState.timer1 = setTimeout(() => {
+        playLearnWordStep2(wordObj);
+    }, 1500);
+};
+
+const playLearnWordStep2 = (wordObj) => {
+    if (!window.learnState.isPlaying) return;
+    
+    document.getElementById('learn-kr-word').innerText = wordObj.meaning;
+    window.speakText(wordObj.meaning, 'ko-KR');
+    
+    // 2초 대기 후 다음 단어
+    window.learnState.timer2 = setTimeout(() => {
+        if (!window.learnState.isPlaying) return;
+        window.learnState.index++;
+        playLearnWordStep1();
+    }, 2000);
+};
+
+window.toggleLearnPlay = () => {
+    window.learnState.isPlaying = !window.learnState.isPlaying;
+    const btn = document.getElementById('btn-learn-pause');
+    
+    if (window.learnState.isPlaying) {
+        btn.innerText = '⏸ 일시정지';
+        btn.classList.replace('bg-emerald-500', 'bg-emerald-600');
+        // 일시정지 해제 시 현재 단어의 처음부터 다시 시작
+        clearTimeout(window.learnState.timer1);
+        clearTimeout(window.learnState.timer2);
+        playLearnWordStep1();
+    } else {
+        btn.innerText = '▶ 계속하기';
+        btn.classList.replace('bg-emerald-600', 'bg-emerald-500');
+        clearTimeout(window.learnState.timer1);
+        clearTimeout(window.learnState.timer2);
+        window.speechSynthesis.cancel();
+    }
+};
+
+window.exitLearn = () => {
+    window.learnState.isPlaying = false;
+    clearTimeout(window.learnState.timer1);
+    clearTimeout(window.learnState.timer2);
+    window.speechSynthesis.cancel();
+    
+    document.getElementById('learn-chapter-view').style.display = 'block';
+    document.getElementById('learn-play-view').style.display = 'none';
+    document.getElementById('learn-quiz-view').style.display = 'none';
+};
+
+const startLearnQuiz = () => {
+    window.learnState.isPlaying = false;
+    document.getElementById('learn-play-view').style.display = 'none';
+    document.getElementById('learn-quiz-view').style.display = 'flex';
+    
+    // 배열 섞기 (Fisher-Yates)
+    window.learnState.quizList = [...window.learnState.list].sort(() => Math.random() - 0.5);
+    window.learnState.quizIndex = 0;
+    renderLearnQuiz();
+};
+
+const renderLearnQuiz = () => {
+    if(window.learnState.quizIndex >= window.learnState.quizList.length) {
+        window.showCustomAlert("🎉 학습 퀴즈를 모두 완료했습니다! 대단해요!");
+        window.exitLearn();
+        return;
+    }
+    
+    const currentWordObj = window.learnState.quizList[window.learnState.quizIndex];
+    document.getElementById('learn-quiz-progress').innerText = `${window.learnState.quizIndex + 1} / ${window.learnState.quizList.length}`;
+    document.getElementById('learn-quiz-meaning').innerText = currentWordObj.meaning;
+    
+    // 4지선다 만들기 (정답 1개 + 오답 3개)
+    let options = [currentWordObj.word];
+    let wrongPool = window.state.quizzes.filter(q => q.word !== currentWordObj.word);
+    wrongPool.sort(() => Math.random() - 0.5);
+    
+    options.push(...wrongPool.slice(0, 3).map(q => q.word));
+    options.sort(() => Math.random() - 0.5); // 선택지 섞기
+    
+    const optionsContainer = document.getElementById('learn-quiz-options');
+    optionsContainer.innerHTML = '';
+    
+    options.forEach(opt => {
+        let btn = document.createElement('button');
+        btn.className = "w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-4 rounded-2xl font-black text-xl shadow-sm border-2 border-slate-200 active:scale-95 transition-all";
+        btn.innerText = opt;
+        btn.onclick = () => window.checkLearnQuiz(opt, currentWordObj.word, btn);
+        optionsContainer.appendChild(btn);
+    });
+};
+
+window.checkLearnQuiz = (selected, correct, btnEl) => {
+    // 이미 클릭 처리된 경우 방지
+    if (btnEl.disabled) return;
+    
+    const allBtns = document.getElementById('learn-quiz-options').querySelectorAll('button');
+    allBtns.forEach(b => b.disabled = true);
+    
+    if (selected === correct) {
+        // 정답 효과
+        btnEl.classList.replace('bg-slate-100', 'bg-emerald-500');
+        btnEl.classList.replace('text-slate-700', 'text-white');
+        btnEl.classList.replace('border-slate-200', 'border-emerald-600');
+        
+        setTimeout(() => {
+            window.learnState.quizIndex++;
+            renderLearnQuiz();
+        }, 500);
+    } else {
+        // 오답 효과
+        btnEl.classList.replace('bg-slate-100', 'bg-red-500');
+        btnEl.classList.replace('text-slate-700', 'text-white');
+        btnEl.classList.replace('border-slate-200', 'border-red-600');
+        
+        // 정답 버튼도 녹색으로 표시해주기
+        allBtns.forEach(b => {
+            if (b.innerText === correct) {
+                b.classList.replace('bg-slate-100', 'bg-emerald-500');
+                b.classList.replace('text-slate-700', 'text-white');
+            }
+        });
+
+        setTimeout(() => {
+            window.showCustomAlert(`틀렸습니다!\n정답은 '${correct}' 입니다.`);
+            // 틀려도 다음 문제로 넘어가게 처리
+            window.learnState.quizIndex++;
+            renderLearnQuiz();
+        }, 600);
+    }
+};
+
+// ==========================================
 // 5. 모달 및 부가 기능 (도감 파트너, 지배자, 랭킹)
 // ==========================================
 window.setPartner = (word) => {
@@ -425,9 +629,9 @@ window.loadChapterDominators = async () => {
     } catch (e) { console.error("지배자 정보를 불러오는 중 오류", e); }
 };
 
-window.showTrainerProfile = async (studentId) => {
+window.showAdventurerProfile = async (studentId) => {
     document.getElementById('trainer-modal').style.display = 'flex';
-    document.getElementById('trainer-modal-content').innerHTML = '<p class="text-slate-400 py-10 animate-pulse font-bold text-center text-lg">트레이너 정보를 불러오는 중...</p>';
+    document.getElementById('trainer-modal-content').innerHTML = '<p class="text-slate-400 py-10 animate-pulse font-bold text-center text-lg">모험가 정보를 불러오는 중...</p>';
 
     try {
         const docSnap = await getDoc(getStudentDoc(studentId));
@@ -477,7 +681,7 @@ window.showTrainerProfile = async (studentId) => {
             </div>`;
     } catch(e) { document.getElementById('trainer-modal-content').innerHTML = '<p class="text-red-500 py-10 font-bold text-center text-lg">정보를 불러올 수 없습니다.</p>'; }
 };
-window.closeTrainerProfile = () => { document.getElementById('trainer-modal').style.display = 'none'; };
+window.closeAdventurerProfile = () => { document.getElementById('trainer-modal').style.display = 'none'; };
 
 window.showTipModal = () => { document.getElementById('tip-modal').style.display = 'flex'; };
 window.closeTipModal = () => { document.getElementById('tip-modal').style.display = 'none'; };
@@ -498,7 +702,7 @@ window.showCheatSheet = () => {
             <div class="bg-slate-900/80 rounded-xl p-3 border border-slate-700 shadow-inner flex flex-col gap-1 select-none">
                 <div class="font-black text-indigo-400 text-lg flex items-center justify-between">
                     ${q.word}
-                    <button onclick="window.speakWord('${q.word}', event)" class="hover:scale-125 transition-transform" title="발음 듣기">🔊</button>
+                    <button onclick="window.speakText('${q.word}', 'en-US')" class="hover:scale-125 transition-transform" title="발음 듣기">🔊</button>
                 </div>
                 <div class="text-sm text-slate-300 font-bold">${q.meaning}</div>
             </div>`;
@@ -515,9 +719,9 @@ window.closeCheatSheet = () => { document.getElementById('cheat-sheet-modal').st
 // ==========================================
 window.enterStage = (chapter) => {
     const currentLevel = window.state.gameData.level || 1;
-    if (chapter >= 4 && chapter <= 6 && currentLevel < 5) return window.showCustomAlert("이 지역은 트레이너 레벨 5 이상부터 진입할 수 있습니다!");
-    if (chapter >= 7 && chapter <= 9 && currentLevel < 10) return window.showCustomAlert("이 지역은 트레이너 레벨 10 이상부터 진입할 수 있습니다!");
-    if (chapter >= 10 && chapter <= 12 && currentLevel < 15) return window.showCustomAlert("이 지역은 트레이너 레벨 15 이상부터 진입할 수 있습니다!");
+    if (chapter >= 4 && chapter <= 6 && currentLevel < 5) return window.showCustomAlert("이 지역은 모험가 레벨 5 이상부터 진입할 수 있습니다!");
+    if (chapter >= 7 && chapter <= 9 && currentLevel < 10) return window.showCustomAlert("이 지역은 모험가 레벨 10 이상부터 진입할 수 있습니다!");
+    if (chapter >= 10 && chapter <= 12 && currentLevel < 15) return window.showCustomAlert("이 지역은 모험가 레벨 15 이상부터 진입할 수 있습니다!");
 
     window.state.currentChapter = chapter;
     document.getElementById('hunt-map-view').style.display = 'none';
@@ -616,7 +820,7 @@ function handleAttack() {
     if (window.state.gameData.exp >= reqExp) {
         window.state.gameData.exp -= reqExp; window.state.gameData.level++;
         document.getElementById('modal').style.display = 'flex';
-        document.getElementById('modal-desc').innerText = `레벨 ${window.state.gameData.level} 트레이너가 되었습니다!`;
+        document.getElementById('modal-desc').innerText = `레벨 ${window.state.gameData.level} 모험가가 되었습니다!`;
     }
     window.updateUI(); window.saveProgress();
 }
@@ -712,7 +916,7 @@ window.renderDex = async () => {
 <div class="w-full text-center bg-white rounded-xl py-2 mt-2 shadow-sm">
                 <div class="font-black text-slate-800 text-base capitalize truncate px-1 flex justify-center items-center gap-1">
                     ${item.word}
-                    <button onclick="window.speakWord('${item.word}', event)" class="hover:scale-125 transition-transform text-sm" title="발음 듣기">🔊</button>
+                    <button onclick="window.speakText('${item.word}', 'en-US'); event.stopPropagation();" class="hover:scale-125 transition-transform text-sm" title="발음 듣기">🔊</button>
                 </div>
                 <div class="text-slate-500 text-xs truncate px-1">${item.meaning}</div>
                 <div class="mt-1 flex items-center justify-center gap-1">
@@ -781,7 +985,7 @@ window.renderRanking = async () => {
             }
 
             html += `
-            <div onclick="window.showTrainerProfile('${student.id}')" class="cursor-pointer border-2 border-white/10 ${tier.bgClass} rounded-2xl p-4 flex flex-col relative overflow-visible shadow-lg hover:scale-105 transition-transform hover:shadow-indigo-500/20 group ${isMe ? 'ring-2 ring-red-400' : ''}">
+            <div onclick="window.showAdventurerProfile('${student.id}')" class="cursor-pointer border-2 border-white/10 ${tier.bgClass} rounded-2xl p-4 flex flex-col relative overflow-visible shadow-lg hover:scale-105 transition-transform hover:shadow-indigo-500/20 group ${isMe ? 'ring-2 ring-red-400' : ''}">
                 ${isMe ? '<div class="absolute -top-2 -left-2 bg-red-500 text-white text-[10px] px-2.5 py-0.5 rounded-full font-bold shadow-md z-10 border border-white/20">나</div>' : ''}
                 <div class="flex justify-between items-start mb-3">
                     <div class="truncate pr-1 w-full">
@@ -854,7 +1058,7 @@ window.loadArena = async () => {
         listEl.innerHTML = `<div class="text-center py-10"><div class="text-5xl mb-4">💤</div><h3 class="text-xl font-bold text-indigo-400 mb-2">영어 마스터님의 휴식 권고</h3><p class="text-sm text-slate-400">오늘의 배틀 에너지를 모두 소모했습니다! (학생 3승 + 관장 2승 달성)<br>풀숲에서 영단어를 더 포획하며 내일을 준비하세요!</p></div>`; return;
     }
 
-    listEl.innerHTML = '<p class="text-center text-indigo-400 py-10 text-sm animate-pulse">상대를 찾고 있습니다...</p>';
+    listEl.innerHTML = '<p class="text-center text-indigo-400 py-10 text-sm animate-pulse">상대 모험가를 찾고 있습니다...</p>';
     try {
         const snap = await getDocs(getStudentsCollection());
         let opponents = [];
@@ -928,7 +1132,7 @@ window.loadArena = async () => {
                 <div class="flex items-center gap-3 sm:gap-4 overflow-hidden">
                     <div class="text-3xl sm:text-4xl shrink-0 drop-shadow-md">${isBoss?'👑':'👦'}</div>
                     <div class="flex flex-col sm:flex-row sm:items-center shrink-0 min-w-0">
-                        <div class="min-w-[70px] truncate"><div class="font-bold text-white truncate text-base sm:text-lg">${oppId}</div><div class="text-xs sm:text-sm ${isBoss?'text-yellow-400':'text-slate-400'} font-bold mt-0.5">${isBoss?'체육관 관장':'트레이너'}</div></div>
+                        <div class="min-w-[70px] truncate"><div class="font-bold text-white truncate text-base sm:text-lg">${oppId}</div><div class="text-xs sm:text-sm ${isBoss?'text-yellow-400':'text-slate-400'} font-bold mt-0.5">${isBoss?'체육관 관장':'모험가'}</div></div>
                         ${top3Html}
                     </div>
                 </div>
@@ -1115,12 +1319,10 @@ window.startRealBattle = () => {
     const myCaught = window.state.gameData.caughtWords || {}; const myLevel = window.state.gameData.level || 1;
     window.battleState.myTeam = window.battleState.mySelection.map(w => {
         let mon = createBattleMon(w, myCaught[w], myLevel);
-        // 💡 아레나 전용 체력 5배 뻥튀기! (순식간에 안 죽게 만듭니다)
         mon.hp *= 5; mon.maxHp *= 5; 
         return mon;
     });
     
-    // [방법 B] 방어자 레벨 상한선 설정 (내 레벨 + 5)
     const oppCaught = window.battleState.oppStats.caughtWords || {}; 
     const oppLevel = Math.min((window.battleState.oppStats.level || 1), myLevel + 5);
     let oppDefenseWords = window.battleState.oppStats.defenseTeam || [];
@@ -1129,13 +1331,12 @@ window.startRealBattle = () => {
     
     window.battleState.oppTeam = oppDefenseWords.map(w => {
         let mon = createBattleMon(w, oppCaught[w], oppLevel);
-        // 💡 방어팀은 조금 더 단단하게 보정 (6배 뻥튀기)
         mon.hp = Math.floor(mon.hp * 6); mon.maxHp = Math.floor(mon.maxHp * 6); mon.atk = Math.floor(mon.atk * 1.2);
         return mon;
     });
 
     window.battleState.myIdx = 0; window.battleState.oppIdx = 0; 
-    window.battleState.myEnergy = 0; window.battleState.oppEnergy = 0; window.battleState.energyMax = 35; // 35대 때리면 게이지 꽉 참
+    window.battleState.myEnergy = 0; window.battleState.oppEnergy = 0; window.battleState.energyMax = 35; 
     window.battleState.active = true;
     updateBattleUI(); logBattleMsg(`배틀 시작! 가랏, ${window.battleState.myTeam[0].word}!`);
     if(window.battleState.oppTimer) clearInterval(window.battleState.oppTimer);
@@ -1157,7 +1358,6 @@ const updateBattleUI = () => {
     const oppTypeInfo = TYPE_COLORS[oppMon.type] || TYPE_COLORS['normal'];
     document.getElementById('opp-b-type').innerText = oppTypeInfo.name; document.getElementById('opp-b-type').style.backgroundColor = oppTypeInfo.color;
 
-    // 💡 게이지 바 UI 업데이트
     document.getElementById('my-b-energy').style.width = `${(window.battleState.myEnergy / window.battleState.energyMax) * 100}%`;
     document.getElementById('opp-b-energy').style.width = `${(window.battleState.oppEnergy / window.battleState.energyMax) * 100}%`;
 
@@ -1195,7 +1395,6 @@ window.tapAttack = () => {
     if (isCrit) dmg = Math.floor(dmg * 1.5);
     oppMon.hp -= dmg; showDmgText(dmg, true, isCrit);
 
-    // 💡 게이지 채우기
     window.battleState.myEnergy = Math.min(window.battleState.energyMax, window.battleState.myEnergy + 1);
 
     const oppImg = document.getElementById('opp-b-img');
@@ -1220,7 +1419,6 @@ const opponentAttack = () => {
     if (isCrit) dmg = Math.floor(dmg * 1.5);
     myMon.hp -= dmg; showDmgText(dmg, false, isCrit);
 
-    // 💡 상대 게이지 채우기 (목표치를 energyMax + 10 으로 늘림!)
     window.battleState.oppEnergy = Math.min(window.battleState.energyMax + 10, window.battleState.oppEnergy + 1);
 
     const myImg = document.getElementById('my-b-img');
@@ -1228,7 +1426,6 @@ const opponentAttack = () => {
 
     if(isCrit) logBattleMsg("상대방의 크리티컬 히트!!", true);
     
-    // 💡 10번을 더 때려야(energyMax + 10) 필살기 발동!
     if (window.battleState.oppEnergy >= window.battleState.energyMax + 10) {
         triggerOpponentUltimate();
     } else {
@@ -1256,7 +1453,7 @@ const checkFaint = () => {
 window.useUltimate = () => {
     if (window.battleState.myEnergy < window.battleState.energyMax || !window.battleState.active) return;
     
-    window.battleState.active = false; // 배틀 일시정지!
+    window.battleState.active = false; 
     clearInterval(window.battleState.oppTimer);
     window.battleState.myEnergy = 0; 
     updateBattleUI();
@@ -1277,11 +1474,11 @@ window.useUltimate = () => {
     
     window.battleState.expectedWord = oppMon.word;
     window.battleState.isShieldMode = false;
-    startQuizTimer(10000); // 10초 타이머
+    startQuizTimer(10000); 
 };
 
 const triggerOpponentUltimate = () => {
-    window.battleState.active = false; // 배틀 일시정지!
+    window.battleState.active = false; 
     clearInterval(window.battleState.oppTimer);
     window.battleState.oppEnergy = 0;
     updateBattleUI();
@@ -1302,18 +1499,18 @@ const triggerOpponentUltimate = () => {
     
     window.battleState.expectedWord = myMon.word;
     window.battleState.isShieldMode = true;
-    startQuizTimer(10000); // 10초 타이머
+    startQuizTimer(10000); 
 };
 
 const startQuizTimer = (duration) => {
     const bar = document.getElementById('b-timer-bar');
     bar.style.transition = 'none'; bar.style.width = '100%';
-    void bar.offsetWidth; // 강제 새로고침
+    void bar.offsetWidth; 
     bar.style.transition = `width ${duration}ms linear`;
     bar.style.width = '0%';
 
     window.battleState.quizTimeout = setTimeout(() => {
-        window.submitBattleQuiz(true); // 시간 초과
+        window.submitBattleQuiz(true); 
     }, duration);
 };
 
@@ -1331,13 +1528,13 @@ window.submitBattleQuiz = (isTimeout = false) => {
     if (window.battleState.isShieldMode) {
         if (success) { logBattleMsg("🛡️ 완벽한 방어! 데미지를 입지 않았다!", true); } 
         else {
-            let dmg = Math.floor(oppMon.atk * 7); // 방어 실패 시 7배 데미지
+            let dmg = Math.floor(oppMon.atk * 7); 
             myMon.hp -= dmg; showDmgText(dmg, false, true);
             logBattleMsg("💥 방어 실패! 엄청난 데미지를 입었다!", true);
         }
     } else {
         if (success) {
-            let dmg = Math.floor(myMon.atk * 7); // 공격 성공 시 7배 데미지
+            let dmg = Math.floor(myMon.atk * 7); 
             oppMon.hp -= dmg; showDmgText(dmg, true, true);
             logBattleMsg("⚡ 스페셜 어택 명중! 효과가 굉장했다!", true);
         } else { logBattleMsg("💦 스펠링을 틀려 스페셜 어택이 빗나갔다...", false); }
@@ -1347,7 +1544,6 @@ window.submitBattleQuiz = (isTimeout = false) => {
     const isGameOver = checkFaint();
     
     if(!isGameOver) {
-        // 배틀 다시 재생!
         window.battleState.active = true;
         window.battleState.oppTimer = setInterval(() => { if(window.battleState.active) opponentAttack(); }, 200);
     }
@@ -1444,7 +1640,7 @@ window.claimDefenseReward = (timestamp) => {
     if (window.state.gameData.exp >= reqExp) {
         window.state.gameData.exp -= reqExp; window.state.gameData.level++;
         document.getElementById('modal').style.display = 'flex';
-        document.getElementById('modal-desc').innerText = `레벨 ${window.state.gameData.level} 트레이너가 되었습니다!`;
+        document.getElementById('modal-desc').innerText = `레벨 ${window.state.gameData.level} 모험가가 되었습니다!`;
     }
     window.updateUI(); window.saveProgress(); window.openDefenseLogs();
 };
@@ -1516,7 +1712,6 @@ function getPokemonInfoForWord(word, count) {
 
     const targetTier = count >= 10 ? 3 : (count >= 5 ? 2 : 1);
 
-    // ⭐ 총 75개의 진화 세트 (총 144마리)
     const VOCAMON_LINES = [
         [1,2,3], [21,22,23], [42,43,44], [63,64,65], [84,85,86], [105,106,107], [125,126,127],
         [4,5,6], [24,25,26], [45,46,47], [66,67,68], [87,88,89], [108,109,110], [128,129,130],
@@ -1547,9 +1742,7 @@ function getPokemonInfoForWord(word, count) {
     };
 }
 
-// ⭐ 144마리 생명체/자연 모티브 데이터베이스
 const DB_STR = 
-    // 💧 물 속성 (1~20번)
     "1:물방울쥐:water|2:물보라쥐:water|3:해일마우스:water|" + 
     "4:꼬마해마:water|5:파도해마:water|6:심연해마:water|" +
     "7:조개동자:water|8:진주동자:water|" +
@@ -1558,8 +1751,6 @@ const DB_STR =
     "13:구름해파리:water|14:독해파리:water|" +
     "15:수달꼬마:water|16:잠수수달:water|" +
     "17:심해고래:water|18:해달꼬마:water|19:얼음펭귄:water|20:소라게:water|" +
-
-    // 🐾 노말 속성 (21~41번)
     "21:파카몽:normal|22:파카파카몽:normal|23:알파카몽:normal|" + 
     "24:다람냥:normal|25:비행다람냥:normal|26:마스터다람냥:normal|" +
     "27:솜털양:normal|28:구름양:normal|" +
@@ -1569,8 +1760,6 @@ const DB_STR =
     "35:바둑강쥐:normal|36:늠름하운드:normal|" +
     "37:아기낙타:normal|38:사막낙타:normal|" +
     "39:게으른곰:normal|40:찹쌀토끼:normal|41:꼬마팬더:normal|" +
-
-    // 🔥 불꽃 속성 (42~62번)
     "42:불꽃여우:fire|43:화염여우:fire|44:마그마여우:fire|" +
     "45:숯불강쥐:fire|46:화염강쥐:fire|47:마그마하운드:fire|" +
     "48:아기불냥:fire|49:화염불냥:fire|" +
@@ -1579,8 +1768,6 @@ const DB_STR =
     "54:불도롱뇽:fire|55:화염도롱뇽:fire|" +
     "56:화산거북:fire|57:폭발거북:fire|" +
     "58:마그마도마뱀:fire|59:태양불새:fire|60:불꽃나방:fire|61:숯불송아지:fire|62:불꽃망아지:fire|" +
-
-    // 🌿 풀 속성 (63~83번)
     "63:이끼거북:grass|64:덤불거북:grass|65:거목거북:grass|" +
     "66:잎사귀벌레:grass|67:수풀벌레:grass|68:거목벌레:grass|" +
     "69:씨앗동자:grass|70:새싹동자:grass|71:숲속정령:grass|" +
@@ -1590,8 +1777,6 @@ const DB_STR =
     "78:버섯돼지:grass|79:맹독돼지:grass|" +
     "80:도토리다람쥐:grass|81:거목다람쥐:grass|" +
     "82:네잎토끼:grass|83:신비사마귀:grass|" +
-
-    // 🪨 땅 속성 (84~104번)
     "84:진흙개구리:ground|85:황토개구리:ground|86:바위개구리:ground|" +
     "87:모래두더지:ground|88:사막두더지:ground|89:지진두더지:ground|" +
     "90:찰흙곰:ground|91:단단곰:ground|" +
@@ -1601,8 +1786,6 @@ const DB_STR =
     "98:꼬마돌도치:ground|99:바위고도치:ground|" +
     "100:황토뱀:ground|101:사막코브라:ground|" +
     "102:고대공룡:ground|103:땅굴벌레:ground|104:모래거북:ground|" +
-
-    // 🌑 어둠 속성 (105~124번)
     "105:새끼까마귀:dark|106:회색까마귀:dark|107:어둠까마귀:dark|" +
     "108:꼬마유령:dark|109:깜깜유령:dark|110:심연유령:dark|" +
     "111:새끼박쥐:dark|112:흡혈박쥐:dark|" +
@@ -1611,8 +1794,6 @@ const DB_STR =
     "117:꼬마전갈:dark|118:맹독전갈:dark|" +
     "119:그림자쥐:dark|120:어둠쥐:dark|" +
     "121:검은올빼미:dark|122:흑호랑이:dark|123:어둠거미:dark|124:칠흑도마뱀:dark|" +
-
-    // ✨ 빛 속성 (125~144번)
     "125:꼬마전기새:light|126:섬광새:light|127:벼락새:light|" +
     "128:별빛천사:light|129:달빛천사:light|130:태양천사:light|" +
     "131:꼬마별:light|132:은하수별:light|133:우주대스타:light|" +
