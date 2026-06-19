@@ -62,14 +62,14 @@
             
             <!-- 학습 탭 내용 -->
             <div id="content-learn" class="tab-content">
-                <!-- 단원 선택 화면 -->
+                <!-- 단원 선택 화면 (그리드 내부 동적 생성) -->
                 <div id="learn-chapter-view" class="magic-card p-6 shadow-xl min-h-[400px]">
                     <div class="text-center mb-6">
                         <h3 class="text-2xl font-bold text-emerald-500 mb-1">📚 단어 학습장</h3>
-                        <p class="text-sm text-slate-500">학습할 단원을 선택하세요!</p>
+                        <p class="text-sm text-slate-500">학습하거나 테스트할 단원을 선택하세요!</p>
                     </div>
-                    <div class="grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar pb-4">
-                        <!-- JS에서 동적으로 1~12단원 버튼 생성 -->
+                    <!-- 자바스크립트에서 grid-cols-2 형태로 렌더링 -->
+                    <div class="grid gap-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar pb-4">
                     </div>
                 </div>
 
@@ -78,9 +78,9 @@
                     <button onclick="window.exitLearn()" class="absolute top-4 left-4 text-slate-400 hover:text-white font-bold text-sm bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-600">◀ 뒤로 가기</button>
                     <div class="text-emerald-400 font-bold mb-8" id="learn-progress-txt">단어 로딩 중...</div>
                     
-                    <div class="text-center h-40 flex flex-col justify-center items-center w-full bg-slate-800 rounded-3xl border-2 border-slate-600 shadow-inner mb-8">
-                        <h2 id="learn-en-word" class="text-5xl font-black text-white mb-4 tracking-wider drop-shadow-md">WORD</h2>
-                        <h3 id="learn-kr-word" class="text-2xl font-bold text-emerald-400 min-h-[2rem]"></h3>
+                    <div class="text-center h-40 flex flex-col justify-center items-center w-full bg-slate-800 rounded-3xl border-2 border-slate-600 shadow-inner mb-8 px-2">
+                        <h2 id="learn-en-word" class="text-4xl sm:text-5xl font-black text-white mb-4 tracking-wider drop-shadow-md break-all">WORD</h2>
+                        <h3 id="learn-kr-word" class="text-xl sm:text-2xl font-bold text-emerald-400 min-h-[2rem] break-keep"></h3>
                     </div>
 
                     <button id="btn-learn-pause" onclick="window.toggleLearnPlay()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-2xl font-black text-xl shadow-md transition-transform active:scale-95">⏸ 일시정지</button>
@@ -91,12 +91,13 @@
                     <button onclick="window.exitLearn()" class="absolute top-4 left-4 text-slate-400 hover:text-white font-bold text-sm bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-600">◀ 그만하기</button>
                     <div class="text-blue-400 font-bold mb-4 mt-2" id="learn-quiz-progress">1 / 10</div>
                     
-                    <div class="text-center w-full mb-6">
+                    <div class="text-center w-full mb-6 px-2">
                         <span class="text-xs font-bold text-slate-500 bg-slate-800 px-2 py-1 rounded-md mb-2 inline-block">다음 뜻을 가진 단어는?</span>
-                        <h2 id="learn-quiz-meaning" class="text-3xl font-black text-white drop-shadow-md break-keep leading-tight">뜻</h2>
+                        <h2 id="learn-quiz-meaning" class="text-2xl sm:text-3xl font-black text-white drop-shadow-md break-keep leading-tight">뜻</h2>
                     </div>
 
-                    <div id="learn-quiz-options" class="grid grid-cols-1 gap-3 w-full mt-auto">
+                    <!-- ⭐ 2x2 배치를 위해 grid-cols-2 적용 -->
+                    <div id="learn-quiz-options" class="grid grid-cols-2 gap-3 w-full mt-auto">
                         <!-- 옵션 버튼 생성 -->
                     </div>
                 </div>
