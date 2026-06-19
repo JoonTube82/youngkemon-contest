@@ -1,4 +1,3 @@
-
 import { auth, getStudentsCollection, getStudentDoc, getWordListCollection, STUDENT_GENDER } from './firebase.js';
 import { signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getDoc, getDocs, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -67,7 +66,7 @@ window.speakText = (text, lang = 'en-US') => {
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = lang; 
-    utterance.rate = 0.85; // 6학년 학생을 위해 살짝 느리게
+    utterance.rate = 0.85; 
     window.speechSynthesis.speak(utterance);
 };
 
@@ -101,8 +100,18 @@ window.learnState = {
     timer2: null,
     quizList: [], 
     quizIndex: 0, 
-    options: [] 
+    options: [],
+    wrongWords: [], 
+    isReviewMode: false
 };
+
+const CHAPTER_TITLES = [
+    "",
+    "What Grade Are You In?", "What Do You Want to Be?", "When Is the Field Trip?",
+    "He Has Short Curly Hair", "How Often Do You Exercise?", "I'm Going to Go on a Trip",
+    "What Season Do You Like?", "I'm Faster Than You", "How Can I Get to the Museum?",
+    "I'd Like to Have the Fruit Salad", "Do You Know About Songpyeon?", "We Should Save the World"
+];
 
 // ==========================================
 // 2. 포켓몬 전투 공식 및 타입 설정
@@ -250,7 +259,6 @@ window.switchTab = (tabName) => {
         return window.showCustomAlert("배틀 중에는 다른 탭으로 이동할 수 없습니다. 도망치기를 누르세요!");
     }
 
-    // 학습 모드 강제 종료 처리
     if(tabName !== 'learn' && window.learnState.isPlaying) {
         window.exitLearn();
     }
@@ -387,20 +395,28 @@ window.renderLearnChapterGrid = () => {
     let html = '';
     for(let i=1; i<=12; i++) {
         html += `
-        <button onclick="window.openLearnChapter(${i})" class="bg-white border-2 border-emerald-100 hover:border-emerald-400 p-4 rounded-2xl shadow-sm hover:shadow-md transition-all flex flex-col items-center justify-center group active:scale-95">
-            <span class="text-3xl mb-1 group-hover:scale-110 transition-transform drop-shadow-sm">📖</span>
-            <span class="font-black text-emerald-600 text-lg">${i}단원</span>
-        </button>`;
+        <div class="bg-white border-2 border-emerald-100 p-3 rounded-2xl shadow-sm flex flex-col items-center justify-between transition-all hover:shadow-md hover:border-emerald-300">
+            <div class="text-center mb-2 w-full">
+                <span class="text-emerald-500 font-black text-sm block mb-0.5">${i}단원</span>
+                <span class="text-slate-600 font-bold text-[10px] leading-tight block h-6 overflow-hidden">${CHAPTER_TITLES[i]}</span>
+            </div>
+            <div class="flex gap-1 w-full mt-auto">
+                <button onclick="window.openLearnPlay(${i})" class="flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-200 py-2 rounded-lg text-xs font-bold transition-transform active:scale-95">학습</button>
+                <button onclick="window.openLearnQuiz(${i})" class="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 py-2 rounded-lg text-xs font-bold transition-transform active:scale-95">테스트</button>
+            </div>
+        </div>`;
     }
+    container.className = "grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar pb-4";
     container.innerHTML = html;
 };
 
-window.openLearnChapter = (ch) => {
+window.openLearnPlay = (ch) => {
     const chapterWords = window.state.quizzes.filter(q => (q.chapter || 1) === ch);
     if(chapterWords.length === 0) return window.showCustomAlert(`${ch}단원에 등록된 단어가 없습니다.`);
     
     window.learnState.list = chapterWords;
     window.learnState.index = 0;
+    window.learnState.isReviewMode = false;
     
     document.getElementById('learn-chapter-view').style.display = 'none';
     document.getElementById('learn-play-view').style.display = 'flex';
@@ -410,23 +426,44 @@ window.openLearnChapter = (ch) => {
     playLearnWordStep1();
 };
 
+window.openLearnQuiz = (ch) => {
+    const chapterWords = window.state.quizzes.filter(q => (q.chapter || 1) === ch);
+    if(chapterWords.length === 0) return window.showCustomAlert(`${ch}단원에 등록된 단어가 없습니다.`);
+    
+    window.learnState.isPlaying = false;
+    document.getElementById('learn-chapter-view').style.display = 'none';
+    document.getElementById('learn-quiz-view').style.display = 'flex';
+    
+    window.learnState.quizList = [...chapterWords].sort(() => Math.random() - 0.5);
+    window.learnState.quizIndex = 0;
+    window.learnState.wrongWords = [];
+    renderLearnQuiz();
+};
+
 const playLearnWordStep1 = () => {
     if (!window.learnState.isPlaying) return;
+    
     if (window.learnState.index >= window.learnState.list.length) {
-        startLearnQuiz();
+        if (window.learnState.isReviewMode) {
+            window.showCustomAlert("오답 복습을 모두 마쳤습니다! 훌륭해요!");
+        } else {
+            window.showCustomAlert("단어 학습을 모두 마쳤습니다!\n이제 테스트에 도전해보세요.");
+        }
+        window.exitLearn();
         return;
     }
     
-    document.getElementById('learn-progress-txt').innerText = `자동 재생 중... (${window.learnState.index + 1} / ${window.learnState.list.length})`;
+    const currentNum = window.learnState.index + 1;
+    const totalNum = window.learnState.list.length;
+    const modeTxt = window.learnState.isReviewMode ? "🚨 오답 복습 중..." : "자동 재생 중...";
+    document.getElementById('learn-progress-txt').innerText = `${modeTxt} (${currentNum} / ${totalNum})`;
     
     const wordObj = window.learnState.list[window.learnState.index];
     document.getElementById('learn-en-word').innerText = wordObj.word;
     document.getElementById('learn-kr-word').innerText = ""; 
     
-    // 영어 읽어주기
     window.speakText(wordObj.word, 'en-US');
     
-    // 1.5초 대기 후 한글 뜻 보여주고 읽기
     window.learnState.timer1 = setTimeout(() => {
         playLearnWordStep2(wordObj);
     }, 1500);
@@ -438,7 +475,6 @@ const playLearnWordStep2 = (wordObj) => {
     document.getElementById('learn-kr-word').innerText = wordObj.meaning;
     window.speakText(wordObj.meaning, 'ko-KR');
     
-    // 2초 대기 후 다음 단어
     window.learnState.timer2 = setTimeout(() => {
         if (!window.learnState.isPlaying) return;
         window.learnState.index++;
@@ -453,7 +489,6 @@ window.toggleLearnPlay = () => {
     if (window.learnState.isPlaying) {
         btn.innerText = '⏸ 일시정지';
         btn.classList.replace('bg-emerald-500', 'bg-emerald-600');
-        // 일시정지 해제 시 현재 단어의 처음부터 다시 시작
         clearTimeout(window.learnState.timer1);
         clearTimeout(window.learnState.timer2);
         playLearnWordStep1();
@@ -477,21 +512,28 @@ window.exitLearn = () => {
     document.getElementById('learn-quiz-view').style.display = 'none';
 };
 
-const startLearnQuiz = () => {
-    window.learnState.isPlaying = false;
-    document.getElementById('learn-play-view').style.display = 'none';
-    document.getElementById('learn-quiz-view').style.display = 'flex';
-    
-    // 배열 섞기 (Fisher-Yates)
-    window.learnState.quizList = [...window.learnState.list].sort(() => Math.random() - 0.5);
-    window.learnState.quizIndex = 0;
-    renderLearnQuiz();
-};
-
 const renderLearnQuiz = () => {
     if(window.learnState.quizIndex >= window.learnState.quizList.length) {
-        window.showCustomAlert("🎉 학습 퀴즈를 모두 완료했습니다! 대단해요!");
-        window.exitLearn();
+        if(window.learnState.wrongWords.length > 0) {
+            window.showCustomAlert(`테스트 완료!\n틀린 단어 ${window.learnState.wrongWords.length}개를 3번씩 복습합니다.`);
+            let reviewList = [];
+            window.learnState.wrongWords.forEach(w => {
+                reviewList.push(w, w, w); 
+            });
+            window.learnState.list = reviewList;
+            window.learnState.index = 0;
+            window.learnState.isReviewMode = true;
+            
+            document.getElementById('learn-quiz-view').style.display = 'none';
+            document.getElementById('learn-play-view').style.display = 'flex';
+            document.getElementById('btn-learn-pause').innerText = '⏸ 일시정지';
+            
+            window.learnState.isPlaying = true;
+            playLearnWordStep1();
+        } else {
+            window.showCustomAlert("🎉 100점입니다! 모든 단어를 완벽하게 맞췄습니다!");
+            window.exitLearn();
+        }
         return;
     }
     
@@ -499,63 +541,46 @@ const renderLearnQuiz = () => {
     document.getElementById('learn-quiz-progress').innerText = `${window.learnState.quizIndex + 1} / ${window.learnState.quizList.length}`;
     document.getElementById('learn-quiz-meaning').innerText = currentWordObj.meaning;
     
-    // 4지선다 만들기 (정답 1개 + 오답 3개)
     let options = [currentWordObj.word];
     let wrongPool = window.state.quizzes.filter(q => q.word !== currentWordObj.word);
     wrongPool.sort(() => Math.random() - 0.5);
     
     options.push(...wrongPool.slice(0, 3).map(q => q.word));
-    options.sort(() => Math.random() - 0.5); // 선택지 섞기
+    options.sort(() => Math.random() - 0.5); 
     
     const optionsContainer = document.getElementById('learn-quiz-options');
     optionsContainer.innerHTML = '';
     
     options.forEach(opt => {
         let btn = document.createElement('button');
-        btn.className = "w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-4 rounded-2xl font-black text-xl shadow-sm border-2 border-slate-200 active:scale-95 transition-all";
+        btn.className = "w-full bg-slate-100 text-slate-700 py-6 rounded-2xl font-black text-lg sm:text-xl shadow-sm border-2 border-slate-200 active:scale-95 transition-all flex items-center justify-center break-all px-2";
         btn.innerText = opt;
-        btn.onclick = () => window.checkLearnQuiz(opt, currentWordObj.word, btn);
+        btn.onclick = () => window.checkLearnQuiz(opt, currentWordObj, btn);
         optionsContainer.appendChild(btn);
     });
 };
 
-window.checkLearnQuiz = (selected, correct, btnEl) => {
-    // 이미 클릭 처리된 경우 방지
+window.checkLearnQuiz = (selected, currentWordObj, btnEl) => {
     if (btnEl.disabled) return;
+    const correctWord = currentWordObj.word;
     
-    const allBtns = document.getElementById('learn-quiz-options').querySelectorAll('button');
-    allBtns.forEach(b => b.disabled = true);
-    
-    if (selected === correct) {
-        // 정답 효과
-        btnEl.classList.replace('bg-slate-100', 'bg-emerald-500');
-        btnEl.classList.replace('text-slate-700', 'text-white');
-        btnEl.classList.replace('border-slate-200', 'border-emerald-600');
+    if (selected === correctWord) {
+        const allBtns = document.getElementById('learn-quiz-options').querySelectorAll('button');
+        allBtns.forEach(b => b.disabled = true);
+        
+        btnEl.className = "w-full bg-emerald-500 text-white py-6 rounded-2xl font-black text-lg sm:text-xl shadow-md border-2 border-emerald-600 transition-all flex items-center justify-center break-all px-2";
         
         setTimeout(() => {
             window.learnState.quizIndex++;
             renderLearnQuiz();
         }, 500);
     } else {
-        // 오답 효과
-        btnEl.classList.replace('bg-slate-100', 'bg-red-500');
-        btnEl.classList.replace('text-slate-700', 'text-white');
-        btnEl.classList.replace('border-slate-200', 'border-red-600');
+        btnEl.disabled = true; 
+        btnEl.className = "w-full bg-red-500 text-white py-6 rounded-2xl font-black text-lg sm:text-xl shadow-inner border-2 border-red-600 opacity-70 transition-all flex items-center justify-center break-all px-2";
         
-        // 정답 버튼도 녹색으로 표시해주기
-        allBtns.forEach(b => {
-            if (b.innerText === correct) {
-                b.classList.replace('bg-slate-100', 'bg-emerald-500');
-                b.classList.replace('text-slate-700', 'text-white');
-            }
-        });
-
-        setTimeout(() => {
-            window.showCustomAlert(`틀렸습니다!\n정답은 '${correct}' 입니다.`);
-            // 틀려도 다음 문제로 넘어가게 처리
-            window.learnState.quizIndex++;
-            renderLearnQuiz();
-        }, 600);
+        if(!window.learnState.wrongWords.find(w => w.word === correctWord)) {
+            window.learnState.wrongWords.push(currentWordObj);
+        }
     }
 };
 
