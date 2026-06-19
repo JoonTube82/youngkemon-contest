@@ -12,10 +12,10 @@
         <div id="login-view" class="login-view-container magic-card p-10 text-center border-red-500">
             <div class="text-6xl mb-4">🧢</div>
             <h1 class="text-4xl text-red-600 mb-2 font-black italic">6학년 보카몬</h1>
-            <p class="text-slate-400 mb-8 font-normal">트레이너 이름을 선택하고 암호를 입력하세요</p>
+            <p class="text-slate-400 mb-8 font-normal">모험가 이름을 선택하고 암호를 입력하세요</p>
             <div class="space-y-4">
                 <select id="user-id" class="spell-input text-xl p-4 border-2 bg-white cursor-pointer appearance-none text-center">
-                    <option value="" disabled selected>트레이너 선택하기</option>
+                    <option value="" disabled selected>모험가 선택하기</option>
                 </select>
                 <input type="password" id="user-pw" class="spell-input text-xl p-4 border-2" placeholder="비밀번호" onkeyup="if(event.key==='Enter')window.handleLogin()">
                 <button id="login-btn" onclick="window.handleLogin()" class="btn-magic mt-4">영어 마스터 연구소 입장하기</button>
@@ -27,7 +27,7 @@
             <div id="profile-card" class="bg-white rounded-3xl p-5 mb-4 shadow-lg flex justify-between items-start border-b-4 border-slate-200 transition-all duration-500">
                 <div>
                     <div class="flex items-center gap-2 mb-1">
-                        <span id="rank-badge" class="text-[10px] px-2 py-0.5 rounded-full bg-red-100 text-red-600 font-bold uppercase tracking-wider">초보 트레이너</span>
+                        <span id="rank-badge" class="text-[10px] px-2 py-0.5 rounded-full bg-red-100 text-red-600 font-bold uppercase tracking-wider">초보 모험가</span>
                         <button id="admin-btn" onclick="window.toggleAdmin()" class="text-slate-300 text-xs hover:text-red-500 font-bold hidden">⚙️ 관리자</button>
                     </div>
                     <h2 class="text-3xl font-bold text-slate-800 mt-1 flex items-center">
@@ -51,13 +51,58 @@
                 </div>
             </div>
 
+            <!-- 학습 탭 추가 -->
             <div class="flex gap-1 mb-4 bg-white p-2 rounded-2xl shadow-sm">
                 <button onclick="window.switchTab('rank')" id="tab-rank" class="tab-btn active flex-1 py-3 text-xs sm:text-sm rounded-xl font-bold bg-slate-100 text-slate-500 truncate">🏆 커뮤니티</button>
+                <button onclick="window.switchTab('learn')" id="tab-learn" class="tab-btn flex-1 py-3 text-xs sm:text-sm rounded-xl font-bold bg-slate-100 text-slate-500 truncate">📚 학습</button>
                 <button onclick="window.switchTab('hunt')" id="tab-hunt" class="tab-btn flex-1 py-3 text-xs sm:text-sm rounded-xl font-bold bg-slate-100 text-slate-500 truncate">🗡️ 풀숲</button>
                 <button onclick="window.switchTab('dex')" id="tab-dex" class="tab-btn flex-1 py-3 text-xs sm:text-sm rounded-xl font-bold bg-slate-100 text-slate-500 truncate">📖 도감</button>
                 <button onclick="window.switchTab('arena')" id="tab-arena" class="tab-btn flex-1 py-3 text-xs sm:text-sm rounded-xl font-bold bg-slate-100 text-slate-500 truncate">⚔️ 배틀</button>
             </div>
             
+            <!-- 학습 탭 내용 -->
+            <div id="content-learn" class="tab-content">
+                <!-- 단원 선택 화면 -->
+                <div id="learn-chapter-view" class="magic-card p-6 shadow-xl min-h-[400px]">
+                    <div class="text-center mb-6">
+                        <h3 class="text-2xl font-bold text-emerald-500 mb-1">📚 단어 학습장</h3>
+                        <p class="text-sm text-slate-500">학습할 단원을 선택하세요!</p>
+                    </div>
+                    <div class="grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar pb-4">
+                        <!-- JS에서 동적으로 1~12단원 버튼 생성 -->
+                    </div>
+                </div>
+
+                <!-- 자동 재생 화면 -->
+                <div id="learn-play-view" class="hidden magic-card p-6 shadow-xl min-h-[400px] flex-col items-center justify-center relative border-4 border-emerald-500">
+                    <button onclick="window.exitLearn()" class="absolute top-4 left-4 text-slate-400 hover:text-white font-bold text-sm bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-600">◀ 뒤로 가기</button>
+                    <div class="text-emerald-400 font-bold mb-8" id="learn-progress-txt">단어 로딩 중...</div>
+                    
+                    <div class="text-center h-40 flex flex-col justify-center items-center w-full bg-slate-800 rounded-3xl border-2 border-slate-600 shadow-inner mb-8">
+                        <h2 id="learn-en-word" class="text-5xl font-black text-white mb-4 tracking-wider drop-shadow-md">WORD</h2>
+                        <h3 id="learn-kr-word" class="text-2xl font-bold text-emerald-400 min-h-[2rem]"></h3>
+                    </div>
+
+                    <button id="btn-learn-pause" onclick="window.toggleLearnPlay()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-2xl font-black text-xl shadow-md transition-transform active:scale-95">⏸ 일시정지</button>
+                </div>
+
+                <!-- 퀴즈 화면 -->
+                <div id="learn-quiz-view" class="hidden magic-card p-6 shadow-xl min-h-[400px] flex-col items-center justify-start relative border-4 border-blue-500">
+                    <button onclick="window.exitLearn()" class="absolute top-4 left-4 text-slate-400 hover:text-white font-bold text-sm bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-600">◀ 그만하기</button>
+                    <div class="text-blue-400 font-bold mb-4 mt-2" id="learn-quiz-progress">1 / 10</div>
+                    
+                    <div class="text-center w-full mb-6">
+                        <span class="text-xs font-bold text-slate-500 bg-slate-800 px-2 py-1 rounded-md mb-2 inline-block">다음 뜻을 가진 단어는?</span>
+                        <h2 id="learn-quiz-meaning" class="text-3xl font-black text-white drop-shadow-md break-keep leading-tight">뜻</h2>
+                    </div>
+
+                    <div id="learn-quiz-options" class="grid grid-cols-1 gap-3 w-full mt-auto">
+                        <!-- 옵션 버튼 생성 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 풀숲 탭 내용 -->
             <div id="content-hunt" class="tab-content">
                 <div id="hunt-map-view" class="magic-card p-6 shadow-xl min-h-[400px]">
                     <div class="text-center mb-6">
@@ -213,7 +258,6 @@
 </div>
                         <div class="flex flex-col gap-3 relative">
                             <div class="relative w-full">
-                                <!-- ⭐ 비밀번호 팝업 방지를 위해 type="text"로 변경 및 autocomplete="off" 적용 -->
                                 <input type="text" id="spell-in" class="spell-input border-red-200 w-full relative z-0" style="color: transparent; caret-color: white;" autocomplete="off" autocorrect="off" spellcheck="false" autocapitalize="off" onkeyup="if(event.key==='Enter')window.checkMagic()" oninput="document.getElementById('fake-text').textContent = this.value || '영단어를 입력하세요'; document.getElementById('fake-text').style.color = this.value ? '#f9fafb' : '#9ca3af';" onpaste="return false;" ondrop="return false;">
                                 <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10 overflow-hidden px-4">
                                     <span id="fake-text" class="text-slate-400 text-[1.8rem] whitespace-pre truncate">영단어를 입력하세요</span>
@@ -243,7 +287,7 @@
                 <div id="arena-list-view" class="magic-card p-6 shadow-xl min-h-[400px]">
                     <div class="text-center mb-6">
                         <h3 class="text-xl font-bold text-red-500 mb-1 flex items-center justify-center gap-2 flex-wrap">
-                            트레이너 배틀
+                            모험가 배틀
                             <button onclick="window.showTipModal()" class="bg-indigo-500 hover:bg-indigo-400 text-white text-[10px] px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm transition-transform active:scale-95 border border-indigo-400">
                                 💡 Tip
                             </button>
@@ -257,10 +301,9 @@
                                 📜 방어 기록
                             </button>
                         </h3>
-                        <p class="text-xs text-slate-400">도감에서 강력한 3마리를 골라 체육관 배틀에 도전하세요!<br>승리하여 승수를 쌓고 최고의 트레이너가 되어보세요.</p>
                     </div>
                     <div id="arena-list" class="space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
-                        <p class="text-center text-slate-400 py-10 text-sm">상대 트레이너를 찾고 있습니다...</p>
+                        <p class="text-center text-slate-400 py-10 text-sm">상대 모험가를 찾고 있습니다...</p>
                     </div>
                 </div>
 
@@ -298,7 +341,6 @@
 
                     <div id="battle-log" class="text-center font-bold text-sm h-6 text-red-500 animate-pulse">상성을 파악하여 화면을 빠르게 탭하세요!</div>
 
-                    <!-- ⭐ 모바일 터치 씹힘 해결: onclick -> onpointerdown 변경 및 터치 최적화 스타일 추가 -->
                     <div onpointerdown="window.tapAttack()" class="bg-indigo-50 rounded-3xl p-4 border-4 border-indigo-300 shadow-lg relative overflow-hidden flex justify-between items-center h-48 cursor-pointer active:scale-[0.98] transition-transform select-none" style="touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none;">
                         <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-10">
                             <span class="text-4xl font-black tracking-widest">TAP TO ATTACK</span>
@@ -309,7 +351,6 @@
                         </div>
 
                         <div class="flex-1 flex justify-center items-center z-50">
-                            <!-- ⭐ 필살기 버튼 터치 최적화 -->
                             <button id="btn-ultimate" onpointerdown="event.stopPropagation(); window.useUltimate()" class="relative bg-gradient-to-br from-yellow-400 to-orange-500 text-white font-black w-16 h-16 rounded-full border-4 border-yellow-200 transition-all opacity-50 pointer-events-none flex flex-col items-center justify-center leading-none shadow-2xl scale-90 sm:scale-100" style="touch-action: manipulation;">
                                 <span class="text-2xl mb-0.5">⚡</span>
                             </button>
@@ -347,7 +388,7 @@
                 <div class="magic-card p-6 shadow-xl min-h-[400px]">
                     <div class="text-center mb-6">
                         <h3 class="text-2xl font-bold text-yellow-500 mb-1">🏆 커뮤니티</h3>
-                        <p class="text-sm text-slate-500">다른 트레이너들의 정보와 강력한 파트너를 확인해보세요.</p>
+                        <p class="text-sm text-slate-500">다른 모험가들의 정보와 강력한 파트너를 확인해보세요.</p>
                     </div>
                     <div id="rank-list" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar pb-4">
                         <p class="text-center text-slate-400 py-10 text-sm animate-pulse col-span-full">랭킹 정보를 불러오는 중...</p>
@@ -560,7 +601,7 @@
 
     <div id="trainer-modal" class="modal-overlay">
         <div class="modal-box border-indigo-500 relative !p-8 !max-w-[450px]">
-            <button onclick="window.closeTrainerProfile()" class="absolute top-4 right-5 text-slate-400 hover:text-white font-bold text-3xl">&times;</button>
+            <button onclick="window.closeAdventurerProfile()" class="absolute top-4 right-5 text-slate-400 hover:text-white font-bold text-3xl">&times;</button>
             <div id="trainer-modal-content">
                 </div>
         </div>
@@ -679,7 +720,7 @@
             <div class="text-center mb-6 shrink-0">
                 <div class="text-5xl mb-3 drop-shadow-md">🛡️</div>
                 <h2 class="text-2xl font-black text-pink-400 mb-2">체육관 방어 기록</h2>
-                <p class="text-xs sm:text-sm text-slate-400">다른 트레이너들의 도전 결과를 확인하세요.</p>
+                <p class="text-xs sm:text-sm text-slate-400">다른 모험가들의 도전 결과를 확인하세요.</p>
             </div>
             <div id="defense-log-list" class="space-y-3 text-left overflow-y-auto custom-scrollbar flex-1 pr-2">
                 </div>
@@ -695,11 +736,10 @@
                     <span id="b-quiz-label" class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1 block">단어 뜻</span>
                     <div class="flex justify-center items-center gap-3">
                         <h3 id="b-quiz-word" class="text-4xl text-yellow-400 font-black break-keep leading-tight">사과</h3>
-                        <button onclick="window.speakWord(window.battleState.expectedWord, event)" class="bg-slate-700 hover:bg-slate-600 text-white rounded-full w-10 h-10 flex items-center justify-center text-xl transition-transform active:scale-90 shadow-sm border border-slate-500" title="발음 힌트 듣기">🔊</button>
+                        <button onclick="window.speakText(window.battleState.expectedWord, 'en-US')" class="bg-slate-700 hover:bg-slate-600 text-white rounded-full w-10 h-10 flex items-center justify-center text-xl transition-transform active:scale-90 shadow-sm border border-slate-500" title="발음 힌트 듣기">🔊</button>
                     </div>
                 </div>
                 <div class="relative w-full mb-4">
-                    <!-- ⭐ 비밀번호 팝업 방지를 위해 type="text"로 변경 및 autocomplete="off" 적용 -->
                     <input type="text" id="b-spell-in" class="spell-input w-full relative z-0 !text-2xl !p-3" style="color: transparent; caret-color: white;" autocomplete="off" autocorrect="off" spellcheck="false" autocapitalize="off" onkeyup="if(event.key==='Enter')window.submitBattleQuiz()" oninput="document.getElementById('b-fake-text').textContent = this.value || '스펠링 입력'; document.getElementById('b-fake-text').style.color = this.value ? '#f9fafb' : '#9ca3af';">
                     <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10 overflow-hidden px-4">
                         <span id="b-fake-text" class="text-slate-400 text-2xl font-bold whitespace-pre truncate">스펠링 입력</span>
