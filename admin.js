@@ -200,7 +200,16 @@ window.addStudentAccount = async () => {
         if(docSnap.exists()) return window.showCustomAlert("이미 존재하는 계정입니다.");
         
         const emptyStats = { level: 1, exp: 0, count: 0, caughtWords: {}, wins: 0, victories: {}, partnerWord: null, usedPokemonCooldown: {}, savedEncounters: {}, defenseLogs: [], testScores: {} };
-        await setDoc(docRef, { id: name, password: pw, gameStats: emptyStats, createdAt: new Date().toISOString(), forceLogout: false });
+        
+        // ⭐ 여기에 isFirstLogin: true 꼬리표가 추가되었습니다!
+        await setDoc(docRef, { 
+            id: name, 
+            password: pw, 
+            isFirstLogin: true, 
+            gameStats: emptyStats, 
+            createdAt: new Date().toISOString(), 
+            forceLogout: false 
+        });
         
         document.getElementById('new-student-name').value = '';
         document.getElementById('new-student-pw').value = '';
