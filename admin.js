@@ -173,7 +173,8 @@ window.applyExcelData = async () => {
         const addPromises = [];
         window.excelDataTemp.forEach(w => {
             const wordId = w.word.toLowerCase().replace(/\s+/g, '_') + '_' + Math.random().toString(36).substr(2,5); 
-            addPromises.push(setDoc(doc(db, 'wordList', wordId), {
+            // ⭐ doc(db, ...) 대신 만들어둔 getWordDoc() 함수를 사용하도록 수정!
+            addPromises.push(setDoc(getWordDoc(wordId), {
                 chapter: w.chapter, word: w.word, meaning: w.meaning, createdAt: Date.now()
             }));
         });
