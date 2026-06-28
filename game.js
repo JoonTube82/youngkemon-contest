@@ -252,6 +252,22 @@ window.handleLogin = async () => {
                 btn.disabled = false; setStatus("비밀번호 오류", true);
                 return window.showCustomAlert("비밀번호가 틀렸습니다!");
             }
+
+            // ⭐ 신규 추가: 최초 로그인 감지 및 비밀번호 변경 로직
+            if (data.isFirstLogin) {
+                let newPw = prompt("🎉 환영합니다!\n앞으로 나만 사용할 [4자리 숫자] 비밀번호를 새로 설정해주세요.");
+                
+                // 4자리 숫자인지 검사
+                if (!newPw || !/^\d{4}$/.test(newPw)) {
+                    btn.disabled = false; setStatus("로그인 취소됨", true);
+                    return window.showCustomAlert("비밀번호는 반드시 4자리 숫자로 입력해야 합니다!\n다시 로그인해주세요.");
+                }
+                
+                // 새 비밀번호를 DB에 저장하고 꼬리표 떼기
+                await setDoc(docRef, { password: newPw, isFirstLogin: false }, { merge: true });
+                window.showCustomAlert("비밀번호가 성공적으로 설정되었습니다!");
+            }
+
             if (data.forceLogout) await setDoc(docRef, { forceLogout: false }, { merge: true });
 
             window.state.gameData = data.gameStats || { level: 1, exp: 0, count: 0, caughtWords: {}, wins: 0, victories: {}, partnerWord: null, usedPokemonCooldown: {}, savedEncounters: {}, defenseLogs: [], testScores: {} };
@@ -265,17 +281,15 @@ window.handleLogin = async () => {
             
             setStatus("접속 성공!"); enterGame(idInput);
         } else {
-            const isConfirmed = await window.showCustomConfirm(`'${idInput}' 모험가님!\n비밀번호[${pwInput}]로 계정을 새로 생성할까요?`);
-            if (isConfirmed) {
-                await setDoc(docRef, { id: idInput, password: pwInput, gameStats: window.state.gameData, createdAt: new Date().toISOString(), forceLogout: false });
-                enterGame(idInput);
-            } else { btn.disabled = false; setStatus("취소됨", true); }
+            // 학생이 직접 아이디를 치고 들어올 수 없으므로, 이제 생성 여부를 묻는 로직은 막아둡니다.
+            btn.disabled = false; setStatus("계정 없음", true);
+            window.showCustomAlert("등록되지 않은 모험가입니다.\n선생님께 계정 생성을 요청하세요!");
         }
     } catch (error) { 
         console.error("Login Error:", error);
         btn.disabled = false; 
         setStatus("서버 접속 오류", true);
-        window.showCustomAlert(`로그인 중 오류가 발생했습니다!\n에러: ${error.message}\n\n※ 만약 'Missing or insufficient permissions' 에러라면 Firebase Firestore Database의 [규칙(Rules)] 탭에서 읽기/쓰기 권한을 허용(true)으로 수정해야 합니다.`);
+        window.showCustomAlert(`로그인 중 오류가 발생했습니다!\n에러: ${error.message}`);
     }
 };
 
