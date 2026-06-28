@@ -190,9 +190,11 @@ window.applyExcelData = async () => {
 // 4. 학생(모험가) 계정 동적 추가 및 삭제 로직
 // ==========================================
 window.addStudentAccount = async () => {
-    const name = document.getElementById('new-student-name').value.trim();
-    // ⭐ 관리자가 입력하지 않아도 초기 비밀번호를 "0000"으로 고정
-    const pw = "0000"; 
+    const nameInput = document.getElementById('new-student-name');
+    if (!nameInput) return;
+    
+    const name = nameInput.value.trim();
+    const pw = "0000"; // 비밀번호 고정
     
     if(!name) return window.showCustomAlert("이름을 입력하세요.");
     
@@ -212,14 +214,16 @@ window.addStudentAccount = async () => {
             forceLogout: false 
         });
         
-        document.getElementById('new-student-name').value = '';
+        nameInput.value = '';
         window.showCustomAlert(`${name} 모험가 계정이 생성되었습니다!\n초기 비밀번호는 0000 입니다.`);
-        window.renderAdminStudentList();
         
-        if (typeof window.loadDynamicStudentList === 'function') {
-            window.loadDynamicStudentList();
-        }
-    } catch(e) { window.showCustomAlert("계정 추가 오류: " + e.message); }
+        // 목록 새로고침
+        if (window.renderAdminStudentList) window.renderAdminStudentList();
+        if (typeof window.loadDynamicStudentList === 'function') window.loadDynamicStudentList();
+        
+    } catch(e) { 
+        window.showCustomAlert("계정 추가 오류: " + e.message); 
+    }
 };
 
 window.renderAdminStudentList = async () => {
