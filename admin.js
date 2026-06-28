@@ -1,8 +1,8 @@
-import { db, getStudentsCollection, getStudentDoc, getWordListCollection, getWordDoc, STUDENT_LIST } from './firebase.js';
+import { db, getStudentsCollection, getStudentDoc, getWordListCollection, getWordDoc } from './firebase.js';
 import { getDoc, getDocs, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // ==========================================
-// 1. 관리자 뷰 화면 토글 기능
+// 1. 관리자 뷰 화면 토글 로직
 // ==========================================
 window.showAdminMainMenu = () => {
     document.getElementById('admin-main-menu').style.display = 'grid';
@@ -26,6 +26,9 @@ window.showAdminSection = (secId) => {
         window.renderTestScores();
         window.renderPrisonList();
     }
+    if (secId === 'admin-sec-student') {
+        window.renderAdminStudentList();
+    }
 };
 
 window.toggleAdmin = () => {
@@ -42,83 +45,304 @@ window.toggleAdmin = () => {
 };
 
 // ==========================================
-// 2. 단어 시험 및 함정(오답노트) 관리 기능
+// 2. 단어 도감 직접 추가 및 삭제 로직
 // ==========================================
-window.renderTestStudentCheckboxes = () => {
+window.addWord = async () => {
+    const cInput = document.getElementById('new-c');
+    const wInput = document.getElementById('new-w'); const mInput = document.getElementById('new-m');
+    const c = parseInt(cInput.value) || 1;
+    const w = wInput.value.trim(); const m = mInput.value.trim();
+    if (!w || !m) return;
+    try {
+        const wordId = w.toLowerCase().replace(/\s+/g, '_');
+        await setDoc(getWordDoc(wordId), { word: w, meaning: m, chapter: c, createdAt: Date.now() });
+        wInput.value = ''; mInput.value = ''; wInput.focus();
+    } catch (error) {}
+};
+
+window.delWord = async (id) => {
+    if (await window.showCustomConfirm("도감에서 삭제할까요?")) { try { await deleteDoc(getWordDoc(id)); } catch(e){} }
+};
+
+window.updateAdminList = () => {
+    const list = document.getElementById('admin-list');
+    if(!list) return;
+    
+    const selectedChapter = parseInt(document.getElementById('new-c').value) || 1;
+    const filteredQuizzes = window.state.quizzes.filter(q => (q.chapter || 1) === selectedChapter);
+
+    if (filteredQuizzes.length === 0) {
+        list.innerHTML = `<p class="text-center text-slate-400 py-6 text-sm font-bold">해당 단원에 등록된 단어가 없습니다.</p>`;
+        return;
+    }
+
+    list.innerHTML = filteredQuizzes.map(q => {
+        const chapterNum = q.chapter || 1;
+        return `
+        <div class="flex justify-between items-center bg-white p-3 rounded-xl shadow-sm border border-slate-100 mb-2">
+            <div class="truncate flex items-center gap-2">
+                <span class="bg-slate-100 text-slate-500 text-[10px] px-2 py-0.5 rounded font-bold shrink-0">${chapterNum}단원</span>
+                <span class="font-black text-red-600 text-lg">${q.word}</span>
+                <span class="text-slate-600 text-sm">${q.meaning}</span>
+            </div>
+            <button onclick="window.delWord('${q.id}')" class="text-red-400 p-2 font-bold text-xs shrink-0">삭제</button>
+        </div>
+    `}).join('');
+};
+
+// ==========================================
+// 3. 엑셀 업로드 및 다운로드 로직 (SheetJS 연동)
+// ==========================================
+window.downloadWordExcel = async () => {
+    if(!window.XLSX) return window.showCustomAlert("엑셀 라이브러리를 불러오지 못했습니다.");
+    window.showCustomAlert("단어장 데이터를 엑셀로 추출 중입니다...");
+    try {
+        const snap = await getDocs(getWordListCollection());
+        let words = [];
+        snap.forEach(doc => words.push(doc.data()));
+        words.sort((a,b) => (a.chapter || 1) - (b.chapter || 1));
+
+        let ws_data = [["단원(숫자)", "영단어", "뜻"]];
+        words.forEach(w => { ws_data.push([w.chapter || 1, w.word, w.meaning]); });
+
+        const ws = window.XLSX.utils.aoa_to_sheet(ws_data);
+        const wb = window.XLSX.utils.book_new();
+        window.XLSX.utils.book_append_sheet(wb, ws, "단어장");
+        window.XLSX.writeFile(wb, "영켓몬_단어장_백업.xlsx");
+        window.closeCustomAlert();
+    } catch(e) { window.showCustomAlert("오류 발생: " + e.message); }
+};
+
+window.excelDataTemp = [];
+window.handleExcelUpload = (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+        try {
+            const bstr = evt.target.result;
+            const wb = window.XLSX.read(bstr, {type: 'binary'});
+            const wsname = wb.SheetNames[0];
+            const ws = wb.Sheets[wsname];
+            const data = window.XLSX.utils.sheet_to_json(ws, {header: 1});
+            
+            let newWords = [];
+            for(let i=1; i<data.length; i++) {
+                const row = data[i];
+                if(row.length >= 3 && row[1] && row[2]) {
+                    newWords.push({ chapter: parseInt(row[0])||1, word: row[1].toString().trim(), meaning: row[2].toString().trim() });
+                }
+            }
+            window.excelDataTemp = newWords;
+            
+            const previewContainer = document.getElementById('excel-preview-container');
+            const previewList = document.getElementById('excel-preview-list');
+            const previewTitle = document.getElementById('excel-preview-title');
+            
+            previewTitle.innerText = `업로드 미리보기 (총 ${newWords.length}개)`;
+            let html = '';
+            newWords.slice(0, 50).forEach(w => { html += `<div>[${w.chapter}단원] ${w.word} : ${w.meaning}</div>`; });
+            if(newWords.length > 50) html += `<div>... 외 ${newWords.length - 50}개</div>`;
+            
+            previewList.innerHTML = html; previewContainer.style.display = 'block';
+        } catch(err) { window.showCustomAlert("엑셀 파일을 읽는 중 오류가 발생했습니다."); }
+    };
+    reader.readAsBinaryString(file);
+    e.target.value = ''; 
+};
+
+window.applyExcelData = async () => {
+    if(!window.excelDataTemp || window.excelDataTemp.length === 0) return window.showCustomAlert("적용할 데이터가 없습니다.");
+    if(!await window.showCustomConfirm(`기존 도감을 모두 삭제하고 엑셀 데이터(${window.excelDataTemp.length}개)로 덮어쓰시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
+
+    window.showCustomAlert("기존 데이터를 삭제하고 새 데이터를 적용 중입니다... (잠시만 기다려주세요)");
+    try {
+        const snap = await getDocs(getWordListCollection());
+        const deletePromises = [];
+        snap.forEach(d => deletePromises.push(deleteDoc(d.ref)));
+        await Promise.all(deletePromises);
+
+        const addPromises = [];
+        window.excelDataTemp.forEach(w => {
+            const wordId = w.word.toLowerCase().replace(/\s+/g, '_') + '_' + Math.random().toString(36).substr(2,5); 
+            addPromises.push(setDoc(doc(db, 'wordList', wordId), {
+                chapter: w.chapter, word: w.word, meaning: w.meaning, createdAt: Date.now()
+            }));
+        });
+        await Promise.all(addPromises);
+        
+        document.getElementById('excel-preview-container').style.display = 'none';
+        window.excelDataTemp = [];
+        window.showCustomAlert("엑셀 데이터 적용이 완료되었습니다!");
+        window.updateAdminList();
+    } catch(e) { window.showCustomAlert("적용 중 오류 발생: " + e.message); }
+};
+
+// ==========================================
+// 4. 학생(모험가) 계정 동적 추가 및 삭제 로직
+// ==========================================
+window.addStudentAccount = async () => {
+    const name = document.getElementById('new-student-name').value.trim();
+    const pw = document.getElementById('new-student-pw').value.trim();
+    if(!name || !pw) return window.showCustomAlert("이름과 초기 비밀번호(4자리)를 입력하세요.");
+    
+    try {
+        const docRef = getStudentDoc(name);
+        const docSnap = await getDoc(docRef);
+        if(docSnap.exists()) return window.showCustomAlert("이미 존재하는 계정입니다.");
+        
+        const emptyStats = { level: 1, exp: 0, count: 0, caughtWords: {}, wins: 0, victories: {}, partnerWord: null, usedPokemonCooldown: {}, savedEncounters: {}, defenseLogs: [], testScores: {} };
+        await setDoc(docRef, { id: name, password: pw, gameStats: emptyStats, createdAt: new Date().toISOString(), forceLogout: false });
+        
+        document.getElementById('new-student-name').value = '';
+        document.getElementById('new-student-pw').value = '';
+        window.showCustomAlert(`${name} 모험가 계정이 생성되었습니다!`);
+        window.renderAdminStudentList();
+        
+        // 추가된 후 로그인 화면 목록을 다시 로드하도록 요청
+        if (typeof window.loadDynamicStudentList === 'function') {
+            window.loadDynamicStudentList();
+        }
+    } catch(e) { window.showCustomAlert("계정 추가 오류: " + e.message); }
+};
+
+window.renderAdminStudentList = async () => {
+    const container = document.getElementById('admin-student-list');
+    if(!container) return;
+    container.innerHTML = '<p class="text-xs text-slate-400">목록을 불러오는 중...</p>';
+    try {
+        const snap = await getDocs(getStudentsCollection());
+        let html = '';
+        let students = [];
+        snap.forEach(doc => {
+            if(!['마스터', '선생님', '테스트', '테스트2'].includes(doc.id)) students.push({id: doc.id, data: doc.data()});
+        });
+        
+        students.sort((a,b) => {
+            const numA = parseInt(a.id.split('.')[0]); const numB = parseInt(b.id.split('.')[0]);
+            return (isNaN(numA) ? 999 : numA) - (isNaN(numB) ? 999 : numB);
+        });
+
+        if(students.length === 0) {
+            container.innerHTML = '<p class="text-xs text-slate-400">등록된 모험가가 없습니다.</p>'; return;
+        }
+
+        students.forEach(s => {
+            html += `
+            <div class="flex justify-between items-center bg-slate-800 p-2 rounded-lg border border-slate-600">
+                <div>
+                    <span class="font-bold text-blue-300 text-sm">${s.id}</span>
+                    <span class="text-[10px] text-slate-400 ml-2">비번: ${s.data.password}</span>
+                </div>
+                <button onclick="window.deleteStudentAccount('${s.id}')" class="text-red-400 text-xs font-bold bg-red-900/30 px-2 py-1 rounded hover:bg-red-500 hover:text-white transition-colors">삭제</button>
+            </div>`;
+        });
+        container.innerHTML = html;
+    } catch(e) { container.innerHTML = '<p class="text-red-400 text-xs">불러오기 실패</p>'; }
+};
+
+window.deleteStudentAccount = async (id) => {
+    if(await window.showCustomConfirm(`정말 [${id}] 모험가 계정과 모든 데이터를 삭제하시겠습니까?`)) {
+        try {
+            await deleteDoc(getStudentDoc(id));
+            window.showCustomAlert(`${id} 계정이 완벽히 삭제되었습니다.`);
+            window.renderAdminStudentList();
+            if (typeof window.loadDynamicStudentList === 'function') {
+                window.loadDynamicStudentList();
+            }
+        } catch(e) {}
+    }
+};
+
+window.resetStudentPassword = async () => {
+    const selectEl = document.getElementById('reset-pw-student');
+    const studentId = selectEl.value;
+    if (!studentId) return window.showCustomAlert("비밀번호를 재설정할 모험가를 선택하세요.");
+
+    const newPw = prompt(`[${studentId}] 새로운 비밀번호를 입력하세요.\n(빈칸으로 두면 '1234'로 설정됩니다)`);
+    if (newPw === null) return; 
+
+    const finalPw = newPw.trim() === "" ? "1234" : newPw.trim();
+    try {
+        await setDoc(getStudentDoc(studentId), { password: finalPw }, { merge: true });
+        window.showCustomAlert(`${studentId}의 비밀번호가 변경되었습니다!`);
+        selectEl.value = ""; 
+    } catch (error) { window.showCustomAlert("비밀번호 변경 중 오류가 발생했습니다."); }
+};
+
+// ==========================================
+// 5. 서버 전체 초기화 및 로그아웃
+// ==========================================
+window.resetAllStudentsData = async () => {
+    const confirmed = await window.showCustomConfirm("정말로 모든 학생의 게임 데이터를 초기화하시겠습니까? (비밀번호는 유지됩니다)");
+    if (!confirmed) return;
+
+    try {
+        window.showCustomAlert("데이터 초기화 중입니다... 잠시만 기다려주세요.");
+        const snap = await getDocs(getStudentsCollection());
+        const emptyStats = { level: 1, exp: 0, count: 0, caughtWords: {}, wins: 0, victories: {}, partnerWord: null, usedPokemonCooldown: {}, savedEncounters: {}, defenseLogs: [], testScores: {} };
+        
+        const promises = [];
+        snap.forEach(docSnap => {
+            if(!['마스터', '선생님', '테스트', '테스트2'].includes(docSnap.id)) {
+                const data = docSnap.data();
+                promises.push(setDoc(docSnap.ref, { 
+                    id: data.id || docSnap.id, password: data.password || "1234", createdAt: data.createdAt || new Date().toISOString(),
+                    gameStats: emptyStats, forceLogout: true
+                }));
+            }
+        });
+        await Promise.all(promises);
+        window.showCustomAlert("새로운 시즌이 시작되었습니다! 데이터가 초기화되었습니다.");
+        setTimeout(() => { location.reload(); }, 2000); 
+    } catch (error) { window.showCustomAlert("초기화 중 오류가 발생했습니다."); }
+};
+
+window.forceLogoutAll = async () => {
+    const confirmed = await window.showCustomConfirm("접속 중인 모든 학생을 강제로 로그아웃하시겠습니까?\n(업데이트 적용을 위해 사용합니다)");
+    if (!confirmed) return;
+
+    try {
+        window.showCustomAlert("전체 로그아웃 신호를 전송 중입니다...");
+        const snap = await getDocs(getStudentsCollection());
+        const promises = [];
+        snap.forEach(docSnap => { 
+            if(!['마스터', '선생님'].includes(docSnap.id)) promises.push(setDoc(docSnap.ref, { forceLogout: true }, { merge: true })); 
+        });
+        await Promise.all(promises);
+        window.showCustomAlert("전원 강제 로그아웃 신호 전송이 완료되었습니다.");
+    } catch (error) { window.showCustomAlert("로그아웃 처리 중 오류가 발생했습니다."); }
+};
+
+// ==========================================
+// 6. 단어 시험(기습 테스트) 관리 및 성적표
+// ==========================================
+window.renderTestStudentCheckboxes = async () => {
     const container = document.getElementById('test-student-checkboxes');
     if (!container) return;
-    let html = '';
-    STUDENT_LIST.forEach(name => {
-        if (!['마스터', '선생님'].includes(name)) {
+    
+    try {
+        const snap = await getDocs(getStudentsCollection());
+        let html = '';
+        let students = [];
+        snap.forEach(docSnap => {
+            if (!['마스터', '선생님', '테스트', '테스트2'].includes(docSnap.id)) students.push(docSnap.id);
+        });
+        students.sort((a,b) => parseInt(a.split('.')[0] || 999) - parseInt(b.split('.')[0] || 999));
+        
+        students.forEach(name => {
             html += `
             <label class="flex items-center gap-1.5 p-1.5 bg-slate-700 border border-slate-600 rounded-lg cursor-pointer hover:bg-slate-600">
                 <input type="checkbox" value="${name}" class="test-student-cb w-4 h-4 text-emerald-500 bg-slate-800 border-slate-500 rounded focus:ring-emerald-500 cursor-pointer" checked>
                 <span class="text-xs font-bold text-emerald-100 truncate">${name}</span>
             </label>
             `;
-        }
-    });
-    container.innerHTML = html;
+        });
+        container.innerHTML = html;
+    } catch(e) {}
 };
 
-window.toggleTestStudents = (state) => {
-    document.querySelectorAll('.test-student-cb').forEach(cb => cb.checked = state);
-};
-
-window.renderTestPaper = (chapter) => {
-    document.getElementById('test-mode-desc').innerHTML = `<span class="text-indigo-600">${chapter}단원</span> 단어 시험이 시작되었습니다.<br>빈칸에 알맞은 영어 스펠링을 입력하세요.`;
-    const listEl = document.getElementById('test-paper-list');
-    const targetQuizzes = window.state.quizzes.filter(q => (q.chapter || 1) == chapter);
-    const shuffled = targetQuizzes.sort(() => 0.5 - Math.random());
-    
-    let html = '';
-    shuffled.forEach((q, idx) => {
-        html += `
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between bg-slate-50 p-4 rounded-xl border border-slate-200 gap-3">
-            <div class="font-bold text-slate-700 text-lg flex-1"><span class="text-red-500 mr-2">${idx + 1}.</span>${q.meaning}</div>
-            <div class="relative flex-1">
-                <input type="password" class="test-answer-input w-full p-3 border-2 border-slate-600 rounded-xl outline-none font-bold text-lg focus:border-red-400 bg-slate-800 relative z-0" style="color: transparent; caret-color: white;" data-word="${q.word}" autocomplete="new-password" spellcheck="false" autocorrect="off" autocapitalize="off" onpaste="return false;" ondrop="return false;" oninput="this.nextElementSibling.firstElementChild.textContent = this.value || '스펠링 입력'; this.nextElementSibling.firstElementChild.style.color = this.value ? 'white' : '#9ca3af';">
-                <div class="absolute inset-0 flex items-center pointer-events-none z-10 px-4 overflow-hidden">
-                    <span class="text-slate-400 text-lg font-bold whitespace-pre truncate">스펠링 입력</span>
-                </div>
-            </div>
-        </div>
-        `;
-    });
-    listEl.innerHTML = html || '<p class="text-center text-slate-500 font-bold py-6">해당 단원에 등록된 단어가 없습니다.</p>';
-};
-
-window.submitTest = async () => {
-    const inputs = document.querySelectorAll('.test-answer-input');
-    let score = 0;
-    let total = inputs.length;
-    let wrongWords = [];
-    
-    inputs.forEach(input => {
-        const correctWord = input.getAttribute('data-word').toLowerCase().trim();
-        const userWord = input.value.trim(); 
-        
-        if (correctWord === userWord.toLowerCase()) {
-            score++;
-            input.classList.add('bg-green-400', 'border-green-400', 'text-green-700');
-        } else {
-            wrongWords.push(correctWord); 
-            input.classList.add('bg-red-400', 'border-red-400', 'text-red-700');
-            input.value = userWord === "" ? `미입력 (정답: ${correctWord})` : `${userWord} (정답: ${correctWord})`;
-        }
-        input.type = 'text'; input.style.color = 'inherit';
-        input.nextElementSibling.style.display = 'none'; input.disabled = true;
-    });
-    
-    const chapter = window.state.currentTestChapter;
-    if (!window.state.gameData.testScores) window.state.gameData.testScores = {};
-    window.state.gameData.testScores[chapter] = { score, total, wrongWords, unsubmitted: false };
-    await window.saveProgress();
-    
-    const btn = document.getElementById('btn-submit-test');
-    btn.disabled = true; btn.classList.replace('bg-red-600', 'bg-slate-400'); btn.style.display = 'none';
-    document.getElementById('test-submit-msg').style.display = 'block';
-};
+window.toggleTestStudents = (state) => { document.querySelectorAll('.test-student-cb').forEach(cb => cb.checked = state); };
 
 window.startTest = async () => {
     const chapter = parseInt(document.getElementById('test-chapter-select').value);
@@ -182,125 +406,6 @@ window.endTest = async () => {
     }
 };
 
-window.renderPrisonPaper = () => {
-    const listEl = document.getElementById('prison-paper-list');
-    let html = '';
-    const words = window.state.prisonWords || {};
-    const sortedWords = Object.entries(words).filter(w => w[1] > 0).sort((a, b) => a[0].localeCompare(b[0]));
-    
-    for (const [word, count] of sortedWords) {
-        const quiz = window.state.quizzes.find(q => q.word.toLowerCase() === word.toLowerCase());
-        const meaning = quiz ? quiz.meaning : "알 수 없음";
-
-        html += `
-        <div class="flex flex-col bg-purple-50 p-4 rounded-xl border-2 border-purple-200 gap-2 shadow-sm">
-            <div class="flex justify-between items-center">
-                <span class="font-black text-slate-700 text-lg">${meaning}</span>
-                <span class="bg-purple-600 text-white text-xs px-2 py-1 rounded-lg font-bold shadow-sm">남은 횟수: ${count}</span>
-            </div>
-            <div class="text-sm font-bold text-purple-500 mb-1">정답: ${word}</div>
-            <div class="flex gap-2">
-                <div class="relative flex-1">
-                    <input type="password" class="w-full p-3 border-2 border-slate-600 rounded-xl outline-none font-bold text-lg focus:border-purple-500 bg-slate-800 relative z-0" style="color: transparent; caret-color: white;" onkeyup="if(event.key==='Enter')window.checkPrisonWord(this, '${word}')" onpaste="return false;" ondrop="return false;" autocomplete="new-password" spellcheck="false" autocorrect="off" autocapitalize="off" oninput="this.nextElementSibling.firstElementChild.textContent = this.value || '단어를 정확히 입력하세요'; this.nextElementSibling.firstElementChild.style.color = this.value ? 'white' : '#9ca3af';">
-                    <div class="absolute inset-0 flex items-center pointer-events-none z-10 px-4 overflow-hidden">
-                        <span class="text-slate-400 text-lg font-bold whitespace-pre truncate">단어를 정확히 입력하세요</span>
-                    </div>
-                </div>
-                <button onclick="window.checkPrisonWord(this.previousElementSibling.querySelector('input'), '${word}')" class="bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl px-4 shrink-0 transition-colors shadow-sm">입력하기</button>
-            </div>
-        </div>
-        `;
-    }
-    listEl.innerHTML = html;
-    const firstInput = listEl.querySelector('input');
-    if (firstInput) firstInput.focus();
-};
-
-window.checkPrisonWord = async (inputEl, targetWord) => {
-    const val = inputEl.value.trim().toLowerCase();
-    if (val === targetWord.toLowerCase()) {
-        inputEl.value = '';
-        if(inputEl.nextElementSibling) { inputEl.nextElementSibling.firstElementChild.textContent = '단어를 정확히 입력하세요'; inputEl.nextElementSibling.firstElementChild.style.color = '#9ca3af'; }
-        inputEl.classList.add('bg-green-100', 'border-green-400');
-        setTimeout(() => { inputEl.classList.remove('bg-green-100', 'border-green-400'); }, 300);
-
-        window.state.prisonWords[targetWord]--;
-        
-        let remainingCount = 0;
-        for (let w in window.state.prisonWords) { if (window.state.prisonWords[w] > 0) remainingCount++; }
-        
-        if (remainingCount === 0) {
-            await setDoc(getStudentDoc(window.state.user), { prisonMode: { active: false, wordsToType: window.state.prisonWords } }, { merge: true });
-            document.getElementById('prison-mode-view').style.display = 'none';
-            window.showCustomAlert("🎉 함정에서 무사히 탈출했습니다!");
-        } else {
-            await setDoc(getStudentDoc(window.state.user), { prisonMode: { active: true, wordsToType: window.state.prisonWords } }, { merge: true });
-            window.renderPrisonPaper();
-        }
-    } else {
-        inputEl.classList.add('bg-red-100', 'border-red-400');
-        setTimeout(() => { inputEl.classList.remove('bg-red-100', 'border-red-400'); }, 300);
-    }
-};
-
-window.renderPrisonList = async () => {
-    const listEl = document.getElementById('prison-management-list');
-    if (!listEl) return;
-    
-    listEl.innerHTML = '<p class="text-center text-slate-400 text-xs py-2 animate-pulse">불러오는 중...</p>';
-    try {
-        const snap = await getDocs(getStudentsCollection());
-        let prisoners = [];
-        snap.forEach(docSnap => {
-            const data = docSnap.data();
-            if (data.prisonMode && data.prisonMode.active) {
-                let activeWords = {};
-                let hasWords = false;
-                for (let w in (data.prisonMode.wordsToType || {})) {
-                    if (data.prisonMode.wordsToType[w] > 0) {
-                        activeWords[w] = data.prisonMode.wordsToType[w];
-                        hasWords = true;
-                    }
-                }
-                if (hasWords) prisoners.push({ id: docSnap.id, words: activeWords });
-            }
-        });
-        
-        if (prisoners.length === 0) {
-            listEl.innerHTML = '<p class="text-center text-slate-400 text-sm py-4 font-bold">함정에 갇힌 학생이 없습니다.</p>';
-            return;
-        }
-        
-        let html = '';
-        prisoners.forEach(p => {
-            const wordsSummary = Object.keys(p.words).map(w => `${w}(${p.words[w]}회)`).join(', ');
-            html += `
-            <div class="flex justify-between items-center bg-slate-700 p-3 rounded-xl border border-slate-600 mb-2">
-                <div class="truncate pr-2 flex-1">
-                    <span class="font-bold text-emerald-300 mr-2">${p.id}</span>
-                    <span class="text-xs text-slate-300 truncate">${wordsSummary}</span>
-                </div>
-                <button onclick="window.forceEscape('${p.id}')" class="bg-indigo-500 text-white text-xs px-3 py-1.5 rounded-lg font-bold shadow hover:bg-indigo-600 transition-colors shrink-0">강제 탈출</button>
-            </div>
-            `;
-        });
-        listEl.innerHTML = html;
-    } catch(e) { listEl.innerHTML = '<p class="text-red-400 text-xs py-2 text-center">오류 발생</p>'; }
-};
-
-window.forceEscape = async (studentId) => {
-    if (await window.showCustomConfirm(`${studentId} 학생을 함정에서 강제로 탈출시키겠습니까?`)) {
-        const docSnap = await getDoc(getStudentDoc(studentId));
-        const oldWords = docSnap.data().prisonMode?.wordsToType || {};
-        let wordsToType = {};
-        for (let w in oldWords) wordsToType[w] = 0;
-        
-        await setDoc(getStudentDoc(studentId), { prisonMode: { active: false, wordsToType: wordsToType } }, { merge: true });
-        window.showCustomAlert(`${studentId} 학생 강제 탈출 처리 완료!`);
-        window.renderPrisonList();
-    }
-};
-
 window.renderTestScores = async () => {
     const tbody = document.getElementById('test-scores-tbody');
     if(!tbody) return;
@@ -312,7 +417,7 @@ window.renderTestScores = async () => {
         let students = [];
         snap.forEach(docSnap => {
             const id = docSnap.id;
-            if (!['마스터', '선생님'].includes(id)) students.push({ id, data: docSnap.data() });
+            if (!['마스터', '선생님', '테스트', '테스트2'].includes(id)) students.push({ id, data: docSnap.data() });
         });
         
         students.sort((a, b) => {
@@ -357,7 +462,7 @@ window.downloadTestScoresCSV = async () => {
         let students = [];
         snap.forEach(docSnap => {
             const id = docSnap.id;
-            if (!['마스터', '선생님'].includes(id)) students.push({ id, data: docSnap.data() });
+            if (!['마스터', '선생님', '테스트', '테스트2'].includes(id)) students.push({ id, data: docSnap.data() });
         });
 
         students.sort((a, b) => {
@@ -366,7 +471,7 @@ window.downloadTestScoresCSV = async () => {
         });
 
         let csvContent = "\uFEFF"; 
-        csvContent += "트레이너명,단원,점수,총점,틀린단어\n";
+        csvContent += "모험가명,단원,점수,총점,틀린단어\n";
         let hasData = false;
 
         students.forEach(student => {
@@ -400,103 +505,62 @@ window.downloadTestScoresCSV = async () => {
 };
 
 // ==========================================
-// 3. 서버 및 학생 계정 관리
+// 7. 함정(오답 노트) 관리
 // ==========================================
-window.resetAllStudentsData = async () => {
-    const confirmed = await window.showCustomConfirm("정말로 모든 학생의 게임 데이터를 초기화하시겠습니까? (비밀번호는 유지됩니다)");
-    if (!confirmed) return;
-
+window.renderPrisonList = async () => {
+    const listEl = document.getElementById('prison-management-list');
+    if (!listEl) return;
+    
+    listEl.innerHTML = '<p class="text-center text-slate-400 text-xs py-2 animate-pulse">불러오는 중...</p>';
     try {
-        window.showCustomAlert("데이터 초기화 중입니다... 잠시만 기다려주세요.");
         const snap = await getDocs(getStudentsCollection());
-        const emptyStats = { level: 1, exp: 0, count: 0, caughtWords: {}, wins: 0, victories: {}, partnerWord: null, usedPokemonCooldown: {}, savedEncounters: {}, defenseLogs: [], testScores: {} };
-        
-        const promises = [];
+        let prisoners = [];
         snap.forEach(docSnap => {
             const data = docSnap.data();
-            promises.push(setDoc(docSnap.ref, { 
-                id: data.id || docSnap.id, password: data.password || "1234", createdAt: data.createdAt || new Date().toISOString(),
-                gameStats: emptyStats, forceLogout: true
-            }));
+            if (data.prisonMode && data.prisonMode.active) {
+                let activeWords = {};
+                let hasWords = false;
+                for (let w in (data.prisonMode.wordsToType || {})) {
+                    if (data.prisonMode.wordsToType[w] > 0) {
+                        activeWords[w] = data.prisonMode.wordsToType[w];
+                        hasWords = true;
+                    }
+                }
+                if (hasWords) prisoners.push({ id: docSnap.id, words: activeWords });
+            }
         });
-        await Promise.all(promises);
-        window.showCustomAlert("새로운 시즌이 시작되었습니다! 데이터가 초기화되었습니다.");
-        setTimeout(() => { location.reload(); }, 2000); 
-    } catch (error) { window.showCustomAlert("초기화 중 오류가 발생했습니다."); }
-};
-
-window.forceLogoutAll = async () => {
-    const confirmed = await window.showCustomConfirm("접속 중인 모든 학생을 강제로 로그아웃하시겠습니까?\n(업데이트 적용을 위해 사용합니다)");
-    if (!confirmed) return;
-
-    try {
-        window.showCustomAlert("전체 로그아웃 신호를 전송 중입니다...");
-        const snap = await getDocs(getStudentsCollection());
-        const promises = [];
-        snap.forEach(docSnap => { promises.push(setDoc(docSnap.ref, { forceLogout: true }, { merge: true })); });
-        await Promise.all(promises);
-        window.showCustomAlert("전원 강제 로그아웃 신호 전송이 완료되었습니다.");
-    } catch (error) { window.showCustomAlert("로그아웃 처리 중 오류가 발생했습니다."); }
-};
-
-window.resetStudentPassword = async () => {
-    const selectEl = document.getElementById('reset-pw-student');
-    const studentId = selectEl.value;
-    if (!studentId) return window.showCustomAlert("비밀번호를 재설정할 학생을 선택하세요.");
-
-    const newPw = prompt(`[${studentId}] 새로운 비밀번호를 입력하세요.\n(빈칸으로 두면 '1234'로 설정됩니다)`);
-    if (newPw === null) return; 
-
-    const finalPw = newPw.trim() === "" ? "1234" : newPw.trim();
-    try {
-        await setDoc(getStudentDoc(studentId), { password: finalPw }, { merge: true });
-        window.showCustomAlert(`${studentId}의 비밀번호가 변경되었습니다!`);
-        selectEl.value = ""; 
-    } catch (error) { window.showCustomAlert("비밀번호 변경 중 오류가 발생했습니다."); }
-};
-
-// ==========================================
-// 4. 단어 도감 관리
-// ==========================================
-window.addWord = async () => {
-    const cInput = document.getElementById('new-c');
-    const wInput = document.getElementById('new-w'); const mInput = document.getElementById('new-m');
-    const c = parseInt(cInput.value) || 1;
-    const w = wInput.value.trim(); const m = mInput.value.trim();
-    if (!w || !m) return;
-    try {
-        const wordId = w.toLowerCase().replace(/\s+/g, '_');
-        await setDoc(getWordDoc(wordId), { word: w, meaning: m, chapter: c, createdAt: Date.now() });
-        wInput.value = ''; mInput.value = ''; wInput.focus();
-    } catch (error) {}
-};
-
-window.delWord = async (id) => {
-    if (await window.showCustomConfirm("도감에서 삭제할까요?")) { try { await deleteDoc(getWordDoc(id)); } catch(e){} }
-};
-
-window.updateAdminList = () => {
-    const list = document.getElementById('admin-list');
-    if(!list) return;
-    
-    const selectedChapter = parseInt(document.getElementById('new-c').value) || 1;
-    const filteredQuizzes = window.state.quizzes.filter(q => (q.chapter || 1) === selectedChapter);
-
-    if (filteredQuizzes.length === 0) {
-        list.innerHTML = `<p class="text-center text-slate-400 py-6 text-sm font-bold">해당 단원에 등록된 단어가 없습니다.</p>`;
-        return;
-    }
-
-    list.innerHTML = filteredQuizzes.map(q => {
-        const chapterNum = q.chapter || 1;
-        return `
-        <div class="flex justify-between items-center bg-white p-3 rounded-xl shadow-sm border border-slate-100 mb-2">
-            <div class="truncate flex items-center gap-2">
-                <span class="bg-slate-100 text-slate-500 text-[10px] px-2 py-0.5 rounded font-bold shrink-0">${chapterNum}단원</span>
-                <span class="font-black text-red-600 text-lg">${q.word}</span>
-                <span class="text-slate-600 text-sm">${q.meaning}</span>
+        
+        if (prisoners.length === 0) {
+            listEl.innerHTML = '<p class="text-center text-slate-400 text-sm py-4 font-bold">함정에 갇힌 모험가가 없습니다.</p>';
+            return;
+        }
+        
+        let html = '';
+        prisoners.forEach(p => {
+            const wordsSummary = Object.keys(p.words).map(w => `${w}(${p.words[w]}회)`).join(', ');
+            html += `
+            <div class="flex justify-between items-center bg-slate-700 p-3 rounded-xl border border-slate-600 mb-2">
+                <div class="truncate pr-2 flex-1">
+                    <span class="font-bold text-emerald-300 mr-2">${p.id}</span>
+                    <span class="text-xs text-slate-300 truncate">${wordsSummary}</span>
+                </div>
+                <button onclick="window.forceEscape('${p.id}')" class="bg-indigo-500 text-white text-xs px-3 py-1.5 rounded-lg font-bold shadow hover:bg-indigo-600 transition-colors shrink-0">강제 탈출</button>
             </div>
-            <button onclick="window.delWord('${q.id}')" class="text-red-400 p-2 font-bold text-xs shrink-0">삭제</button>
-        </div>
-    `}).join('');
+            `;
+        });
+        listEl.innerHTML = html;
+    } catch(e) { listEl.innerHTML = '<p class="text-red-400 text-xs py-2 text-center">오류 발생</p>'; }
+};
+
+window.forceEscape = async (studentId) => {
+    if (await window.showCustomConfirm(`${studentId} 모험가를 함정에서 강제로 탈출시키겠습니까?`)) {
+        const docSnap = await getDoc(getStudentDoc(studentId));
+        const oldWords = docSnap.data().prisonMode?.wordsToType || {};
+        let wordsToType = {};
+        for (let w in oldWords) wordsToType[w] = 0;
+        
+        await setDoc(getStudentDoc(studentId), { prisonMode: { active: false, wordsToType: wordsToType } }, { merge: true });
+        window.showCustomAlert(`${studentId} 모험가 강제 탈출 처리 완료!`);
+        window.renderPrisonList();
+    }
 };
