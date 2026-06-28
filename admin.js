@@ -159,6 +159,7 @@ window.handleExcelUpload = (e) => {
     e.target.value = ''; 
 };
 
+// ⭐ 에러 수정된 데이터베이스 덮어쓰기 로직!
 window.applyExcelData = async () => {
     if(!window.excelDataTemp || window.excelDataTemp.length === 0) return window.showCustomAlert("적용할 데이터가 없습니다.");
     if(!await window.showCustomConfirm(`기존 도감을 모두 삭제하고 엑셀 데이터(${window.excelDataTemp.length}개)로 덮어쓰시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
@@ -173,7 +174,7 @@ window.applyExcelData = async () => {
         const addPromises = [];
         window.excelDataTemp.forEach(w => {
             const wordId = w.word.toLowerCase().replace(/\s+/g, '_') + '_' + Math.random().toString(36).substr(2,5); 
-            // ⭐ doc(db, ...) 대신 만들어둔 getWordDoc() 함수를 사용하도록 수정!
+            // 💡 문제 해결: doc() 대신 안전한 getWordDoc() 함수 사용!
             addPromises.push(setDoc(getWordDoc(wordId), {
                 chapter: w.chapter, word: w.word, meaning: w.meaning, createdAt: Date.now()
             }));
@@ -192,12 +193,10 @@ window.applyExcelData = async () => {
 // ==========================================
 window.addStudentAccount = async () => {
     const nameInput = document.getElementById('new-student-name');
-    const genderSelect = document.getElementById('new-student-gender');
     if (!nameInput) return;
     
     const name = nameInput.value.trim();
-    const pw = "0000"; 
-    const gender = genderSelect ? genderSelect.value : "male"; // ⭐ 선택된 성별 가져오기
+    const pw = "0000"; // 비밀번호 고정
     
     if(!name) return window.showCustomAlert("이름을 입력하세요.");
     
@@ -208,11 +207,9 @@ window.addStudentAccount = async () => {
         
         const emptyStats = { level: 1, exp: 0, count: 0, caughtWords: {}, wins: 0, victories: {}, partnerWord: null, usedPokemonCooldown: {}, savedEncounters: {}, defenseLogs: [], testScores: {} };
         
-        // ⭐ DB에 gender 값 추가 저장
         await setDoc(docRef, { 
             id: name, 
             password: pw, 
-            gender: gender, 
             isFirstLogin: true, 
             gameStats: emptyStats, 
             createdAt: new Date().toISOString(), 
@@ -288,10 +285,10 @@ window.resetStudentPassword = async () => {
 
     const finalPw = newPw.trim() === "" ? "1234" : newPw.trim();
     try {
-        await setDoc(getStudentDoc(studentId), { password: finalPw }, { merge: true });
-        window.showCustomAlert(`${studentId}의 비밀번호가 변경되었습니다!`);
+        await setDoc(getStudentDoc(studentId), { password: finalPw, isFirstLogin: true }, { merge: true });
+        window.showCustomAlert(`${studentId}의 비밀번호가 변경되었습니다!\n다음에 로그인할 때 본인이 다시 비번을 설정하게 됩니다.`);
         selectEl.value = ""; 
-        window.renderAdminStudentList(); // 리스트 새로고침
+        window.renderAdminStudentList();
     } catch (error) { window.showCustomAlert("비밀번호 변경 중 오류가 발생했습니다."); }
 };
 
