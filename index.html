@@ -393,16 +393,17 @@
                     <div class="max-h-[300px] overflow-y-auto pr-2 space-y-2 custom-scrollbar" id="admin-list"></div>
                 </div>
 
-                <!-- 관리자: 학생 관리 (계정 동적 추가/삭제/비번변경) -->
+             <!-- 관리자: 학생 관리 (계정 동적 추가/삭제/비번변경) -->
                 <div id="admin-sec-student" class="hidden">
                     <button onclick="window.showAdminMainMenu()" class="text-slate-400 hover:text-white text-sm font-bold mb-4 flex items-center gap-1 transition-colors">◀ 메인 메뉴로 돌아가기</button>
                     
                     <div class="bg-blue-900/30 p-4 rounded-2xl border border-blue-500/30 mb-6">
                         <h3 class="text-sm font-bold text-blue-400 mb-2">👦 모험가 계정 추가</h3>
-                        <p class="text-xs text-slate-400 mb-3">새로운 모험가를 추가합니다. 초기 비밀번호는 입력한 4자리 숫자로 설정됩니다.</p>
+                        <!-- ⭐ 설명 변경됨 -->
+                        <p class="text-xs text-slate-400 mb-3">새로운 모험가를 추가합니다. 초기 비밀번호는 <b>'0000'</b>으로 자동 설정됩니다.</p>
                         <div class="flex gap-2 mb-3">
                             <input type="text" id="new-student-name" class="flex-1 p-3 border rounded-xl outline-none text-sm font-bold text-slate-700 focus:border-blue-400 bg-white shadow-sm" placeholder="이름 (예: 1.길동)" autocomplete="off">
-                            <input type="text" id="new-student-pw" class="w-24 p-3 border rounded-xl outline-none text-sm font-bold text-slate-700 focus:border-blue-400 bg-white shadow-sm" placeholder="초기비번" maxlength="4" autocomplete="off">
+                            <!-- ⭐ 비밀번호 입력칸 삭제됨 -->
                             <button onclick="window.addStudentAccount()" class="bg-blue-600 text-white px-4 py-3 rounded-xl font-bold text-sm shadow-md active:scale-95 transition-transform hover:bg-blue-700 shrink-0">추가</button>
                         </div>
                     </div>
