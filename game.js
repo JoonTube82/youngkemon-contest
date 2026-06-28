@@ -356,7 +356,6 @@ function startMagicRPG() {
     unsubscribeWords = onSnapshot(getWordListCollection(), (snapshot) => {
         window.state.quizzes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         window.refreshQuiz();
-        // admin 기능이 켜져있다면 (admin.js가 로드되어 window 객체에 바인딩되어 있다면)
         if(window.updateAdminList) window.updateAdminList();
         if (document.getElementById('prison-mode-view').style.display === 'flex') {
             if(window.renderPrisonPaper) window.renderPrisonPaper();
@@ -374,8 +373,69 @@ function startMagicRPG() {
                 setTimeout(() => location.reload(), 2500); return;
             }
 
+            // ⭐ 성별을 DB에서 직접 읽어와 캐릭터 이미지 자동 변경
+            const gender = data.gender || "male";
+            const tNum = gender === "female" ? "2" : "1";
+            window.trainerIdleImg = new Image(); window.trainerIdleImg.src = `trainer${tNum}_idle.png`;
+            window.trainerAttackImg = new Image(); window.trainerAttackImg.src = `trainer${tNum}_attack.png`;
+            if (!window.charImg) {
+                window.charImg = window.trainerIdleImg; 
+                window.trainerAttackOffset = 0;
+            }
+
             if (data.gameStats && data.gameStats.testScores) window.state.gameData.testScores = data.gameStats.testScores;
 
+            if (data.testMode && data.testMode.active) {
+                if (document.getElementById('test-mode-view').style.display !== 'flex') {
+                    window.state.currentTestChapter = data.testMode.chapter;
+                    if(window.renderTestPaper) window.renderTestPaper(data.testMode.chapter);
+                    document.getElementById('test-mode-view').style.display = 'flex';
+                }
+            } else {
+                const testView = document.getElementById('test-mode-view');
+                const submitBtn = document.getElementById('btn-submit-test');
+                if (testView.style.display === 'flex' && submitBtn && !submitBtn.disabled) {
+                    const inputs = document.querySelectorAll('.test-answer-input');
+                    let wrongWords = [];
+                    inputs.forEach(input => {
+                        const correctWord = input.getAttribute('data-word').toLowerCase().trim();
+                        if (input.value.trim().toLowerCase() !== correctWord) wrongWords.push(correctWord);
+                    });
+                    if(window.submitTest) window.submitTest();
+                    if (wrongWords.length > 0) {
+                        let wordsToType = {};
+                        wrongWords.forEach(w => { wordsToType[w] = 3; });
+                        setDoc(getStudentDoc(window.state.user), { prisonMode: { active: true, wordsToType: wordsToType } }, { merge: true });
+                    }
+                }
+                document.getElementById('test-mode-view').style.display = 'none';
+                if (submitBtn) {
+                    submitBtn.style.display = 'block'; submitBtn.disabled = false;
+                    submitBtn.classList.replace('bg-slate-400', 'bg-red-600');
+                }
+                const msgEl = document.getElementById('test-submit-msg');
+                if (msgEl) msgEl.style.display = 'none';
+            }
+
+            if (data.prisonMode && data.prisonMode.active) {
+                let activeWords = {}; let hasWords = false;
+                for (let w in (data.prisonMode.wordsToType || {})) {
+                    if (data.prisonMode.wordsToType[w] > 0) { activeWords[w] = data.prisonMode.wordsToType[w]; hasWords = true; }
+                }
+                if (hasWords) {
+                    window.state.prisonWords = activeWords;
+                    if (document.getElementById('prison-mode-view').style.display !== 'flex') {
+                        document.getElementById('prison-mode-view').style.display = 'flex';
+                        if(window.renderPrisonPaper) window.renderPrisonPaper();
+                    }
+                } else { document.getElementById('prison-mode-view').style.display = 'none'; }
+            } else { document.getElementById('prison-mode-view').style.display = 'none'; }
+        }
+    });
+
+    window.updateUI(); window.loadChapterDominators(); 
+    requestAnimationFrame(gameLoop);
+}
             // 기습 테스트 모드 감지 로직
             if (data.testMode && data.testMode.active) {
                 if (document.getElementById('test-mode-view').style.display !== 'flex') {
