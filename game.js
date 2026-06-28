@@ -436,64 +436,6 @@ function startMagicRPG() {
     window.updateUI(); window.loadChapterDominators(); 
     requestAnimationFrame(gameLoop);
 }
-            // 기습 테스트 모드 감지 로직
-            if (data.testMode && data.testMode.active) {
-                if (document.getElementById('test-mode-view').style.display !== 'flex') {
-                    window.state.currentTestChapter = data.testMode.chapter;
-                    if(window.renderTestPaper) window.renderTestPaper(data.testMode.chapter);
-                    document.getElementById('test-mode-view').style.display = 'flex';
-                }
-            } else {
-                const testView = document.getElementById('test-mode-view');
-                const submitBtn = document.getElementById('btn-submit-test');
-                if (testView.style.display === 'flex' && submitBtn && !submitBtn.disabled) {
-                    const inputs = document.querySelectorAll('.test-answer-input');
-                    let wrongWords = [];
-                    inputs.forEach(input => {
-                        const correctWord = input.getAttribute('data-word').toLowerCase().trim();
-                        if (input.value.trim().toLowerCase() !== correctWord) wrongWords.push(correctWord);
-                    });
-                    if(window.submitTest) window.submitTest();
-                    if (wrongWords.length > 0) {
-                        let wordsToType = {};
-                        wrongWords.forEach(w => { wordsToType[w] = 3; });
-                        setDoc(getStudentDoc(window.state.user), { prisonMode: { active: true, wordsToType: wordsToType } }, { merge: true });
-                    }
-                }
-                document.getElementById('test-mode-view').style.display = 'none';
-                if (submitBtn) {
-                    submitBtn.style.display = 'block'; submitBtn.disabled = false;
-                    submitBtn.classList.replace('bg-slate-400', 'bg-red-600');
-                }
-                const msgEl = document.getElementById('test-submit-msg');
-                if (msgEl) msgEl.style.display = 'none';
-            }
-
-            // 함정(오답노트) 모드 감지 로직
-            if (data.prisonMode && data.prisonMode.active) {
-                let activeWords = {}; let hasWords = false;
-                for (let w in (data.prisonMode.wordsToType || {})) {
-                    if (data.prisonMode.wordsToType[w] > 0) { activeWords[w] = data.prisonMode.wordsToType[w]; hasWords = true; }
-                }
-                if (hasWords) {
-                    window.state.prisonWords = activeWords;
-                    if (document.getElementById('prison-mode-view').style.display !== 'flex') {
-                        document.getElementById('prison-mode-view').style.display = 'flex';
-                        if(window.renderPrisonPaper) window.renderPrisonPaper();
-                    }
-                } else { document.getElementById('prison-mode-view').style.display = 'none'; }
-            } else { document.getElementById('prison-mode-view').style.display = 'none'; }
-        }
-    });
-    
-    // 캐릭터 이미지 세팅 (이제 항상 1번 남자 캐릭터를 사용합니다)
-    window.trainerIdleImg = new Image(); window.trainerIdleImg.src = `trainer1_idle.png`;
-    window.trainerAttackImg = new Image(); window.trainerAttackImg.src = `trainer1_attack.png`;
-    window.charImg = window.trainerIdleImg; window.trainerAttackOffset = 0; 
-
-    window.updateUI(); window.loadChapterDominators(); 
-    requestAnimationFrame(gameLoop);
-}
 
 window.saveProgress = async () => {
     if (!window.state.user) return;
