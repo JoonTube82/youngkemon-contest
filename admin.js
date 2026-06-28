@@ -49,19 +49,27 @@ window.toggleAdmin = () => {
 // ==========================================
 window.addWord = async () => {
     const cInput = document.getElementById('new-c');
-    const wInput = document.getElementById('new-w'); const mInput = document.getElementById('new-m');
+    const wInput = document.getElementById('new-w'); 
+    const mInput = document.getElementById('new-m');
     const c = parseInt(cInput.value) || 1;
-    const w = wInput.value.trim(); const m = mInput.value.trim();
+    const w = wInput.value.trim(); 
+    const m = mInput.value.trim();
     if (!w || !m) return;
     try {
         const wordId = w.toLowerCase().replace(/\s+/g, '_');
         await setDoc(getWordDoc(wordId), { word: w, meaning: m, chapter: c, createdAt: Date.now() });
         wInput.value = ''; mInput.value = ''; wInput.focus();
+        window.updateAdminList();
     } catch (error) {}
 };
 
 window.delWord = async (id) => {
-    if (await window.showCustomConfirm("도감에서 삭제할까요?")) { try { await deleteDoc(getWordDoc(id)); } catch(e){} }
+    if (await window.showCustomConfirm("도감에서 삭제할까요?")) { 
+        try { 
+            await deleteDoc(getWordDoc(id)); 
+            window.updateAdminList();
+        } catch(e){} 
+    }
 };
 
 window.updateAdminList = () => {
@@ -199,7 +207,6 @@ window.addStudentAccount = async () => {
         window.showCustomAlert(`${name} 모험가 계정이 생성되었습니다!`);
         window.renderAdminStudentList();
         
-        // 추가된 후 로그인 화면 목록을 다시 로드하도록 요청
         if (typeof window.loadDynamicStudentList === 'function') {
             window.loadDynamicStudentList();
         }
@@ -229,7 +236,7 @@ window.renderAdminStudentList = async () => {
 
         students.forEach(s => {
             html += `
-            <div class="flex justify-between items-center bg-slate-800 p-2 rounded-lg border border-slate-600">
+            <div class="flex justify-between items-center bg-slate-800 p-2 rounded-lg border border-slate-600 mb-2">
                 <div>
                     <span class="font-bold text-blue-300 text-sm">${s.id}</span>
                     <span class="text-[10px] text-slate-400 ml-2">비번: ${s.data.password}</span>
@@ -267,6 +274,7 @@ window.resetStudentPassword = async () => {
         await setDoc(getStudentDoc(studentId), { password: finalPw }, { merge: true });
         window.showCustomAlert(`${studentId}의 비밀번호가 변경되었습니다!`);
         selectEl.value = ""; 
+        window.renderAdminStudentList(); // 리스트 새로고침
     } catch (error) { window.showCustomAlert("비밀번호 변경 중 오류가 발생했습니다."); }
 };
 
@@ -348,8 +356,8 @@ window.startTest = async () => {
     const chapter = parseInt(document.getElementById('test-chapter-select').value);
     const checkedBoxes = Array.from(document.querySelectorAll('.test-student-cb:checked')).map(cb => cb.value);
     
-    if (checkedBoxes.length === 0) return window.showCustomAlert("테스트를 진행할 대상 학생을 선택하세요.");
-    if(await window.showCustomConfirm(`선택한 ${checkedBoxes.length}명의 학생에게 [${chapter}단원] 강제 시험을 시작하시겠습니까?\n진행 중인 게임 화면이 중단됩니다.`)) {
+    if (checkedBoxes.length === 0) return window.showCustomAlert("테스트를 진행할 대상 모험가를 선택하세요.");
+    if(await window.showCustomConfirm(`선택한 ${checkedBoxes.length}명의 모험가에게 [${chapter}단원] 강제 시험을 시작하시겠습니까?\n진행 중인 게임 화면이 중단됩니다.`)) {
         try {
             window.showCustomAlert("시험 시작 신호를 전송 중입니다...");
             const snap = await getDocs(getStudentsCollection());
@@ -374,7 +382,7 @@ window.startTest = async () => {
 };
 
 window.endTest = async () => {
-    if(await window.showCustomConfirm(`시험을 종료하시겠습니까?\n틀린 단어가 있는 학생은 오답 노트(함정)로 이동합니다.`)) {
+    if(await window.showCustomConfirm(`시험을 종료하시겠습니까?\n틀린 단어가 있는 모험가는 오답 노트(함정)로 이동합니다.`)) {
         try {
             window.showCustomAlert("시험 종료 신호를 전송 중입니다...");
             const snap = await getDocs(getStudentsCollection());
@@ -451,7 +459,7 @@ window.renderTestScores = async () => {
                 });
             }
         });
-        tbody.innerHTML = html || '<tr><td colspan="4" class="text-center py-4 text-slate-400">학생 데이터가 없습니다.</td></tr>';
+        tbody.innerHTML = html || '<tr><td colspan="4" class="text-center py-4 text-slate-400">모험가 데이터가 없습니다.</td></tr>';
     } catch(e) { tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-red-500">오류 발생</td></tr>'; }
 };
 
