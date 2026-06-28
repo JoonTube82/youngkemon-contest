@@ -1,5 +1,5 @@
-import { db, getStudentsCollection, getStudentDoc, getWordListCollection, getWordDoc, STUDENT_LIST, getSettingsDoc } from './firebase.js';
-import { getDoc, getDocs, setDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { db, getStudentsCollection, getStudentDoc, getWordListCollection, getWordDoc, STUDENT_LIST } from './firebase.js';
+import { getDoc, getDocs, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // ==========================================
 // 1. 관리자 뷰 화면 토글 기능
@@ -26,9 +26,6 @@ window.showAdminSection = (secId) => {
         window.renderTestScores();
         window.renderPrisonList();
     }
-    if (secId === 'admin-sec-student') {
-        if (window.renderAdminStudentList) window.renderAdminStudentList();
-    }
 };
 
 window.toggleAdmin = () => {
@@ -54,9 +51,9 @@ window.renderTestStudentCheckboxes = () => {
     STUDENT_LIST.forEach(name => {
         if (!['마스터', '선생님'].includes(name)) {
             html += `
-            <label class="flex items-center gap-2 p-2 sm:p-3 bg-slate-700 border border-slate-600 rounded-xl cursor-pointer hover:bg-slate-600 transition-colors">
-                <input type="checkbox" value="${name}" class="test-student-cb w-5 h-5 text-emerald-500 bg-slate-800 border-slate-500 rounded focus:ring-emerald-500 cursor-pointer" checked>
-                <span class="text-sm sm:text-base font-bold text-emerald-100 truncate">${name}</span>
+            <label class="flex items-center gap-1.5 p-1.5 bg-slate-700 border border-slate-600 rounded-lg cursor-pointer hover:bg-slate-600">
+                <input type="checkbox" value="${name}" class="test-student-cb w-4 h-4 text-emerald-500 bg-slate-800 border-slate-500 rounded focus:ring-emerald-500 cursor-pointer" checked>
+                <span class="text-xs font-bold text-emerald-100 truncate">${name}</span>
             </label>
             `;
         }
@@ -69,8 +66,7 @@ window.toggleTestStudents = (state) => {
 };
 
 window.renderTestPaper = (chapter) => {
-    const title = window.state.chapterTitles?.[chapter] || `${chapter}단원`;
-    document.getElementById('test-mode-desc').innerHTML = `<span class="text-indigo-600">[${title}]</span> 단어 시험이 시작되었습니다.<br>빈칸에 알맞은 영어 스펠링을 입력하세요.`;
+    document.getElementById('test-mode-desc').innerHTML = `<span class="text-indigo-600">${chapter}단원</span> 단어 시험이 시작되었습니다.<br>빈칸에 알맞은 영어 스펠링을 입력하세요.`;
     const listEl = document.getElementById('test-paper-list');
     const targetQuizzes = window.state.quizzes.filter(q => (q.chapter || 1) == chapter);
     const shuffled = targetQuizzes.sort(() => 0.5 - Math.random());
@@ -127,10 +123,9 @@ window.submitTest = async () => {
 window.startTest = async () => {
     const chapter = parseInt(document.getElementById('test-chapter-select').value);
     const checkedBoxes = Array.from(document.querySelectorAll('.test-student-cb:checked')).map(cb => cb.value);
-    const title = window.state.chapterTitles?.[chapter] || `${chapter}단원`;
     
     if (checkedBoxes.length === 0) return window.showCustomAlert("테스트를 진행할 대상 학생을 선택하세요.");
-    if(await window.showCustomConfirm(`선택한 ${checkedBoxes.length}명의 학생에게 [${title}] 강제 시험을 시작하시겠습니까?\n진행 중인 게임 화면이 중단됩니다.`)) {
+    if(await window.showCustomConfirm(`선택한 ${checkedBoxes.length}명의 학생에게 [${chapter}단원] 강제 시험을 시작하시겠습니까?\n진행 중인 게임 화면이 중단됩니다.`)) {
         try {
             window.showCustomAlert("시험 시작 신호를 전송 중입니다...");
             const snap = await getDocs(getStudentsCollection());
@@ -149,7 +144,7 @@ window.startTest = async () => {
                 }
             });
             await Promise.all(promises);
-            window.showCustomAlert(`[${title}] 시험이 시작되었습니다!`);
+            window.showCustomAlert(`[${chapter}단원] 시험이 시작되었습니다!`);
         } catch(e) { console.error(e); }
     }
 };
@@ -341,11 +336,10 @@ window.renderTestScores = async () => {
                     const isPerfect = scoreData.score === scoreData.total && scoreData.total > 0;
                     const wrongList = scoreData.wrongWords && scoreData.wrongWords.length > 0 ? scoreData.wrongWords.join(', ') : (scoreData.unsubmitted ? '미제출' : '없음 (만점!)');
                     const wrongClass = isPerfect ? 'text-emerald-400 font-bold' : (scoreData.unsubmitted ? 'text-slate-500' : 'text-red-400 font-bold');
-                    const title = window.state.chapterTitles?.[ch] || `${ch}단원`;
                     
                     html += `<tr class="border-b border-slate-600 hover:bg-slate-700 transition-colors">
                         ${index === 0 ? `<td class="p-3 font-bold text-emerald-300 bg-slate-800 border-r border-slate-600 align-middle" rowspan="${chaptersTaken.length}">${student.id}</td>` : ''}
-                        <td class="p-3 text-center text-slate-300 align-middle">${title}</td>
+                        <td class="p-3 text-center text-slate-300 align-middle">${ch}단원</td>
                         <td class="p-3 text-center font-bold ${isPerfect ? 'text-sky-400' : 'text-slate-300'} align-middle">${scoreData.score}/${scoreData.total}</td>
                         <td class="p-3 ${wrongClass} break-words whitespace-normal max-w-[200px] align-middle leading-snug">${wrongList}</td>
                     </tr>`;
@@ -383,10 +377,9 @@ window.downloadTestScoresCSV = async () => {
                 hasData = true;
                 chaptersTaken.forEach(ch => {
                     const scoreData = scores[ch];
-                    const title = window.state.chapterTitles?.[ch] || `${ch}단원`;
                     const wrongList = scoreData.wrongWords && scoreData.wrongWords.length > 0 ? scoreData.wrongWords.join(', ') : (scoreData.unsubmitted ? '미제출' : '없음');
                     const safeWrongList = `"${wrongList.replace(/"/g, '""')}"`;
-                    csvContent += `${student.id},${title},${scoreData.score},${scoreData.total},${safeWrongList}\n`;
+                    csvContent += `${student.id},${ch},${scoreData.score},${scoreData.total},${safeWrongList}\n`;
                 });
             } else { csvContent += `${student.id},기록없음,-,-,-\n`; }
         });
@@ -422,10 +415,7 @@ window.resetAllStudentsData = async () => {
         snap.forEach(docSnap => {
             const data = docSnap.data();
             promises.push(setDoc(docSnap.ref, { 
-                id: data.id || docSnap.id, 
-                password: data.password || "1234", 
-                gender: data.gender || "male",
-                createdAt: data.createdAt || new Date().toISOString(),
+                id: data.id || docSnap.id, password: data.password || "1234", createdAt: data.createdAt || new Date().toISOString(),
                 gameStats: emptyStats, forceLogout: true
             }));
         });
@@ -449,142 +439,24 @@ window.forceLogoutAll = async () => {
     } catch (error) { window.showCustomAlert("로그아웃 처리 중 오류가 발생했습니다."); }
 };
 
-// ==========================================
-// ⭐ 4. 엑셀 업로드 및 단원별 단어 일괄 동기화 (고도화 부문)
-// ==========================================
-// 선택한 단원의 현재 등록된 단어들을 포함하여 엑셀 생성 후 다운로드
-window.downloadExcelTemplate = () => {
-    const selectedChapter = parseInt(document.getElementById('new-c').value) || 1;
-    
-    // 현재 선택된 단원에 등록된 퀴즈 필터링
-    const currentQuizzes = window.state.quizzes.filter(q => (q.chapter || 1) === selectedChapter);
-    
-    // 헤더 및 가이드 라인 정의
-    const data = [
-        ["단원번호(숫자)", "영단어", "뜻"],
-        ["[설명] 숫자만 입력", "[설명] 영단어 입력", "[설명] 한글 뜻 입력"],
-        [`(※ 현재 ${selectedChapter}단원 관리 중입니다. 파일 업로드 시 이 단원의 기존 데이터는 삭제되고 아래 목록으로 대체됩니다.)`, "", ""]
-    ];
+window.resetStudentPassword = async () => {
+    const selectEl = document.getElementById('reset-pw-student');
+    const studentId = selectEl.value;
+    if (!studentId) return window.showCustomAlert("비밀번호를 재설정할 학생을 선택하세요.");
 
-    // 기존 데이터가 있다면 가이드 아래에 자동으로 채워줌
-    currentQuizzes.forEach(q => {
-        data.push([selectedChapter, q.word, q.meaning]);
-    });
+    const newPw = prompt(`[${studentId}] 새로운 비밀번호를 입력하세요.\n(빈칸으로 두면 '1234'로 설정됩니다)`);
+    if (newPw === null) return; 
 
-    const worksheet = XLSX.utils.aoa_to_sheet(data);
-    
-    // 열 너비 깔끔하게 자동 세팅
-    worksheet['!cols'] = [
-        { wch: 25 }, // A열
-        { wch: 30 }, // B열
-        { wch: 30 }  // C열
-    ];
-
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "VocaList");
-    XLSX.writeFile(workbook, `${selectedChapter}단원_단어_일괄관리_양식.xlsx`);
-};
-
-// 엑셀 업로드 시 선택된 단원의 기존 데이터를 싹 지우고 동기화 (추가+삭제)
-window.handleExcelUpload = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const selectedChapter = parseInt(document.getElementById('new-c').value) || 1;
-
-    const confirmMsg = `⚠️ 주의! 엑셀을 업로드하면 현재 서버에 저장된 [${selectedChapter}단원]의 모든 단어가 지워지고, 엑셀 파일에 적힌 단어들로만 새롭게 바뀝니다.\n\n정말로 진행하시겠습니까?`;
-    if (!await window.showCustomConfirm(confirmMsg)) {
-        event.target.value = '';
-        return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-        try {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
-            const sheet = workbook.Sheets[workbook.SheetNames[0]];
-            const json = XLSX.utils.sheet_to_json(sheet);
-
-            window.showCustomAlert("서버 데이터를 동기화하는 중입니다... 잠시 대기해주세요.");
-            
-            // 1단계: 선택된 단원의 기존 데이터를 지우기 위해 Firebase에서 대상 조회
-            const existingQuizzes = window.state.quizzes.filter(q => (q.chapter || 1) === selectedChapter);
-            
-            // 대량 처리를 위한 Firestore Batch 활성화
-            let batch = writeBatch(db);
-            let operationCount = 0;
-
-            // 기존 단어 일괄 삭제 등록
-            for (const q of existingQuizzes) {
-                batch.delete(getWordDoc(q.id));
-                operationCount++;
-                if (operationCount >= 400) { // Firestore 처리 제한선 안전 분할
-                    await batch.commit();
-                    batch = writeBatch(db);
-                    operationCount = 0;
-                }
-            }
-
-            // 2단계: 엑셀 파일에서 읽어온 새로운 단어 목록 일괄 등록
-            for (const row of json) {
-                const chapter = parseInt(row["단원번호(숫자)"]);
-                const word = row["영단어"] ? String(row["영단어"]).trim() : "";
-                const meaning = row["뜻"] ? String(row["뜻"]).trim() : "";
-
-                // 현재 관리 중인 단원 번호와 일치하고 글자가 유효할 때만 등록 (설명글 자동 패스)
-                if (chapter === selectedChapter && word && meaning) {
-                    const wordId = word.toLowerCase().replace(/\s+/g, '_');
-                    batch.set(getWordDoc(wordId), {
-                        word: word,
-                        meaning: meaning,
-                        chapter: chapter,
-                        createdAt: Date.now()
-                    });
-                    operationCount++;
-
-                    if (operationCount >= 400) {
-                        await batch.commit();
-                        batch = writeBatch(db);
-                        operationCount = 0;
-                    }
-                }
-            }
-
-            // 남은 작업 최종 커밋
-            if (operationCount > 0) {
-                await batch.commit();
-            }
-
-            window.showCustomAlert(`🎉 [${selectedChapter}단원]의 단어장이 엑셀 내용과 완벽하게 동기화되었습니다!`);
-            event.target.value = ''; 
-            if(window.updateAdminList) window.updateAdminList(); 
-        } catch (err) {
-            console.error(err);
-            window.showCustomAlert("엑셀 파일 분석 중 오류가 발생했습니다. 규격 양식을 확인해 주세요.");
-        }
-    };
-    reader.readAsArrayBuffer(file);
-};
-
-// 단원 제목 변경 저장
-window.saveChapterTitle = async () => {
-    const chapter = document.getElementById('new-c').value;
-    const newTitle = document.getElementById('custom-chapter-title').value.trim();
-    
-    if (!newTitle) return window.showCustomAlert("단원 제목을 입력하세요.");
-    
+    const finalPw = newPw.trim() === "" ? "1234" : newPw.trim();
     try {
-        await setDoc(getSettingsDoc(), { [chapter]: newTitle }, { merge: true });
-        window.showCustomAlert(`${chapter}단원 제목이 [${newTitle}](으)로 변경되었습니다!`);
-        document.getElementById('custom-chapter-title').value = '';
-    } catch (e) {
-        window.showCustomAlert("제목 저장 중 오류가 발생했습니다.");
-    }
+        await setDoc(getStudentDoc(studentId), { password: finalPw }, { merge: true });
+        window.showCustomAlert(`${studentId}의 비밀번호가 변경되었습니다!`);
+        selectEl.value = ""; 
+    } catch (error) { window.showCustomAlert("비밀번호 변경 중 오류가 발생했습니다."); }
 };
 
 // ==========================================
-// 5. 단어 도감 관리 (개별 추가/삭제)
+// 4. 단어 도감 관리
 // ==========================================
 window.addWord = async () => {
     const cInput = document.getElementById('new-c');
@@ -600,9 +472,7 @@ window.addWord = async () => {
 };
 
 window.delWord = async (id) => {
-    if (await window.showCustomConfirm("도감에서 해당 단어를 삭제하시겠습니까?")) { 
-        try { await deleteDoc(getWordDoc(id)); } catch(e){} 
-    }
+    if (await window.showCustomConfirm("도감에서 삭제할까요?")) { try { await deleteDoc(getWordDoc(id)); } catch(e){} }
 };
 
 window.updateAdminList = () => {
@@ -610,97 +480,23 @@ window.updateAdminList = () => {
     if(!list) return;
     
     const selectedChapter = parseInt(document.getElementById('new-c').value) || 1;
-    
-    const titleInput = document.getElementById('custom-chapter-title');
-    if(titleInput) {
-        titleInput.value = window.state.chapterTitles?.[selectedChapter] || "";
-    }
-
     const filteredQuizzes = window.state.quizzes.filter(q => (q.chapter || 1) === selectedChapter);
 
     if (filteredQuizzes.length === 0) {
-        list.innerHTML = `<p class="text-center text-slate-400 py-8 text-base font-bold">해당 단원에 등록된 단어가 없습니다.</p>`;
+        list.innerHTML = `<p class="text-center text-slate-400 py-6 text-sm font-bold">해당 단원에 등록된 단어가 없습니다.</p>`;
         return;
     }
 
     list.innerHTML = filteredQuizzes.map(q => {
         const chapterNum = q.chapter || 1;
         return `
-        <div class="flex justify-between items-center bg-white p-4 rounded-xl shadow-md border border-slate-200 mb-3">
-            <div class="truncate flex items-center gap-3">
-                <span class="bg-slate-100 text-slate-500 text-sm sm:text-base px-3 py-1.5 rounded-lg font-bold shrink-0">${chapterNum}단원</span>
-                <span class="font-black text-red-600 text-xl sm:text-2xl">${q.word}</span>
-                <span class="text-slate-600 text-base sm:text-lg font-bold">${q.meaning}</span>
+        <div class="flex justify-between items-center bg-white p-3 rounded-xl shadow-sm border border-slate-100 mb-2">
+            <div class="truncate flex items-center gap-2">
+                <span class="bg-slate-100 text-slate-500 text-[10px] px-2 py-0.5 rounded font-bold shrink-0">${chapterNum}단원</span>
+                <span class="font-black text-red-600 text-lg">${q.word}</span>
+                <span class="text-slate-600 text-sm">${q.meaning}</span>
             </div>
-            <button onclick="window.delWord('${q.id}')" class="text-red-500 hover:bg-red-50 px-3 py-2 rounded-xl font-bold text-sm sm:text-base shrink-0 transition-colors border border-transparent hover:border-red-200">삭제</button>
+            <button onclick="window.delWord('${q.id}')" class="text-red-400 p-2 font-bold text-xs shrink-0">삭제</button>
         </div>
     `}).join('');
-};
-
-// ==========================================
-// 6. 학생 관리 (추가/삭제/비밀번호 초기화)
-// ==========================================
-window.renderAdminStudentList = () => {
-    const listEl = document.getElementById('admin-student-list');
-    if (!listEl) return;
-    
-    let html = '';
-    STUDENT_LIST.forEach(name => {
-        const isPrivileged = ['마스터', '선생님', '테스트', '테스트2'].includes(name);
-        
-        html += `
-        <div class="flex justify-between items-center bg-white p-4 rounded-xl shadow-md border border-slate-200 mb-2">
-            <span class="font-black text-slate-800 text-base sm:text-lg">${name}</span>
-            ${!isPrivileged ? `<button onclick="window.removeStudent('${name}')" class="text-red-500 hover:bg-red-50 px-3 py-2 rounded-xl font-bold text-sm sm:text-base shrink-0 transition-colors border border-transparent hover:border-red-200">삭제</button>` : `<span class="text-sm text-slate-400 font-bold p-2 bg-slate-100 rounded-lg">기본 계정</span>`}
-        </div>`;
-    });
-    listEl.innerHTML = html || '<p class="text-center text-slate-400 py-6 text-base font-bold">등록된 학생이 없습니다.</p>';
-};
-
-window.addStudent = async () => {
-    const nameInput = document.getElementById('new-student-name');
-    const genderInput = document.getElementById('new-student-gender');
-    const name = nameInput.value.trim();
-    const gender = genderInput.value;
-    
-    if (!name) return window.showCustomAlert("추가할 학생의 이름을 입력하세요.");
-    if (STUDENT_LIST.includes(name)) return window.showCustomAlert("이미 존재하는 학생 이름입니다.");
-    
-    try {
-        const emptyStats = { level: 1, exp: 0, count: 0, caughtWords: {}, wins: 0, victories: {}, partnerWord: null, usedPokemonCooldown: {}, savedEncounters: {}, defenseLogs: [], testScores: {} };
-        await setDoc(getStudentDoc(name), { 
-            id: name, 
-            password: "RESET", 
-            isPwSet: false,    
-            gender: gender,
-            gameStats: emptyStats, 
-            createdAt: new Date().toISOString(), 
-            forceLogout: false 
-        });
-        nameInput.value = '';
-        window.showCustomAlert(`[${name}] 학생이 정상적으로 등록되었습니다!\n(최초 로그인 시 학생이 스스로 4자리 암호를 설정합니다)`);
-    } catch (e) { window.showCustomAlert("학생 추가 중 오류가 발생했습니다."); }
-};
-
-window.removeStudent = async (name) => {
-    if (await window.showCustomConfirm(`정말로 [${name}] 학생을 삭제하시겠습니까?\n모든 게임 데이터와 성적이 영구적으로 사라집니다.`)) {
-        try {
-            await deleteDoc(getStudentDoc(name));
-            window.showCustomAlert(`[${name}] 학생이 완벽하게 삭제되었습니다.`);
-        } catch (e) { window.showCustomAlert("학생 삭제 중 오류가 발생했습니다."); }
-    }
-};
-
-window.resetStudentPassword = async () => {
-    const selectEl = document.getElementById('reset-pw-student');
-    const studentId = selectEl.value;
-    if (!studentId) return window.showCustomAlert("비밀번호를 초기화할 학생을 선택하세요.");
-
-    if (await window.showCustomConfirm(`[${studentId}] 학생의 비밀번호를 초기화하시겠습니까?\n(다음 접속 시 학생이 직접 새 4자리 숫자를 설정하게 됩니다.)`)) {
-        try {
-            await setDoc(getStudentDoc(studentId), { password: "RESET", isPwSet: false }, { merge: true });
-            window.showCustomAlert(`[${studentId}] 학생의 비밀번호가 초기화되었습니다!`);
-            selectEl.value = ""; 
-        } catch (error) { window.showCustomAlert("비밀번호 초기화 중 오류가 발생했습니다."); }
-    }
 };
