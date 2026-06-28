@@ -191,10 +191,12 @@ window.applyExcelData = async () => {
 // ==========================================
 window.addStudentAccount = async () => {
     const nameInput = document.getElementById('new-student-name');
+    const genderSelect = document.getElementById('new-student-gender');
     if (!nameInput) return;
     
     const name = nameInput.value.trim();
-    const pw = "0000"; // 비밀번호 고정
+    const pw = "0000"; 
+    const gender = genderSelect ? genderSelect.value : "male"; // ⭐ 선택된 성별 가져오기
     
     if(!name) return window.showCustomAlert("이름을 입력하세요.");
     
@@ -205,9 +207,11 @@ window.addStudentAccount = async () => {
         
         const emptyStats = { level: 1, exp: 0, count: 0, caughtWords: {}, wins: 0, victories: {}, partnerWord: null, usedPokemonCooldown: {}, savedEncounters: {}, defenseLogs: [], testScores: {} };
         
+        // ⭐ DB에 gender 값 추가 저장
         await setDoc(docRef, { 
             id: name, 
             password: pw, 
+            gender: gender, 
             isFirstLogin: true, 
             gameStats: emptyStats, 
             createdAt: new Date().toISOString(), 
@@ -217,7 +221,6 @@ window.addStudentAccount = async () => {
         nameInput.value = '';
         window.showCustomAlert(`${name} 모험가 계정이 생성되었습니다!\n초기 비밀번호는 0000 입니다.`);
         
-        // 목록 새로고침
         if (window.renderAdminStudentList) window.renderAdminStudentList();
         if (typeof window.loadDynamicStudentList === 'function') window.loadDynamicStudentList();
         
