@@ -1781,15 +1781,15 @@ function gameLoop() {
 }
 
 // ==========================================
-// 10. 오리지널 보카몬(VocaMon) 매핑 로직
+// 10. 오리지널 보카몬(VocaMon) 매핑 로직 (영구 고정 방식)
 // ==========================================
 function getPokemonInfoForWord(word, count) {
-    const sorted = [...window.state.quizzes].sort((a,b)=>((a.createdAt||0)-(b.createdAt||0))||a.word.localeCompare(b.word));
-    let idx = sorted.findIndex(q=>q.word.toLowerCase()===word.toLowerCase());
-    if (idx === -1) {
-        let hash = 0; for (let i = 0; i < word.length; i++) hash = word.charCodeAt(i) + ((hash << 5) - hash);
-        idx = Math.abs(hash);
+    // ⭐ 알파벳 스펠링 자체를 숫자로 변환 (이제 엑셀을 덮어써도 몬스터가 절대 안 바뀝니다!)
+    let hash = 0; 
+    for (let i = 0; i < word.length; i++) {
+        hash = word.charCodeAt(i) + ((hash << 5) - hash);
     }
+    let idx = Math.abs(hash);
 
     const targetTier = count >= 10 ? 3 : (count >= 5 ? 2 : 1);
 
