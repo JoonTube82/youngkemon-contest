@@ -1,4 +1,4 @@
-import { auth, getStudentsCollection, getStudentDoc, getWordListCollection, STUDENT_GENDER } from './firebase.js';
+import { auth, getStudentsCollection, getStudentDoc, getWordListCollection } from './firebase.js';
 import { signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getDoc, getDocs, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
@@ -58,9 +58,6 @@ window.AudioManager = {
 };
 window.AudioManager.init();
 
-// ==========================================
-// ★ 단어 읽어주기 (TTS) 기능 추가
-// ==========================================
 window.speakText = (text, lang = 'en-US') => {
     if (!text) return;
     window.speechSynthesis.cancel();
@@ -89,20 +86,9 @@ window.state = {
     monster: { hp: 100, shake: 0, tier: 1, name: "???" }
 };
 
-// ==========================================
-// 학습(Learn) 탭 전용 상태
-// ==========================================
 window.learnState = { 
-    list: [], 
-    index: 0, 
-    isPlaying: false, 
-    timer1: null, 
-    timer2: null,
-    quizList: [], 
-    quizIndex: 0, 
-    options: [],
-    wrongWords: [], 
-    isReviewMode: false
+    list: [], index: 0, isPlaying: false, timer1: null, timer2: null,
+    quizList: [], quizIndex: 0, options: [], wrongWords: [], isReviewMode: false
 };
 
 const CHAPTER_TITLES = [
@@ -113,9 +99,6 @@ const CHAPTER_TITLES = [
     "I'd Like to Have the Fruit Salad", "Do You Know About Songpyeon?", "We Should Save the World"
 ];
 
-// ==========================================
-// 2. 포켓몬 전투 공식 및 타입 설정
-// ==========================================
 const TYPE_EFFECTIVENESS = {
     normal: { }, 
     fire: { fire: 0.5, water: 0.5, grass: 2 }, 
@@ -139,6 +122,48 @@ const TYPE_COLORS = {
     ground: { bg: 'bg-[#E2BF65]', color: '#E2BF65', name: '땅' },
     dark: { bg: 'bg-[#705746]', color: '#705746', name: '어둠' },
     light: { bg: 'bg-[#FEF08A]', color: '#CA8A04', name: '빛' }
+};
+
+// ==========================================
+// 2. 동적 모험가 목록 로드 (DB에서 직접 가져옴)
+// ==========================================
+window.loadDynamicStudentList = async () => {
+    const loginSelect = document.getElementById('user-id');
+    const adminSelect = document.getElementById('reset-pw-student'); // 관리자용 셀렉트 박스
+    
+    try {
+        const snap = await getDocs(getStudentsCollection());
+        let students = [];
+        snap.forEach(doc => {
+            if (!['마스터', '선생님', '테스트', '테스트2'].includes(doc.id)) {
+                students.push(doc.id);
+            }
+        });
+        
+        students.sort((a, b) => {
+            const getNum = (id) => { const num = parseInt(id.split('.')[0]); return isNaN(num) ? 999 : num; };
+            return getNum(a) - getNum(b);
+        });
+        
+        students.push('마스터', '선생님', '테스트', '테스트2');
+
+        if(loginSelect) {
+            loginSelect.innerHTML = '<option value="" disabled selected>모험가 선택하기</option>';
+            students.forEach(s => {
+                const opt = document.createElement('option'); opt.value = s; opt.innerText = s;
+                loginSelect.appendChild(opt);
+            });
+        }
+        if(adminSelect) {
+            adminSelect.innerHTML = '<option value="" disabled selected>학생 선택</option>';
+            students.forEach(s => {
+                if (!['마스터', '선생님'].includes(s)) {
+                    const opt = document.createElement('option'); opt.value = s; opt.innerText = s;
+                    adminSelect.appendChild(opt);
+                }
+            });
+        }
+    } catch(e) { console.error("모험가 목록 로딩 실패", e); }
 };
 
 // ==========================================
@@ -176,8 +201,10 @@ window.handleLogout = async () => {
 };
 
 const initAuth = async () => {
-    try { await signInAnonymously(auth); } 
-    catch (error) { setStatus("서버 접속 지연 중입니다.", true); }
+    try { 
+        await signInAnonymously(auth); 
+        window.loadDynamicStudentList(); 
+    } catch (error) { setStatus("서버 접속 지연 중입니다.", true); }
 };
 initAuth();
 
@@ -233,7 +260,7 @@ window.handleLogin = async () => {
         console.error("Login Error:", error);
         btn.disabled = false; 
         setStatus("서버 접속 오류", true);
-        window.showCustomAlert(`로그인 중 오류가 발생했습니다!\n에러: ${error.message}\n\n※ 만약 'Missing or insufficient permissions' 에러라면 Firebase Firestore Database의 [규칙(Rules)] 탭에서 읽기/쓰기 권한을 허용(true)으로 수정해야 합니다.`);
+        window.showCustomAlert(`로그인 중 오류가 발생했습니다!\n에러: ${error.message}`);
     }
 };
 
@@ -252,7 +279,7 @@ function enterGame(id) {
 }
 
 // ==========================================
-// 4. 게임 핵심 흐름 (탭, 데이터 동기화, 모달)
+// 4. 게임 핵심 흐름 (탭, 데이터 동기화)
 // ==========================================
 window.switchTab = (tabName) => {
     if(window.battleState && window.battleState.active && tabName !== 'arena') {
@@ -301,12 +328,6 @@ function startMagicRPG() {
         window.state.quizzes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         window.refreshQuiz();
         if(window.updateAdminList) window.updateAdminList();
-        if (document.getElementById('prison-mode-view').style.display === 'flex') {
-            if(window.renderPrisonPaper) window.renderPrisonPaper();
-        }
-        if (document.getElementById('test-mode-view').style.display === 'flex') {
-            if(window.renderTestPaper) window.renderTestPaper(window.state.currentTestChapter);
-        }
     });
 
     unsubscribeStudent = onSnapshot(getStudentDoc(window.state.user), (docSnap) => {
@@ -319,7 +340,7 @@ function startMagicRPG() {
 
             if (data.gameStats && data.gameStats.testScores) window.state.gameData.testScores = data.gameStats.testScores;
 
-            // 시험 모드 감지
+            // 관리자가 낸 시험 및 함정 모드 UI 연동
             if (data.testMode && data.testMode.active) {
                 if (document.getElementById('test-mode-view').style.display !== 'flex') {
                     window.state.currentTestChapter = data.testMode.chapter;
@@ -352,7 +373,6 @@ function startMagicRPG() {
                 if (msgEl) msgEl.style.display = 'none';
             }
 
-            // 함정 모드 감지
             if (data.prisonMode && data.prisonMode.active) {
                 let activeWords = {}; let hasWords = false;
                 for (let w in (data.prisonMode.wordsToType || {})) {
@@ -369,11 +389,8 @@ function startMagicRPG() {
         }
     });
     
-    const gender = STUDENT_GENDER[window.state.user] || "male";
-    const tNum = gender === "female" ? "2" : "1";
-    
-    window.trainerIdleImg = new Image(); window.trainerIdleImg.src = `trainer${tNum}_idle.png`;
-    window.trainerAttackImg = new Image(); window.trainerAttackImg.src = `trainer${tNum}_attack.png`;
+    window.trainerIdleImg = new Image(); window.trainerIdleImg.src = `trainer1_idle.png`;
+    window.trainerAttackImg = new Image(); window.trainerAttackImg.src = `trainer1_attack.png`;
     window.charImg = window.trainerIdleImg; window.trainerAttackOffset = 0; 
 
     window.updateUI(); window.loadChapterDominators(); 
@@ -387,7 +404,7 @@ window.saveProgress = async () => {
 };
 
 // ==========================================
-// ★ [신규] 학습(Learn) 탭 기능
+// ★ 학습(Learn) 탭 기능 (오답 복습 포함)
 // ==========================================
 window.renderLearnChapterGrid = () => {
     const container = document.querySelector('#learn-chapter-view > .grid');
@@ -553,7 +570,7 @@ const renderLearnQuiz = () => {
     
     options.forEach(opt => {
         let btn = document.createElement('button');
-        btn.className = "w-full bg-slate-100 text-slate-700 py-6 rounded-2xl font-black text-lg sm:text-xl shadow-sm border-2 border-slate-200 active:scale-95 transition-all flex items-center justify-center break-all px-2";
+        btn.className = "w-full bg-slate-100 text-slate-700 py-6 rounded-2xl font-black text-lg sm:text-xl shadow-sm border-2 border-slate-200 transition-colors flex items-center justify-center break-all px-2 focus:outline-none select-none";
         btn.innerText = opt;
         btn.onclick = () => window.checkLearnQuiz(opt, currentWordObj, btn);
         optionsContainer.appendChild(btn);
@@ -568,7 +585,7 @@ window.checkLearnQuiz = (selected, currentWordObj, btnEl) => {
         const allBtns = document.getElementById('learn-quiz-options').querySelectorAll('button');
         allBtns.forEach(b => b.disabled = true);
         
-        btnEl.className = "w-full bg-emerald-500 text-white py-6 rounded-2xl font-black text-lg sm:text-xl shadow-md border-2 border-emerald-600 transition-all flex items-center justify-center break-all px-2";
+        btnEl.className = "w-full bg-emerald-500 text-white py-6 rounded-2xl font-black text-lg sm:text-xl shadow-md border-2 border-emerald-600 transition-colors flex items-center justify-center break-all px-2 focus:outline-none select-none";
         
         setTimeout(() => {
             window.learnState.quizIndex++;
@@ -576,7 +593,7 @@ window.checkLearnQuiz = (selected, currentWordObj, btnEl) => {
         }, 500);
     } else {
         btnEl.disabled = true; 
-        btnEl.className = "w-full bg-red-500 text-white py-6 rounded-2xl font-black text-lg sm:text-xl shadow-inner border-2 border-red-600 opacity-70 transition-all flex items-center justify-center break-all px-2";
+        btnEl.className = "w-full bg-red-500 text-white py-6 rounded-2xl font-black text-lg sm:text-xl shadow-inner border-2 border-red-600 opacity-70 transition-colors flex items-center justify-center break-all px-2 focus:outline-none select-none";
         
         if(!window.learnState.wrongWords.find(w => w.word === correctWord)) {
             window.learnState.wrongWords.push(currentWordObj);
@@ -585,7 +602,7 @@ window.checkLearnQuiz = (selected, currentWordObj, btnEl) => {
 };
 
 // ==========================================
-// 5. 모달 및 부가 기능 (도감 파트너, 지배자, 랭킹)
+// 5. 부가 기능 (도감 파트너, 지배자 등)
 // ==========================================
 window.setPartner = (word) => {
     const count = window.state.gameData.caughtWords[word] || 0;
@@ -822,6 +839,122 @@ window.checkMagic = () => {
     if (fakeText) { fakeText.textContent = '영단어를 입력하세요'; fakeText.style.color = '#9ca3af'; }
 };
 
+window.renderTestPaper = (chapter) => {
+    document.getElementById('test-mode-desc').innerHTML = `<span class="text-indigo-600">${chapter}단원</span> 단어 시험이 시작되었습니다.<br>빈칸에 알맞은 영어 스펠링을 입력하세요.`;
+    const listEl = document.getElementById('test-paper-list');
+    const targetQuizzes = window.state.quizzes.filter(q => (q.chapter || 1) == chapter);
+    const shuffled = targetQuizzes.sort(() => 0.5 - Math.random());
+    
+    let html = '';
+    shuffled.forEach((q, idx) => {
+        html += `
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between bg-slate-50 p-4 rounded-xl border border-slate-200 gap-3">
+            <div class="font-bold text-slate-700 text-lg flex-1"><span class="text-red-500 mr-2">${idx + 1}.</span>${q.meaning}</div>
+            <div class="relative flex-1">
+                <input type="text" class="test-answer-input w-full p-3 border-2 border-slate-600 rounded-xl outline-none font-bold text-lg focus:border-red-400 bg-slate-800 relative z-0" style="color: transparent; caret-color: white;" data-word="${q.word}" autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="off" onpaste="return false;" ondrop="return false;" oninput="this.nextElementSibling.firstElementChild.textContent = this.value || '스펠링 입력'; this.nextElementSibling.firstElementChild.style.color = this.value ? 'white' : '#9ca3af';">
+                <div class="absolute inset-0 flex items-center pointer-events-none z-10 px-4 overflow-hidden">
+                    <span class="text-slate-400 text-lg font-bold whitespace-pre truncate">스펠링 입력</span>
+                </div>
+            </div>
+        </div>
+        `;
+    });
+    listEl.innerHTML = html || '<p class="text-center text-slate-500 font-bold py-6">해당 단원에 등록된 단어가 없습니다.</p>';
+};
+
+window.submitTest = async () => {
+    const inputs = document.querySelectorAll('.test-answer-input');
+    let score = 0;
+    let total = inputs.length;
+    let wrongWords = [];
+    
+    inputs.forEach(input => {
+        const correctWord = input.getAttribute('data-word').toLowerCase().trim();
+        const userWord = input.value.trim(); 
+        
+        if (correctWord === userWord.toLowerCase()) {
+            score++;
+            input.classList.add('bg-green-400', 'border-green-400', 'text-green-700');
+        } else {
+            wrongWords.push(correctWord); 
+            input.classList.add('bg-red-400', 'border-red-400', 'text-red-700');
+            input.value = userWord === "" ? `미입력 (정답: ${correctWord})` : `${userWord} (정답: ${correctWord})`;
+        }
+        input.type = 'text'; input.style.color = 'inherit';
+        input.nextElementSibling.style.display = 'none'; input.disabled = true;
+    });
+    
+    const chapter = window.state.currentTestChapter;
+    if (!window.state.gameData.testScores) window.state.gameData.testScores = {};
+    window.state.gameData.testScores[chapter] = { score, total, wrongWords, unsubmitted: false };
+    await window.saveProgress();
+    
+    const btn = document.getElementById('btn-submit-test');
+    btn.disabled = true; btn.classList.replace('bg-red-600', 'bg-slate-400'); btn.style.display = 'none';
+    document.getElementById('test-submit-msg').style.display = 'block';
+};
+
+window.renderPrisonPaper = () => {
+    const listEl = document.getElementById('prison-paper-list');
+    let html = '';
+    const words = window.state.prisonWords || {};
+    const sortedWords = Object.entries(words).filter(w => w[1] > 0).sort((a, b) => a[0].localeCompare(b[0]));
+    
+    for (const [word, count] of sortedWords) {
+        const quiz = window.state.quizzes.find(q => q.word.toLowerCase() === word.toLowerCase());
+        const meaning = quiz ? quiz.meaning : "알 수 없음";
+
+        html += `
+        <div class="flex flex-col bg-purple-50 p-4 rounded-xl border-2 border-purple-200 gap-2 shadow-sm">
+            <div class="flex justify-between items-center">
+                <span class="font-black text-slate-700 text-lg">${meaning}</span>
+                <span class="bg-purple-600 text-white text-xs px-2 py-1 rounded-lg font-bold shadow-sm">남은 횟수: ${count}</span>
+            </div>
+            <div class="text-sm font-bold text-purple-500 mb-1">정답: ${word}</div>
+            <div class="flex gap-2">
+                <div class="relative flex-1">
+                    <input type="text" class="w-full p-3 border-2 border-slate-600 rounded-xl outline-none font-bold text-lg focus:border-purple-500 bg-slate-800 relative z-0" style="color: transparent; caret-color: white;" onkeyup="if(event.key==='Enter')window.checkPrisonWord(this, '${word}')" onpaste="return false;" ondrop="return false;" autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="off" oninput="this.nextElementSibling.firstElementChild.textContent = this.value || '단어를 정확히 입력하세요'; this.nextElementSibling.firstElementChild.style.color = this.value ? 'white' : '#9ca3af';">
+                    <div class="absolute inset-0 flex items-center pointer-events-none z-10 px-4 overflow-hidden">
+                        <span class="text-slate-400 text-lg font-bold whitespace-pre truncate">단어를 정확히 입력하세요</span>
+                    </div>
+                </div>
+                <button onclick="window.checkPrisonWord(this.previousElementSibling.querySelector('input'), '${word}')" class="bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl px-4 shrink-0 transition-colors shadow-sm">입력하기</button>
+            </div>
+        </div>
+        `;
+    }
+    listEl.innerHTML = html;
+    const firstInput = listEl.querySelector('input');
+    if (firstInput) firstInput.focus();
+};
+
+window.checkPrisonWord = async (inputEl, targetWord) => {
+    const val = inputEl.value.trim().toLowerCase();
+    if (val === targetWord.toLowerCase()) {
+        inputEl.value = '';
+        if(inputEl.nextElementSibling) { inputEl.nextElementSibling.firstElementChild.textContent = '단어를 정확히 입력하세요'; inputEl.nextElementSibling.firstElementChild.style.color = '#9ca3af'; }
+        inputEl.classList.add('bg-green-100', 'border-green-400');
+        setTimeout(() => { inputEl.classList.remove('bg-green-100', 'border-green-400'); }, 300);
+
+        window.state.prisonWords[targetWord]--;
+        
+        let remainingCount = 0;
+        for (let w in window.state.prisonWords) { if (window.state.prisonWords[w] > 0) remainingCount++; }
+        
+        if (remainingCount === 0) {
+            await setDoc(getStudentDoc(window.state.user), { prisonMode: { active: false, wordsToType: window.state.prisonWords } }, { merge: true });
+            document.getElementById('prison-mode-view').style.display = 'none';
+            window.showCustomAlert("🎉 함정에서 무사히 탈출했습니다!");
+        } else {
+            await setDoc(getStudentDoc(window.state.user), { prisonMode: { active: true, wordsToType: window.state.prisonWords } }, { merge: true });
+            window.renderPrisonPaper();
+        }
+    } else {
+        inputEl.classList.add('bg-red-100', 'border-red-400');
+        setTimeout(() => { inputEl.classList.remove('bg-red-100', 'border-red-400'); }, 300);
+    }
+};
+
 function handleAttack() {
     const word = window.state.currentQuiz.word;
     if (!window.state.gameData.caughtWords) window.state.gameData.caughtWords = {};
@@ -1039,7 +1172,7 @@ window.renderRanking = async () => {
 };
 
 // ==========================================
-// 8. 아레나(배틀) 관련 로직 (스킬 게이지 및 체력 보정 추가)
+// 8. 아레나(배틀) 관련 로직
 // ==========================================
 const checkDailyLimit = () => {
     const myId = window.state.user;
@@ -1472,9 +1605,6 @@ const checkFaint = () => {
     return false;
 };
 
-// ==========================================
-// 💡 [신규] 스페셜 어택 및 실드(방어) 로직
-// ==========================================
 window.useUltimate = () => {
     if (window.battleState.myEnergy < window.battleState.energyMax || !window.battleState.active) return;
     
@@ -1725,7 +1855,7 @@ function gameLoop() {
 }
 
 // ==========================================
-// 10. 오리지널 보카몬(VocaMon) 매핑 로직 (144마리 완벽 분배판)
+// 10. 오리지널 보카몬(VocaMon) 매핑 로직
 // ==========================================
 function getPokemonInfoForWord(word, count) {
     const sorted = [...window.state.quizzes].sort((a,b)=>((a.createdAt||0)-(b.createdAt||0))||a.word.localeCompare(b.word));
