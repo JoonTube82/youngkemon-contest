@@ -191,8 +191,10 @@ window.applyExcelData = async () => {
 // ==========================================
 window.addStudentAccount = async () => {
     const name = document.getElementById('new-student-name').value.trim();
-    const pw = document.getElementById('new-student-pw').value.trim();
-    if(!name || !pw) return window.showCustomAlert("이름과 초기 비밀번호(4자리)를 입력하세요.");
+    // ⭐ 관리자가 입력하지 않아도 초기 비밀번호를 "0000"으로 고정
+    const pw = "0000"; 
+    
+    if(!name) return window.showCustomAlert("이름을 입력하세요.");
     
     try {
         const docRef = getStudentDoc(name);
@@ -201,7 +203,6 @@ window.addStudentAccount = async () => {
         
         const emptyStats = { level: 1, exp: 0, count: 0, caughtWords: {}, wins: 0, victories: {}, partnerWord: null, usedPokemonCooldown: {}, savedEncounters: {}, defenseLogs: [], testScores: {} };
         
-        // ⭐ 여기에 isFirstLogin: true 꼬리표가 추가되었습니다!
         await setDoc(docRef, { 
             id: name, 
             password: pw, 
@@ -212,8 +213,7 @@ window.addStudentAccount = async () => {
         });
         
         document.getElementById('new-student-name').value = '';
-        document.getElementById('new-student-pw').value = '';
-        window.showCustomAlert(`${name} 모험가 계정이 생성되었습니다!`);
+        window.showCustomAlert(`${name} 모험가 계정이 생성되었습니다!\n초기 비밀번호는 0000 입니다.`);
         window.renderAdminStudentList();
         
         if (typeof window.loadDynamicStudentList === 'function') {
