@@ -6,27 +6,38 @@
     <title>6학년 보카몬</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 엑셀 파일 처리를 위한 SheetJS 라이브러리 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body class="p-4 flex items-center justify-center min-h-screen">
     <div id="app-wrapper" class="w-full max-w-[480px] mx-auto transition-all duration-500">
+        
         <!-- 로그인 화면 -->
         <div id="login-view" class="login-view-container magic-card p-10 text-center border-red-500">
             <div class="text-6xl mb-4">🧢</div>
             <h1 class="text-4xl text-red-600 mb-2 font-black italic">6학년 보카몬</h1>
-            <p class="text-slate-400 mb-8 font-normal">모험가 이름을 선택하고 암호를 입력하세요</p>
-            <div class="space-y-4">
+            
+            <!-- Step 1: 학급 코드 입력 -->
+            <div id="login-step-1" class="space-y-4">
+                <p class="text-slate-400 mb-8 font-normal">선생님이 알려주신 학급 코드를 입력하세요</p>
+                <input type="text" id="class-code" class="spell-input text-xl p-4 border-2" placeholder="학급 코드 (예: 6-1)" onkeyup="if(event.key==='Enter')window.checkClassCode()">
+                <button onclick="window.checkClassCode()" class="btn-magic mt-4">학급 접속하기</button>
+            </div>
+
+            <!-- Step 2: 모험가 선택 및 암호 입력 -->
+            <div id="login-step-2" class="space-y-4 hidden">
+                <p id="class-title-display" class="text-emerald-400 font-bold mb-4 bg-emerald-900/30 py-2 rounded-xl border border-emerald-500/30">학급코드</p>
+                <p class="text-slate-400 mb-6 font-normal text-sm">모험가 이름을 선택하고 암호를 입력하세요</p>
                 <select id="user-id" class="spell-input text-xl p-4 border-2 bg-white cursor-pointer appearance-none text-center">
                     <option value="" disabled selected>모험가 선택하기</option>
                 </select>
                 <input type="password" id="user-pw" class="spell-input text-xl p-4 border-2" placeholder="비밀번호" onkeyup="if(event.key==='Enter')window.handleLogin()">
                 <button id="login-btn" onclick="window.handleLogin()" class="btn-magic mt-4">영어 마스터 연구소 입장하기</button>
+                <button onclick="window.backToClassSelect()" class="text-slate-400 hover:text-white text-sm font-bold mt-4 transition-colors">◀ 다른 학급 접속하기</button>
             </div>
+
             <p id="login-status" class="text-slate-300 text-xs mt-4 min-h-[1rem]">도감 서버와 연결 중...</p>
         </div>
 
-        <!-- 게임 메인 화면 -->
         <div id="game-view" class="game-view-container">
             <div id="profile-card" class="bg-white rounded-3xl p-5 mb-4 shadow-lg flex justify-between items-start border-b-4 border-slate-200 transition-all duration-500">
                 <div>
@@ -55,7 +66,7 @@
                 </div>
             </div>
 
-            <!-- 하단 탭 메뉴 -->
+            <!-- 하단 탭 추가 -->
             <div class="flex gap-1 mb-4 bg-white p-2 rounded-2xl shadow-sm">
                 <button onclick="window.switchTab('rank')" id="tab-rank" class="tab-btn active flex-1 py-3 text-xs sm:text-sm rounded-xl font-bold bg-slate-100 text-slate-500 truncate">🏆 커뮤니티</button>
                 <button onclick="window.switchTab('learn')" id="tab-learn" class="tab-btn flex-1 py-3 text-xs sm:text-sm rounded-xl font-bold bg-slate-100 text-slate-500 truncate">📚 학습</button>
@@ -64,14 +75,15 @@
                 <button onclick="window.switchTab('arena')" id="tab-arena" class="tab-btn flex-1 py-3 text-xs sm:text-sm rounded-xl font-bold bg-slate-100 text-slate-500 truncate">⚔️ 배틀</button>
             </div>
             
-            <!-- [학습 탭] -->
+            <!-- 학습 탭 내용 -->
             <div id="content-learn" class="tab-content">
                 <div id="learn-chapter-view" class="magic-card p-6 shadow-xl min-h-[400px]">
                     <div class="text-center mb-6">
                         <h3 class="text-2xl font-bold text-emerald-500 mb-1">📚 단어 학습장</h3>
                         <p class="text-sm text-slate-500">학습하거나 테스트할 단원을 선택하세요!</p>
                     </div>
-                    <div class="grid gap-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar pb-4"></div>
+                    <div class="grid gap-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar pb-4">
+                    </div>
                 </div>
 
                 <div id="learn-play-view" class="hidden magic-card p-6 shadow-xl min-h-[400px] flex-col items-center justify-center relative border-4 border-emerald-500">
@@ -82,6 +94,7 @@
                         <h2 id="learn-en-word" class="text-4xl sm:text-5xl font-black text-white mb-4 tracking-wider drop-shadow-md break-all">WORD</h2>
                         <h3 id="learn-kr-word" class="text-xl sm:text-2xl font-bold text-emerald-400 min-h-[2rem] break-keep"></h3>
                     </div>
+
                     <button id="btn-learn-pause" onclick="window.toggleLearnPlay()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-2xl font-black text-xl shadow-md transition-transform active:scale-95">⏸ 일시정지</button>
                 </div>
 
@@ -94,11 +107,12 @@
                         <h2 id="learn-quiz-meaning" class="text-2xl sm:text-3xl font-black text-white drop-shadow-md break-keep leading-tight">뜻</h2>
                     </div>
 
-                    <div id="learn-quiz-options" class="grid grid-cols-2 gap-3 w-full mt-auto"></div>
+                    <div id="learn-quiz-options" class="grid grid-cols-2 gap-3 w-full mt-auto">
+                    </div>
                 </div>
             </div>
 
-            <!-- [풀숲 탭] -->
+            <!-- 풀숲 탭 내용 -->
             <div id="content-hunt" class="tab-content">
                 <div id="hunt-map-view" class="magic-card p-6 shadow-xl min-h-[400px]">
                     <div class="text-center mb-6">
@@ -106,6 +120,7 @@
                         <p class="text-sm text-slate-500">탐험할 교과서 단원을 선택하세요!</p>
                     </div>
                     <div class="space-y-5 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar pb-4">
+                        
                         <div class="bg-green-50 border-2 border-green-200 rounded-3xl p-4 shadow-sm relative overflow-hidden">
                             <div class="absolute -right-4 -top-2 text-6xl opacity-20">🌲</div>
                             <h4 class="font-bold text-green-700 mb-3 text-sm"><span class="bg-green-500 text-white px-2 py-0.5 rounded-lg text-xs mr-1">지역 1</span> 초심자의 숲</h4>
@@ -393,21 +408,15 @@
                     <div class="max-h-[300px] overflow-y-auto pr-2 space-y-2 custom-scrollbar" id="admin-list"></div>
                 </div>
 
-             <!-- 관리자: 학생 관리 (계정 동적 추가/삭제/비번변경) -->
+                <!-- 관리자: 학생 관리 -->
                 <div id="admin-sec-student" class="hidden">
                     <button onclick="window.showAdminMainMenu()" class="text-slate-400 hover:text-white text-sm font-bold mb-4 flex items-center gap-1 transition-colors">◀ 메인 메뉴로 돌아가기</button>
                     
                     <div class="bg-blue-900/30 p-4 rounded-2xl border border-blue-500/30 mb-6">
                         <h3 class="text-sm font-bold text-blue-400 mb-2">👦 모험가 계정 추가</h3>
-                        <!-- ⭐ 설명 변경됨 -->
                         <p class="text-xs text-slate-400 mb-3">새로운 모험가를 추가합니다. 초기 비밀번호는 <b>'0000'</b>으로 자동 설정됩니다.</p>
-                       <div class="flex gap-2 mb-3">
+                        <div class="flex gap-2 mb-3">
                             <input type="text" id="new-student-name" class="flex-1 p-3 border rounded-xl outline-none text-sm font-bold text-slate-700 focus:border-blue-400 bg-white shadow-sm" placeholder="이름 (예: 1.길동)" autocomplete="off">
-                            <!-- ⭐ 신규: 성별 선택 박스 추가 -->
-                            <select id="new-student-gender" class="w-20 p-3 border rounded-xl outline-none text-sm font-bold text-slate-700 focus:border-blue-400 bg-white shadow-sm">
-                                <option value="male">남자</option>
-                                <option value="female">여자</option>
-                            </select>
                             <button onclick="window.addStudentAccount()" class="bg-blue-600 text-white px-4 py-3 rounded-xl font-bold text-sm shadow-md active:scale-95 transition-transform hover:bg-blue-700 shrink-0">추가</button>
                         </div>
                     </div>
@@ -681,31 +690,7 @@
         </div>
     </div>
 
-    <div id="battle-quiz-modal" translate="no" class="notranslate fixed inset-0 bg-black/90 z-[9999] hidden flex-col items-center justify-center p-4 backdrop-blur-sm">
-        <div id="b-quiz-box" class="bg-slate-800 rounded-3xl p-8 w-full max-w-md shadow-[0_0_50px_rgba(0,0,0,0.8)] border-4 border-indigo-500 text-center relative overflow-hidden transition-colors duration-300">
-            <div class="relative z-10">
-                <h2 id="b-quiz-title" class="text-3xl font-black text-white mb-2 tracking-widest drop-shadow-md">⚡ 스페셜 어택!</h2>
-                <p id="b-quiz-desc" class="text-slate-300 font-bold mb-6 text-sm">제한 시간 안에 영단어를 입력하세요!</p>
-               <div class="bg-black/50 rounded-2xl p-6 mb-6 border border-slate-600 shadow-inner">
-                    <span id="b-quiz-label" class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1 block">단어 뜻</span>
-                    <div class="flex justify-center items-center gap-3">
-                        <h3 id="b-quiz-word" class="text-4xl text-yellow-400 font-black break-keep leading-tight">사과</h3>
-                        <button onclick="window.speakText(window.battleState.expectedWord, 'en-US')" class="bg-slate-700 hover:bg-slate-600 text-white rounded-full w-10 h-10 flex items-center justify-center text-xl transition-transform active:scale-90 shadow-sm border border-slate-500" title="발음 힌트 듣기">🔊</button>
-                    </div>
-                </div>
-                <div class="relative w-full mb-4">
-                    <input type="text" id="b-spell-in" class="spell-input w-full relative z-0 !text-2xl !p-3" style="color: transparent; caret-color: white;" autocomplete="off" autocorrect="off" spellcheck="false" autocapitalize="off" onkeyup="if(event.key==='Enter')window.submitBattleQuiz()" oninput="document.getElementById('b-fake-text').textContent = this.value || '스펠링 입력'; document.getElementById('b-fake-text').style.color = this.value ? '#f9fafb' : '#9ca3af';">
-                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10 overflow-hidden px-4">
-                        <span id="b-fake-text" class="text-slate-400 text-2xl font-bold whitespace-pre truncate">스펠링 입력</span>
-                    </div>
-                </div>
-                <div class="w-full bg-slate-700 h-3 rounded-full overflow-hidden border border-slate-600">
-                    <div id="b-timer-bar" class="h-full bg-red-500 w-full transition-none"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
+    <!-- 스크립트 연결 부분 -->
     <script type="module" src="firebase.js"></script>
     <script type="module" src="admin.js"></script>
     <script type="module" src="game.js"></script>
