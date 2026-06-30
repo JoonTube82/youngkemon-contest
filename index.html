@@ -16,12 +16,28 @@
             <div class="text-6xl mb-4">🧢</div>
             <h1 class="text-4xl text-red-600 mb-2 font-black italic">6학년 보카몬</h1>
             
-            <!-- Step 1: 학급 코드 입력 -->
-            <div id="login-step-1" class="space-y-4">
-                <p class="text-slate-400 mb-8 font-normal">선생님이 알려주신 학급 코드를 입력하세요</p>
-                <!-- ⭐ value="대회초 6-1" 속성을 추가하여 기본값 설정 -->
-                <input type="text" id="class-code" value="대회초 6-1" class="spell-input text-xl p-4 border-2" placeholder="학급 코드 (예: 6-1)" onkeyup="if(event.key==='Enter')window.checkClassCode()">
-                <button onclick="window.checkClassCode()" class="btn-magic mt-4">학급 접속하기</button>
+            <!-- Step 1: 학급 접속 및 생성 탭 -->
+            <div id="login-step-1">
+                <!-- 탭 버튼 -->
+                <div class="flex gap-2 mb-6">
+                    <button onclick="window.switchLoginTab('join')" id="btn-tab-join" class="flex-1 bg-red-500 text-white font-bold py-3 rounded-xl border-2 border-red-600 shadow-sm transition-colors text-sm">모험가 접속</button>
+                    <button onclick="window.switchLoginTab('create')" id="btn-tab-create" class="flex-1 bg-slate-800 text-slate-400 font-bold py-3 rounded-xl border-2 border-slate-700 shadow-sm transition-colors hover:bg-slate-700 text-sm">선생님 (학급생성)</button>
+                </div>
+
+                <!-- 모험가 접속 모드 -->
+                <div id="mode-join" class="space-y-4">
+                    <p class="text-slate-400 mb-4 font-normal text-sm">선생님이 알려주신 학급 코드를 입력하세요</p>
+                    <input type="text" id="class-code-join" value="대회초 6-1" class="spell-input text-xl p-4 border-2" placeholder="학급 코드 (예: 대회초 6-1)" onkeyup="if(event.key==='Enter')window.checkClassCode()">
+                    <button onclick="window.checkClassCode()" class="btn-magic mt-4">학급 접속하기</button>
+                </div>
+
+                <!-- 새 학급 만들기 모드 -->
+                <div id="mode-create" class="space-y-4 hidden">
+                    <p class="text-slate-400 mb-4 font-normal text-sm">새로운 학급을 개설하고 마스터 비번을 설정하세요</p>
+                    <input type="text" id="class-code-create" class="spell-input text-lg p-3 border-2" placeholder="새 학급 코드 (예: 한국초 6-2)">
+                    <input type="password" id="class-master-pw" class="spell-input text-lg p-3 border-2 mt-2" placeholder="마스터 비밀번호 설정" onkeyup="if(event.key==='Enter')window.createClass()">
+                    <button onclick="window.createClass()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white border-none py-3 rounded-2xl font-black text-lg shadow-md transition-transform active:scale-95 mt-4">새 학급 개설하기</button>
+                </div>
             </div>
 
             <!-- Step 2: 모험가 선택 및 암호 입력 -->
@@ -359,7 +375,7 @@
                     <button onclick="window.showAdminSection('admin-sec-student')" class="bg-blue-900/30 border-2 border-blue-500/30 p-5 rounded-2xl flex flex-col items-center justify-center hover:bg-blue-900/50 hover:border-blue-400 transition-all shadow-md group">
                         <span class="text-4xl mb-2 group-hover:scale-110 transition-transform drop-shadow-md">👦</span>
                         <span class="font-black text-blue-400 text-lg">학생 관리</span>
-                        <span class="text-[10px] text-blue-300/70 mt-1 font-bold">계정 추가/삭제</span>
+                        <span class="text-[10px] text-blue-300/70 mt-1 font-bold">계정 관리/비번초기화</span>
                     </button>
                     <button onclick="window.showAdminSection('admin-sec-server')" class="bg-purple-900/30 border-2 border-purple-500/30 p-5 rounded-2xl flex flex-col items-center justify-center hover:bg-purple-900/50 hover:border-purple-400 transition-all shadow-md group">
                         <span class="text-4xl mb-2 group-hover:scale-110 transition-transform drop-shadow-md">⚙️</span>
@@ -428,7 +444,6 @@
                     </div>
 
                     <div class="bg-blue-900/30 p-4 rounded-2xl border border-blue-500/30">
-                        <!-- ⭐ 마스터, 테스트 계정도 비밀번호 초기화 가능하도록 설명 변경 -->
                         <h3 class="text-sm font-bold text-blue-400 mb-2">🔑 계정 비밀번호 초기화</h3>
                         <p class="text-xs text-slate-400 mb-3">모험가 또는 마스터 계정의 비밀번호를 강제로 초기화합니다.</p>
                         <div class="flex gap-2">
@@ -693,9 +708,37 @@
         </div>
     </div>
 
-    <!-- 스크립트 연결 부분 -->
     <script type="module" src="firebase.js"></script>
     <script type="module" src="admin.js"></script>
     <script type="module" src="game.js"></script>
+
+    <!-- ⭐ 학급 접속 화면 UI 전환을 위한 아주 간단한 스크립트 추가 -->
+    <script>
+        window.switchLoginTab = function(mode) {
+            if(mode === 'join') {
+                document.getElementById('btn-tab-join').classList.replace('bg-slate-800', 'bg-red-500');
+                document.getElementById('btn-tab-join').classList.replace('text-slate-400', 'text-white');
+                document.getElementById('btn-tab-join').classList.replace('border-slate-700', 'border-red-600');
+                
+                document.getElementById('btn-tab-create').classList.replace('bg-red-500', 'bg-slate-800');
+                document.getElementById('btn-tab-create').classList.replace('text-white', 'text-slate-400');
+                document.getElementById('btn-tab-create').classList.replace('border-red-600', 'border-slate-700');
+                
+                document.getElementById('mode-join').style.display = 'block';
+                document.getElementById('mode-create').style.display = 'none';
+            } else {
+                document.getElementById('btn-tab-create').classList.replace('bg-slate-800', 'bg-red-500');
+                document.getElementById('btn-tab-create').classList.replace('text-slate-400', 'text-white');
+                document.getElementById('btn-tab-create').classList.replace('border-slate-700', 'border-red-600');
+                
+                document.getElementById('btn-tab-join').classList.replace('bg-red-500', 'bg-slate-800');
+                document.getElementById('btn-tab-join').classList.replace('text-white', 'text-slate-400');
+                document.getElementById('btn-tab-join').classList.replace('border-red-600', 'border-slate-700');
+                
+                document.getElementById('mode-join').style.display = 'none';
+                document.getElementById('mode-create').style.display = 'block';
+            }
+        };
+    </script>
 </body>
 </html>
