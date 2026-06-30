@@ -927,7 +927,12 @@ window.refreshQuiz = () => {
     }
 
     document.getElementById('quiz-txt').innerText = window.state.currentQuiz.meaning;
-    if(hint) { hint.innerText = "정답 영단어를 입력하면 몬스터볼을 던집니다!"; hint.className = "text-slate-400 text-[10px] mt-4 font-normal italic"; }
+    
+    // ⭐ 기본 힌트 메시지도 큼직하고 뚜렷하게 변경
+    if(hint) { 
+        hint.innerHTML = "정답 영단어를 입력하면 몬스터를 포획합니다!"; 
+        hint.className = "text-slate-400 text-lg mt-4 font-bold"; 
+    }
 
     const word = window.state.currentQuiz.word;
     const catchCount = window.state.gameData.caughtWords?.[word] || 0;
@@ -943,13 +948,35 @@ window.checkMagic = () => {
     if (!window.state.currentQuiz) return;
     const input = document.getElementById('spell-in');
     const hint = document.getElementById('hint-msg');
+    const correctWord = window.state.currentQuiz.word;
     
-    if (input.value.trim().toLowerCase() === window.state.currentQuiz.word.toLowerCase()) { 
+    if (input.value.trim().toLowerCase() === correctWord.toLowerCase()) { 
         handleAttack(); window.refreshQuiz(); input.value = ''; input.focus();
     } else {
         window.state.shake = 15;
-        hint.innerText = `틀렸어요! (정답 힌트: ${window.state.currentQuiz.word.charAt(0)}...)`;
-        hint.className = "text-red-500 text-[12px] mt-4 font-bold animate-bounce";
+        
+        // ⭐ 알파벳 스크램블 (무작위 섞기) 로직
+        let arr = correctWord.split('');
+        let scrambled = correctWord;
+        let attempts = 0;
+        
+        // 단어가 2글자 이상일 경우 원래 단어와 모양이 달라질 때까지 섞음
+        if (correctWord.length > 1) {
+            while (scrambled === correctWord && attempts < 10) {
+                for (let i = arr.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [arr[i], arr[j]] = [arr[j], arr[i]];
+                }
+                scrambled = arr.join('');
+                attempts++;
+            }
+        }
+        
+        // ⭐ 힌트 텍스트 크기를 대폭 키우고 알파벳 사이 간격을 벌림 (text-4xl 적용)
+        const scrambledText = arr.join(' &nbsp; ');
+        hint.innerHTML = `<span class="text-xl text-red-500 font-bold">틀렸어요! 단어 힌트:</span><br><span class="text-4xl text-red-600 font-black tracking-widest mt-2 inline-block">${scrambledText.toUpperCase()}</span>`;
+        hint.className = "mt-4 animate-bounce";
+        
         input.value = ''; input.focus();
     }
 
