@@ -1,4 +1,4 @@
-import { auth, getStudentsCollection, getStudentDoc, getWordListCollection, STUDENT_GENDER } from './firebase.js';
+import { auth, getStudentsCollection, getStudentDoc, getWordListCollection, setClassCode } from './firebase.js';
 import { signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getDoc, getDocs, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
@@ -58,9 +58,6 @@ window.AudioManager = {
 };
 window.AudioManager.init();
 
-// ==========================================
-// ★ 단어 읽어주기 (TTS) 기능 추가
-// ==========================================
 window.speakText = (text, lang = 'en-US') => {
     if (!text) return;
     window.speechSynthesis.cancel();
@@ -89,20 +86,9 @@ window.state = {
     monster: { hp: 100, shake: 0, tier: 1, name: "???" }
 };
 
-// ==========================================
-// 학습(Learn) 탭 전용 상태
-// ==========================================
 window.learnState = { 
-    list: [], 
-    index: 0, 
-    isPlaying: false, 
-    timer1: null, 
-    timer2: null,
-    quizList: [], 
-    quizIndex: 0, 
-    options: [],
-    wrongWords: [], 
-    isReviewMode: false
+    list: [], index: 0, isPlaying: false, timer1: null, timer2: null,
+    quizList: [], quizIndex: 0, options: [], wrongWords: [], isReviewMode: false
 };
 
 const CHAPTER_TITLES = [
@@ -113,9 +99,6 @@ const CHAPTER_TITLES = [
     "I'd Like to Have the Fruit Salad", "Do You Know About Songpyeon?", "We Should Save the World"
 ];
 
-// ==========================================
-// 2. 포켓몬 전투 공식 및 타입 설정
-// ==========================================
 const TYPE_EFFECTIVENESS = {
     normal: { }, 
     fire: { fire: 0.5, water: 0.5, grass: 2 }, 
@@ -142,7 +125,7 @@ const TYPE_COLORS = {
 };
 
 // ==========================================
-// 3. 팝업(Alert/Confirm) 및 로그인 처리
+// 2. 팝업, 로그인 및 학급 코드 처리
 // ==========================================
 let confirmResolve = null;
 window.showCustomAlert = (msg) => {
@@ -175,16 +158,55 @@ window.handleLogout = async () => {
     if (await window.showCustomConfirm("정말 로그아웃 하시겠습니까?")) location.reload();
 };
 
-// 동적 학생 목록 불러오기
+const initAuth = async () => {
+    try { await signInAnonymously(auth); } 
+    catch (error) { setStatus("서버 접속 지연 중입니다.", true); }
+};
+initAuth();
+
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        window.state.authUid = user.uid;
+        setStatus("도감 서버 준비 완료! 학급 코드를 입력하세요.");
+    } else {
+        window.state.authUid = null;
+    }
+});
+
+// ⭐ 학급 코드 입력 후 접속 로직
+window.checkClassCode = async () => {
+    const codeInput = document.getElementById('class-code').value.trim();
+    if (!codeInput) return window.showCustomAlert("학급 코드를 입력해주세요.");
+    
+    // 파이어베이스 DB 경로를 이 학급으로 고정
+    if(typeof setClassCode === 'function') setClassCode(codeInput);
+    
+    document.getElementById('login-step-1').style.display = 'none';
+    document.getElementById('login-step-2').style.display = 'block';
+    document.getElementById('class-title-display').innerText = `🏫 [${codeInput}] 접속 중`;
+    
+    setStatus("모험가 명단 로딩 중...");
+    await window.loadDynamicStudentList();
+    setStatus("접속 대기 중...");
+};
+
+// ⭐ 다른 학급으로 돌아가기
+window.backToClassSelect = () => {
+    document.getElementById('login-step-1').style.display = 'block';
+    document.getElementById('login-step-2').style.display = 'none';
+    document.getElementById('user-id').innerHTML = '<option value="" disabled selected>모험가 선택하기</option>';
+};
+
+// ⭐ 동적 학생 목록 불러오기 (마스터, 테스트만 특별 취급)
 window.loadDynamicStudentList = async () => {
     const loginSelect = document.getElementById('user-id');
-    const adminSelect = document.getElementById('reset-pw-student'); // 관리자용 셀렉트 박스
+    const adminSelect = document.getElementById('reset-pw-student'); 
     
     try {
         const snap = await getDocs(getStudentsCollection());
         let students = [];
         snap.forEach(doc => {
-            if (!['마스터', '선생님', '테스트', '테스트2'].includes(doc.id)) {
+            if (!['마스터', '테스트'].includes(doc.id)) {
                 students.push(doc.id);
             }
         });
@@ -194,7 +216,7 @@ window.loadDynamicStudentList = async () => {
             return getNum(a) - getNum(b);
         });
         
-        students.push('마스터', '선생님', '테스트', '테스트2');
+        students.push('마스터', '테스트');
 
         if(loginSelect) {
             loginSelect.innerHTML = '<option value="" disabled selected>모험가 선택하기</option>';
@@ -204,41 +226,21 @@ window.loadDynamicStudentList = async () => {
             });
         }
         if(adminSelect) {
-            adminSelect.innerHTML = '<option value="" disabled selected>학생 선택</option>';
+            adminSelect.innerHTML = '<option value="" disabled selected>계정 선택</option>';
             students.forEach(s => {
-                if (!['마스터', '선생님'].includes(s)) {
-                    const opt = document.createElement('option'); opt.value = s; opt.innerText = s;
-                    adminSelect.appendChild(opt);
-                }
+                const opt = document.createElement('option'); opt.value = s; opt.innerText = s;
+                adminSelect.appendChild(opt);
             });
         }
-    } catch(e) { console.error("학생 목록 로딩 실패", e); }
+    } catch(e) { console.error("모험가 목록 로딩 실패", e); }
 };
-
-const initAuth = async () => {
-    try { 
-        await signInAnonymously(auth); 
-        window.loadDynamicStudentList(); 
-    } catch (error) { setStatus("서버 접속 지연 중입니다.", true); }
-};
-initAuth();
-
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        window.state.authUid = user.uid;
-        setStatus("도감 서버 준비 완료! 모험가를 선택하세요.");
-        document.getElementById('login-btn').disabled = false;
-    } else {
-        window.state.authUid = null;
-        document.getElementById('login-btn').disabled = true;
-    }
-});
 
 window.handleLogin = async () => {
     if (!window.state.authUid) return window.showCustomAlert("서버와 연결되지 않았습니다.");
     const idInput = document.getElementById('user-id').value.trim();
     const pwInput = document.getElementById('user-pw').value.trim();
     const btn = document.getElementById('login-btn');
+    
     if (!idInput || !pwInput) return window.showCustomAlert("모험가 이름과 비밀번호를 모두 입력하세요!");
     btn.disabled = true;
     setStatus("모험가 기록 조회 중...");
@@ -246,24 +248,21 @@ window.handleLogin = async () => {
     try {
         const docRef = getStudentDoc(idInput);
         const docSnap = await getDoc(docRef);
+        
         if (docSnap.exists()) {
             const data = docSnap.data();
             if (data.password !== pwInput) {
                 btn.disabled = false; setStatus("비밀번호 오류", true);
                 return window.showCustomAlert("비밀번호가 틀렸습니다!");
             }
-
-            // ⭐ 신규 추가: 최초 로그인 감지 및 비밀번호 변경 로직
+            
+            // ⭐ 첫 로그인 시 비밀번호 직접 설정
             if (data.isFirstLogin) {
                 let newPw = prompt("🎉 환영합니다!\n앞으로 나만 사용할 [4자리 숫자] 비밀번호를 새로 설정해주세요.");
-                
-                // 4자리 숫자인지 검사
                 if (!newPw || !/^\d{4}$/.test(newPw)) {
                     btn.disabled = false; setStatus("로그인 취소됨", true);
                     return window.showCustomAlert("비밀번호는 반드시 4자리 숫자로 입력해야 합니다!\n다시 로그인해주세요.");
                 }
-                
-                // 새 비밀번호를 DB에 저장하고 꼬리표 떼기
                 await setDoc(docRef, { password: newPw, isFirstLogin: false }, { merge: true });
                 window.showCustomAlert("비밀번호가 성공적으로 설정되었습니다!");
             }
@@ -281,9 +280,15 @@ window.handleLogin = async () => {
             
             setStatus("접속 성공!"); enterGame(idInput);
         } else {
-            // 학생이 직접 아이디를 치고 들어올 수 없으므로, 이제 생성 여부를 묻는 로직은 막아둡니다.
-            btn.disabled = false; setStatus("계정 없음", true);
-            window.showCustomAlert("등록되지 않은 모험가입니다.\n선생님께 계정 생성을 요청하세요!");
+            // 마스터, 테스트 계정 최초 자동 생성 (대회 세팅용)
+            if (idInput === '마스터' || idInput === '테스트') {
+                const emptyStats = { level: 1, exp: 0, count: 0, caughtWords: {}, wins: 0, victories: {}, partnerWord: null, usedPokemonCooldown: {}, savedEncounters: {}, defenseLogs: [], testScores: {} };
+                await setDoc(docRef, { id: idInput, password: pwInput, isFirstLogin: false, gameStats: emptyStats, createdAt: new Date().toISOString(), forceLogout: false });
+                enterGame(idInput);
+            } else {
+                btn.disabled = false; setStatus("계정 없음", true);
+                window.showCustomAlert("등록되지 않은 모험가입니다.\n마스터에게 계정 생성을 요청하세요!");
+            }
         }
     } catch (error) { 
         console.error("Login Error:", error);
@@ -297,7 +302,7 @@ function enterGame(id) {
     window.state.user = id;
     document.getElementById('player-name').innerText = id;
     document.getElementById('app-wrapper').classList.replace('max-w-[480px]', 'max-w-[1400px]');
-    if (id === '마스터' || id === '선생님') document.getElementById('admin-btn').style.display = 'inline-block';
+    if (id === '마스터') document.getElementById('admin-btn').style.display = 'inline-block';
     
     document.getElementById('login-view').style.display = 'none';
     document.getElementById('game-view').style.display = 'block';
@@ -308,7 +313,7 @@ function enterGame(id) {
 }
 
 // ==========================================
-// 4. 게임 핵심 흐름 (탭, 데이터 동기화, 모달)
+// 4. 게임 핵심 흐름 (탭, 데이터 동기화)
 // ==========================================
 window.switchTab = (tabName) => {
     if(window.battleState && window.battleState.active && tabName !== 'arena') {
@@ -373,16 +378,6 @@ function startMagicRPG() {
                 setTimeout(() => location.reload(), 2500); return;
             }
 
-            // ⭐ 성별을 DB에서 직접 읽어와 캐릭터 이미지 자동 변경
-            const gender = data.gender || "male";
-            const tNum = gender === "female" ? "2" : "1";
-            window.trainerIdleImg = new Image(); window.trainerIdleImg.src = `trainer${tNum}_idle.png`;
-            window.trainerAttackImg = new Image(); window.trainerAttackImg.src = `trainer${tNum}_attack.png`;
-            if (!window.charImg) {
-                window.charImg = window.trainerIdleImg; 
-                window.trainerAttackOffset = 0;
-            }
-
             if (data.gameStats && data.gameStats.testScores) window.state.gameData.testScores = data.gameStats.testScores;
 
             if (data.testMode && data.testMode.active) {
@@ -432,6 +427,10 @@ function startMagicRPG() {
             } else { document.getElementById('prison-mode-view').style.display = 'none'; }
         }
     });
+    
+    window.trainerIdleImg = new Image(); window.trainerIdleImg.src = `trainer1_idle.png`;
+    window.trainerAttackImg = new Image(); window.trainerAttackImg.src = `trainer1_attack.png`;
+    window.charImg = window.trainerIdleImg; window.trainerAttackOffset = 0; 
 
     window.updateUI(); window.loadChapterDominators(); 
     requestAnimationFrame(gameLoop);
@@ -444,7 +443,7 @@ window.saveProgress = async () => {
 };
 
 // ==========================================
-// ★ [신규] 학습(Learn) 탭 기능 (오답 복습 포함)
+// ★ 학습(Learn) 탭 기능
 // ==========================================
 window.renderLearnChapterGrid = () => {
     const container = document.querySelector('#learn-chapter-view > .grid');
@@ -610,7 +609,6 @@ const renderLearnQuiz = () => {
     
     options.forEach(opt => {
         let btn = document.createElement('button');
-        // ⭐ 터치 시 하얗게 변하는 현상 해결을 위해 hover/active 효과 조정
         btn.className = "w-full bg-slate-100 text-slate-700 py-6 rounded-2xl font-black text-lg sm:text-xl shadow-sm border-2 border-slate-200 transition-colors flex items-center justify-center break-all px-2 focus:outline-none select-none";
         btn.innerText = opt;
         btn.onclick = () => window.checkLearnQuiz(opt, currentWordObj, btn);
@@ -639,7 +637,6 @@ window.checkLearnQuiz = (selected, currentWordObj, btnEl) => {
         if(!window.learnState.wrongWords.find(w => w.word === correctWord)) {
             window.learnState.wrongWords.push(currentWordObj);
         }
-        // ⭐ 오답을 눌렀을 때는 다음 문제로 넘어가지 않고, 정답을 누를 때까지 기다립니다.
     }
 };
 
@@ -688,7 +685,7 @@ window.loadChapterDominators = async () => {
 
         snap.forEach(doc => {
             const sId = doc.id;
-            if (['테스트', '테스트2', '선생님', '마스터'].includes(sId)) return;
+            if (['마스터', '테스트'].includes(sId)) return;
             const caught = doc.data().gameStats?.caughtWords || {};
             for (let word in caught) {
                 const quiz = window.state.quizzes.find(q => q.word.toLowerCase() === word.toLowerCase());
@@ -1020,7 +1017,7 @@ window.renderRanking = async () => {
         const snap = await getDocs(getStudentsCollection());
         let students = [];
         snap.forEach(doc => {
-            if (!['테스트', '테스트2'].includes(doc.id)) {
+            if (!['마스터', '테스트'].includes(doc.id)) {
                 const data = doc.data(); const stats = data.gameStats || {};
                 const caughtWords = stats.caughtWords || {};
                 let maxCh = 0; let bestWord = null; let bestCount = 0; let partnerStage = null;
@@ -1102,7 +1099,7 @@ window.renderRanking = async () => {
 // ==========================================
 const checkDailyLimit = () => {
     const myId = window.state.user;
-    if (['선생님', '마스터', '테스트', '테스트2'].includes(myId)) return false;
+    if (['마스터', '테스트'].includes(myId)) return false;
     
     const victories = window.state.gameData.victories || {};
     const now = new Date(); const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
@@ -1147,19 +1144,19 @@ window.loadArena = async () => {
         const snap = await getDocs(getStudentsCollection());
         let opponents = [];
         const myId = window.state.user;
-        const isPrivileged = ['선생님', '마스터', '테스트', '테스트2'].includes(myId);
+        const isPrivileged = ['마스터', '테스트'].includes(myId);
         
         const victories = window.state.gameData.victories || {};
         const now = new Date(); const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
         
         let studentWinsToday = 0;
         for (let opp in victories) {
-            if (victories[opp] >= startOfToday && !['마스터', '선생님', '테스트', '테스트2'].includes(opp)) studentWinsToday++;
+            if (victories[opp] >= startOfToday && !['마스터', '테스트'].includes(opp)) studentWinsToday++;
         }
 
         snap.forEach(doc => {
             const oppId = doc.id;
-            if (oppId === myId || oppId === '테스트2') return; 
+            if (oppId === myId) return; 
             if (oppId === '테스트' && !isPrivileged) return;
             opponents.push({ id: oppId, data: doc.data() });
         });
@@ -1175,7 +1172,7 @@ window.loadArena = async () => {
         let html = '';
         opponents.forEach(opp => {
             const oppId = opp.id; const docData = opp.data;
-            const isBoss = (oppId === '선생님' || oppId === '마스터');
+            const isBoss = (oppId === '마스터');
             let canBattle = true; let cooldownMsg = "";
 
             if (!isPrivileged) {
@@ -1299,7 +1296,7 @@ window.saveDefenseTeam = () => {
 
 window.prepareBattle = async (oppId) => {
     const myId = window.state.user;
-    const isPrivileged = ['선생님', '마스터', '테스트', '테스트2'].includes(myId);
+    const isPrivileged = ['마스터', '테스트'].includes(myId);
     if (!isPrivileged && checkDailyLimit()) return window.showCustomAlert("오늘의 배틀 에너지를 모두 소모했습니다!\n내일 다시 도전하세요.");
 
     const docSnap = await getDoc(getStudentDoc(oppId));
@@ -1656,11 +1653,11 @@ const endBattle = (isWin) => {
         const nowMs = Date.now();
         window.battleState.mySelection.forEach(word => { window.state.gameData.usedPokemonCooldown[word] = nowMs; });
         
-        const isPrivileged = ['선생님', '마스터', '테스트', '테스트2'].includes(window.state.user);
+        const isPrivileged = ['마스터', '테스트'].includes(window.state.user);
         let extraMsg = "";
         if (!isPrivileged) {
-            if (window.battleState.oppId === '선생님' || window.battleState.oppId === '마스터') extraMsg = "\n(관장 배틀은 내일 다시 도전할 수 있습니다.)";
-            else extraMsg = "\n(해당 학생과는 3일 후 재대결 가능합니다.)";
+            if (window.battleState.oppId === '마스터') extraMsg = "\n(관장 배틀은 내일 다시 도전할 수 있습니다.)";
+            else extraMsg = "\n(해당 모험가와는 3일 후 재대결 가능합니다.)";
         }
 
         msg = `🎉 배틀 승리!\n멋진 컨트롤이었습니다!\n출전한 파트너들은 오늘 하루 휴식합니다.\n총 🏆${window.state.gameData.wins}승 달성!${extraMsg}`;
@@ -1781,10 +1778,9 @@ function gameLoop() {
 }
 
 // ==========================================
-// 10. 오리지널 보카몬(VocaMon) 매핑 로직 (영구 고정 방식)
+// 10. 오리지널 보카몬(VocaMon) 매핑 로직
 // ==========================================
 function getPokemonInfoForWord(word, count) {
-    // ⭐ 알파벳 스펠링 자체를 숫자로 변환 (이제 엑셀을 덮어써도 몬스터가 절대 안 바뀝니다!)
     let hash = 0; 
     for (let i = 0; i < word.length; i++) {
         hash = word.charCodeAt(i) + ((hash << 5) - hash);
