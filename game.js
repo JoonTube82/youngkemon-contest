@@ -1971,8 +1971,9 @@ const LOCAL_POKEMON_DB = (() => {
 })();
 
 // ==========================================
-// ⭐ 11. 시험(테스트) 및 함정(감옥) 모드 로직 (복구 완료)
+// ⭐ 11. 시험(테스트) 및 함정(감옥) 모드 로직
 // ==========================================
+
 // 1. 기습 테스트 화면 그리기
 window.renderTestPaper = (chapter) => {
     const listEl = document.getElementById('test-paper-list');
@@ -1996,7 +1997,6 @@ window.renderTestPaper = (chapter) => {
     const shuffled = [...chapterWords].sort(() => Math.random() - 0.5);
     let html = '';
     shuffled.forEach((q, idx) => {
-        // 문제 번호를 text-black으로, 입력창 배경을 bg-slate-800, 글씨를 text-white(#ffffff)로 변경
         html += `
         <div class="bg-slate-50 p-4 rounded-2xl border-2 border-slate-200 mb-3 flex flex-col gap-2 shadow-sm">
             <div class="flex justify-between items-center">
@@ -2010,7 +2010,72 @@ window.renderTestPaper = (chapter) => {
     document.getElementById('test-mode-desc').innerHTML = `[${chapter}단원] 시험이 시작되었습니다.<br>빈칸에 알맞은 영어 스펠링을 입력하세요.`;
 };
 
-// 2. 함정(감옥) 화면 그리기
+// 2. 제출하기 함수 (이 부분이 지워졌던 것입니다!)
+window.submitTest = async () => {
+    const btn = document.getElementById('btn-submit-test');
+    if (btn && btn.disabled) return; // 중복 클릭 방지
+    
+    if (btn) {
+        btn.disabled = true;
+        btn.classList.remove('bg-red-600', 'hover:bg-red-700', 'active:scale-95');
+        btn.classList.add('bg-slate-500');
+        btn.innerText = '제출 처리 중...';
+    }
+
+    const inputs = document.querySelectorAll('.test-answer-input');
+    let total = inputs.length;
+    let score = 0;
+    let wrongWords = [];
+
+    inputs.forEach(input => {
+        const correctWord = input.getAttribute('data-word').trim().toLowerCase();
+        const userWord = input.value.trim().toLowerCase();
+        if (userWord === correctWord) score++;
+        else wrongWords.push(correctWord);
+    });
+
+    const chapter = window.state.currentTestChapter || 1;
+    
+    try {
+        const docRef = getStudentDoc(window.state.user);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            let data = docSnap.data();
+            let stats = data.gameStats || {};
+            if (!stats.testScores) stats.testScores = {};
+            
+            // 점수 저장
+            stats.testScores[chapter] = {
+                score: score,
+                total: total,
+                wrongWords: wrongWords,
+                unsubmitted: false
+            };
+            
+            await setDoc(docRef, { gameStats: stats }, { merge: true });
+        }
+        
+        // 성공 시 버튼을 숨기고 완료 메시지 표시
+        if (btn) btn.style.display = 'none';
+        const msgEl = document.getElementById('test-submit-msg');
+        if (msgEl) {
+            msgEl.innerHTML = `✅ 정상적으로 제출되었습니다! (${total}문제 중 ${score}점)<br><span class="text-sm text-slate-500">선생님이 시험을 종료할 때까지 화면을 끄지 말고 대기하세요.</span>`;
+            msgEl.style.display = 'block';
+        }
+    } catch (error) {
+        console.error("Test Submit Error:", error);
+        alert("서버 통신 중 오류가 발생했습니다. 다시 눌러주세요.");
+        // 에러 시 버튼 원상복구
+        if (btn) {
+            btn.disabled = false;
+            btn.classList.remove('bg-slate-500');
+            btn.classList.add('bg-red-600', 'hover:bg-red-700', 'active:scale-95');
+            btn.innerText = '제출하기';
+        }
+    }
+};
+
+// 3. 함정(감옥) 화면 그리기
 window.renderPrisonPaper = () => {
     const listEl = document.getElementById('prison-paper-list');
     if (!listEl) return;
@@ -2023,9 +2088,8 @@ window.renderPrisonPaper = () => {
         if (count > 0) {
             const quiz = window.state.quizzes.find(q => q.word.toLowerCase() === word.toLowerCase());
             const meaning = quiz ? quiz.meaning : '알 수 없음';
-            const safeId = word.replace(/\s+/g, ''); // 띄어쓰기 방지 ID 생성
+            const safeId = word.replace(/\s+/g, '');
             
-            // 입력창 글씨를 흰색(#ffffff)으로 바꾸고, 우측에 [입력] 버튼 추가
             html += `
             <div class="bg-slate-700 p-4 rounded-2xl border-2 border-slate-600 flex flex-col gap-2 shadow-inner">
                 <div class="flex justify-between items-center mb-2">
@@ -2042,7 +2106,7 @@ window.renderPrisonPaper = () => {
     listEl.innerHTML = html;
 };
 
-// 3. 함정(감옥) 입력 체크 및 진동 효과 로직
+// 4. 함정(감옥) 입력 체크
 window.checkPrisonInput = async (inputEl, word) => {
     const val = inputEl.value.trim().toLowerCase();
 
@@ -2087,7 +2151,6 @@ window.checkPrisonInput = async (inputEl, word) => {
         inputEl.setAttribute('placeholder', "틀렸습니다! 다시 입력하세요.");
         inputEl.classList.add('border-red-500', 'bg-red-100', 'placeholder-red-500');
         
-        // 틀렸을 때 빨간색으로 깜빡이는 피드백
         setTimeout(() => {
             inputEl.classList.remove('border-red-500', 'bg-red-100', 'placeholder-red-500');
             if(!inputEl.value) {
