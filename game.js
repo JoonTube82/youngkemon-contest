@@ -1973,91 +1973,44 @@ const LOCAL_POKEMON_DB = (() => {
 // ==========================================
 // ⭐ 11. 시험(테스트) 및 함정(감옥) 모드 로직 (복구 완료)
 // ==========================================
+// 1. 기습 테스트 화면 그리기
 window.renderTestPaper = (chapter) => {
     const listEl = document.getElementById('test-paper-list');
     if (!listEl) return;
     
+    if (!window.state.quizzes || window.state.quizzes.length === 0) {
+        listEl.innerHTML = '<p class="text-center text-slate-400 font-bold py-4 animate-pulse">단어 데이터를 서버에서 불러오는 중...</p>';
+        return;
+    }
+
     const chapterWords = window.state.quizzes.filter(q => parseInt(q.chapter || 1) === parseInt(chapter));
     
     if (chapterWords.length === 0) {
-        listEl.innerHTML = '<p class="text-center text-slate-500 font-bold">출제될 단어가 없습니다.</p>';
+        listEl.innerHTML = `<div class="bg-red-50 border border-red-200 text-red-500 rounded-xl p-4 text-center font-bold">출제할 단어가 없습니다!<br>관리자 화면에서 [${chapter}단원] 영단어를 먼저 추가해주세요.</div>`;
+        document.getElementById('btn-submit-test').style.display = 'none';
         return;
     }
+
+    document.getElementById('btn-submit-test').style.display = 'block';
 
     const shuffled = [...chapterWords].sort(() => Math.random() - 0.5);
     let html = '';
     shuffled.forEach((q, idx) => {
+        // 입력창에 style로 강제 검은색 및 그림자 제거 적용
         html += `
         <div class="bg-slate-50 p-4 rounded-2xl border-2 border-slate-200 mb-3 flex flex-col gap-2 shadow-sm">
             <div class="flex justify-between items-center">
                 <span class="text-xs font-bold text-slate-500 bg-slate-200 px-2 py-1 rounded-lg tracking-wider">Q ${idx + 1}</span>
             </div>
             <div class="text-lg sm:text-xl font-black text-slate-800 break-keep mt-1">${q.meaning}</div>
-            <input type="text" class="test-answer-input w-full p-3 border-2 border-slate-300 rounded-xl font-bold text-slate-700 outline-none focus:border-red-400 focus:bg-white transition-colors" placeholder="영단어 스펠링 입력" data-word="${q.word}" autocapitalize="off" autocomplete="off" spellcheck="false">
+            <input type="text" class="test-answer-input w-full p-4 border-2 border-slate-300 rounded-xl font-bold text-xl text-slate-900 bg-white outline-none focus:border-red-500 focus:ring-2 focus:ring-red-200 transition-all shadow-inner placeholder-slate-400" style="color: #0f172a !important; text-shadow: none !important; -webkit-text-stroke: 0 !important;" placeholder="영단어 스펠링 입력" data-word="${q.word}" autocapitalize="off" autocomplete="off" spellcheck="false">
         </div>`;
     });
     listEl.innerHTML = html;
     document.getElementById('test-mode-desc').innerHTML = `[${chapter}단원] 시험이 시작되었습니다.<br>빈칸에 알맞은 영어 스펠링을 입력하세요.`;
 };
 
-window.submitTest = async () => {
-    const btn = document.getElementById('btn-submit-test');
-    if (btn && btn.disabled) return;
-    
-    if (btn) {
-        btn.disabled = true;
-        btn.classList.replace('bg-red-600', 'bg-slate-400');
-        btn.innerText = '제출 완료 (대기 중)';
-    }
-
-    const inputs = document.querySelectorAll('.test-answer-input');
-    let total = inputs.length;
-    let score = 0;
-    let wrongWords = [];
-
-    inputs.forEach(input => {
-        const correctWord = input.getAttribute('data-word').trim().toLowerCase();
-        const userWord = input.value.trim().toLowerCase();
-        if (userWord === correctWord) score++;
-        else wrongWords.push(correctWord);
-    });
-
-    const chapter = window.state.currentTestChapter || 1;
-    
-    try {
-        const docRef = getStudentDoc(window.state.user);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-            let data = docSnap.data();
-            let stats = data.gameStats || {};
-            if (!stats.testScores) stats.testScores = {};
-            
-            stats.testScores[chapter] = {
-                score: score,
-                total: total,
-                wrongWords: wrongWords,
-                unsubmitted: false
-            };
-            
-            await setDoc(docRef, { gameStats: stats }, { merge: true });
-        }
-        
-        if (btn) btn.style.display = 'none';
-        const msgEl = document.getElementById('test-submit-msg');
-        if (msgEl) {
-            msgEl.innerHTML = `✅ 제출 완료! (${total}문제 중 ${score}점)<br>마스터의 시험 종료를 기다리세요.`;
-            msgEl.style.display = 'block';
-        }
-    } catch (error) {
-        console.error("Test Submit Error:", error);
-        if (btn) {
-            btn.disabled = false;
-            btn.classList.replace('bg-slate-400', 'bg-red-600');
-            btn.innerText = '제출하기';
-        }
-    }
-};
-
+// 2. 함정(감옥) 화면 그리기
 window.renderPrisonPaper = () => {
     const listEl = document.getElementById('prison-paper-list');
     if (!listEl) return;
@@ -2071,32 +2024,27 @@ window.renderPrisonPaper = () => {
             const quiz = window.state.quizzes.find(q => q.word.toLowerCase() === word.toLowerCase());
             const meaning = quiz ? quiz.meaning : '알 수 없음';
             
+            // 투명 겹치기 효과 완전히 제거 및 깔끔한 input으로 변경
             html += `
             <div class="bg-slate-700 p-4 rounded-2xl border-2 border-slate-600 flex flex-col gap-2 shadow-inner">
-                <div class="flex justify-between items-center mb-1">
+                <div class="flex justify-between items-center mb-2">
                     <span class="text-base sm:text-lg font-black text-white break-keep pr-2">${meaning}</span>
                     <span class="bg-purple-600 text-white text-[10px] sm:text-xs px-2.5 py-1 rounded-md font-bold shrink-0 shadow-sm border border-purple-400">남은 횟수: ${count}번</span>
                 </div>
-                <div class="relative w-full">
-                    <input type="text" class="prison-answer-input w-full p-3 border-2 border-slate-500 rounded-xl font-bold text-slate-800 bg-slate-100 outline-none focus:border-purple-400 focus:bg-white transition-all z-10 relative" style="color: transparent; caret-color: #1e293b;" placeholder="" onkeyup="if(event.key==='Enter') window.checkPrisonInput(this, '${word}')" oninput="this.nextElementSibling.textContent = this.value || '[${word}] 정확히 입력하세요'; this.nextElementSibling.style.color = this.value ? '#1e293b' : '#94a3b8';" autocapitalize="off" autocomplete="off" spellcheck="false" onpaste="return false;" ondrop="return false;">
-                    <div class="absolute inset-0 flex items-center px-3 pointer-events-none z-20 overflow-hidden text-slate-400 font-bold">
-                        <span>[${word}] 정확히 입력하세요</span>
-                    </div>
-                </div>
+                <input type="text" class="prison-answer-input w-full p-4 border-2 border-slate-400 rounded-xl font-bold text-xl text-slate-900 bg-slate-100 outline-none focus:border-purple-500 focus:bg-white transition-all shadow-inner placeholder-slate-500" style="color: #0f172a !important; text-shadow: none !important; -webkit-text-stroke: 0 !important;" placeholder="[${word}] 정확히 입력하세요" onkeyup="if(event.key==='Enter') window.checkPrisonInput(this, '${word}')" autocapitalize="off" autocomplete="off" spellcheck="false" onpaste="return false;" ondrop="return false;">
             </div>`;
         }
     }
     listEl.innerHTML = html;
 };
 
+// 3. 함정(감옥) 입력 체크 및 진동 효과 로직
 window.checkPrisonInput = async (inputEl, word) => {
     const val = inputEl.value.trim().toLowerCase();
-    const overlaySpan = inputEl.nextElementSibling.querySelector('span');
 
     if (val === word.toLowerCase()) {
         inputEl.value = '';
-        overlaySpan.textContent = `[${word}] 정확히 입력하세요`;
-        overlaySpan.style.color = '#94a3b8';
+        inputEl.setAttribute('placeholder', `[${word}] 정확히 입력하세요`);
         
         try {
             const docRef = getStudentDoc(window.state.user);
@@ -2132,14 +2080,14 @@ window.checkPrisonInput = async (inputEl, word) => {
         }
     } else {
         inputEl.value = '';
-        overlaySpan.textContent = "틀렸습니다! 다시 입력하세요.";
-        overlaySpan.style.color = '#ef4444';
-        inputEl.classList.add('border-red-500', 'bg-red-50');
+        inputEl.setAttribute('placeholder', "틀렸습니다! 다시 입력하세요.");
+        inputEl.classList.add('border-red-500', 'bg-red-100', 'placeholder-red-500');
+        
+        // 틀렸을 때 빨간색으로 깜빡이는 피드백
         setTimeout(() => {
-            inputEl.classList.remove('border-red-500', 'bg-red-50');
+            inputEl.classList.remove('border-red-500', 'bg-red-100', 'placeholder-red-500');
             if(!inputEl.value) {
-                overlaySpan.textContent = `[${word}] 정확히 입력하세요`;
-                overlaySpan.style.color = '#94a3b8';
+                inputEl.setAttribute('placeholder', `[${word}] 정확히 입력하세요`);
             }
         }, 800);
     }
