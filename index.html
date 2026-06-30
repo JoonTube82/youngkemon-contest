@@ -19,7 +19,8 @@
             <!-- Step 1: 학급 코드 입력 -->
             <div id="login-step-1" class="space-y-4">
                 <p class="text-slate-400 mb-8 font-normal">선생님이 알려주신 학급 코드를 입력하세요</p>
-                <input type="text" id="class-code" class="spell-input text-xl p-4 border-2" placeholder="학급 코드 (예: 6-1)" onkeyup="if(event.key==='Enter')window.checkClassCode()">
+                <!-- ⭐ value="대회초 6-1" 속성을 추가하여 기본값 설정 -->
+                <input type="text" id="class-code" value="대회초 6-1" class="spell-input text-xl p-4 border-2" placeholder="학급 코드 (예: 6-1)" onkeyup="if(event.key==='Enter')window.checkClassCode()">
                 <button onclick="window.checkClassCode()" class="btn-magic mt-4">학급 접속하기</button>
             </div>
 
@@ -427,10 +428,12 @@
                     </div>
 
                     <div class="bg-blue-900/30 p-4 rounded-2xl border border-blue-500/30">
-                        <h3 class="text-sm font-bold text-blue-400 mb-2">🔑 비상 비밀번호 재설정</h3>
+                        <!-- ⭐ 마스터, 테스트 계정도 비밀번호 초기화 가능하도록 설명 변경 -->
+                        <h3 class="text-sm font-bold text-blue-400 mb-2">🔑 계정 비밀번호 초기화</h3>
+                        <p class="text-xs text-slate-400 mb-3">모험가 또는 마스터 계정의 비밀번호를 강제로 초기화합니다.</p>
                         <div class="flex gap-2">
                             <select id="reset-pw-student" class="flex-1 p-3 border rounded-xl outline-none text-sm font-bold text-slate-700 focus:border-blue-400 bg-white shadow-sm">
-                                <option value="" disabled selected>학생 선택</option>
+                                <option value="" disabled selected>계정 선택</option>
                             </select>
                             <button onclick="window.resetStudentPassword()" class="bg-blue-600 text-white px-4 py-3 rounded-xl font-bold text-sm shadow-md active:scale-95 transition-transform hover:bg-blue-700 shrink-0">초기화</button>
                         </div>
