@@ -1,4 +1,4 @@
-import { auth, getStudentsCollection, getStudentDoc, getWordListCollection, setClassCode } from './firebase.js';
+import { auth, getStudentsCollection, getStudentDoc, getWordListCollection, setClassCode, getClassDoc } from './firebase.js';
 import { signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getDoc, getDocs, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
@@ -125,7 +125,7 @@ const TYPE_COLORS = {
 };
 
 // ==========================================
-// 2. 팝업, 로그인 및 학급 코드 처리
+// 2. 학급 접속 및 팝업, 로그인 처리
 // ==========================================
 let confirmResolve = null;
 window.showCustomAlert = (msg) => {
@@ -150,7 +150,7 @@ const setStatus = (msg, isError = false) => {
     const statusEl = document.getElementById('login-status');
     if (statusEl) {
         statusEl.innerText = msg;
-        statusEl.className = isError ? "text-red-500 text-xs mt-2 font-bold" : "text-red-400 text-xs mt-2 animate-pulse";
+        statusEl.className = isError ? "text-red-500 text-xs mt-4 font-bold" : "text-red-400 text-xs mt-4 animate-pulse";
     }
 };
 
@@ -167,37 +167,106 @@ initAuth();
 onAuthStateChanged(auth, (user) => {
     if (user) {
         window.state.authUid = user.uid;
-        setStatus("도감 서버 준비 완료! 학급 코드를 입력하세요.");
+        setStatus("서버 준비 완료! 학급 코드를 입력하세요.");
     } else {
         window.state.authUid = null;
     }
 });
 
-// ⭐ 학급 코드 입력 후 접속 로직
+// ⭐ 기존/신규 학급 코드 체크
 window.checkClassCode = async () => {
-    const codeInput = document.getElementById('class-code').value.trim();
+    const codeInput = document.getElementById('class-code-join').value.trim();
     if (!codeInput) return window.showCustomAlert("학급 코드를 입력해주세요.");
     
-    // 파이어베이스 DB 경로를 이 학급으로 고정
-    if(typeof setClassCode === 'function') setClassCode(codeInput);
+    setStatus("학급 정보 확인 중...");
     
-    document.getElementById('login-step-1').style.display = 'none';
-    document.getElementById('login-step-2').style.display = 'block';
-    document.getElementById('class-title-display').innerText = `🏫 [${codeInput}] 접속 중`;
-    
-    setStatus("모험가 명단 로딩 중...");
-    await window.loadDynamicStudentList();
-    setStatus("접속 대기 중...");
+    try {
+        // "대회초 6-1"은 기존 데이터를 살리기 위해 프리패스
+        if (codeInput !== "대회초 6-1") {
+            const classSnap = await getDoc(getClassDoc(codeInput));
+            if (!classSnap.exists()) {
+                setStatus("존재하지 않는 학급", true);
+                return window.showCustomAlert(`[${codeInput}] 학급이 존재하지 않습니다.\n오타가 없는지 확인하거나, 선생님께 문의하세요.`);
+            }
+        }
+
+        // 통과 시, 해당 학급으로 DB 경로 고정
+        setClassCode(codeInput);
+        
+        document.getElementById('login-step-1').style.display = 'none';
+        document.getElementById('login-step-2').style.display = 'block';
+        document.getElementById('class-title-display').innerText = `🏫 [${codeInput}] 접속 중`;
+        
+        setStatus("모험가 명단 로딩 중...");
+        await window.loadDynamicStudentList();
+        setStatus("접속 대기 중...");
+    } catch (error) {
+        setStatus("서버 접속 오류", true);
+        window.showCustomAlert(`오류가 발생했습니다: ${error.message}`);
+    }
 };
 
-// ⭐ 다른 학급으로 돌아가기
+// ⭐ 새로운 학급 생성 (마스터 계정 자동 생성)
+window.createClass = async () => {
+    const codeInput = document.getElementById('class-code-create').value.trim();
+    const masterPw = document.getElementById('class-master-pw').value.trim();
+    
+    if (!codeInput || !masterPw) return window.showCustomAlert("새 학급 코드와 마스터 비밀번호를 모두 입력하세요.");
+    
+    setStatus("새 학급 개설 중...");
+    
+    try {
+        if (codeInput === "대회초 6-1") return window.showCustomAlert("해당 이름은 기본 학급으로 지정되어 사용할 수 없습니다.");
+
+        const classRef = getClassDoc(codeInput);
+        const classSnap = await getDoc(classRef);
+        
+        if (classSnap.exists()) {
+            setStatus("개설 실패", true);
+            return window.showCustomAlert("이미 존재하는 학급 코드입니다.\n다른 이름으로 개설해주세요.");
+        }
+        
+        // 레지스트리에 학급 공식 등록
+        await setDoc(classRef, { createdAt: new Date().toISOString(), createdBy: window.state.authUid });
+        
+        // 현재 접속된 클래스를 새 클래스로 설정
+        setClassCode(codeInput);
+        
+        // 해당 반의 '마스터' 계정 자동 생성
+        const emptyStats = { level: 1, exp: 0, count: 0, caughtWords: {}, wins: 0, victories: {}, partnerWord: null, usedPokemonCooldown: {}, savedEncounters: {}, defenseLogs: [], testScores: {} };
+        await setDoc(getStudentDoc('마스터'), {
+            id: '마스터',
+            password: masterPw,
+            isFirstLogin: false,
+            gameStats: emptyStats,
+            createdAt: new Date().toISOString(),
+            forceLogout: false
+        });
+        
+        window.showCustomAlert(`🎉 [${codeInput}] 학급이 성공적으로 개설되었습니다!\n이제 모험가 접속 탭에서 로그인할 수 있습니다.`);
+        
+        document.getElementById('class-code-create').value = '';
+        document.getElementById('class-master-pw').value = '';
+        
+        // 모험가 탭으로 되돌아가고 방금 만든 코드 채워주기
+        window.switchLoginTab('join');
+        document.getElementById('class-code-join').value = codeInput;
+        setStatus("학급 개설 완료. 학급에 접속하세요!");
+        
+    } catch (error) {
+        setStatus("서버 접속 오류", true);
+        window.showCustomAlert(`개설 중 오류가 발생했습니다: ${error.message}`);
+    }
+};
+
 window.backToClassSelect = () => {
     document.getElementById('login-step-1').style.display = 'block';
     document.getElementById('login-step-2').style.display = 'none';
     document.getElementById('user-id').innerHTML = '<option value="" disabled selected>모험가 선택하기</option>';
+    document.getElementById('user-pw').value = '';
+    setStatus("학급 코드를 입력하세요.");
 };
 
-// ⭐ 동적 학생 목록 불러오기 (마스터, 테스트만 특별 취급)
 window.loadDynamicStudentList = async () => {
     const loginSelect = document.getElementById('user-id');
     const adminSelect = document.getElementById('reset-pw-student'); 
@@ -256,7 +325,7 @@ window.handleLogin = async () => {
                 return window.showCustomAlert("비밀번호가 틀렸습니다!");
             }
             
-            // ⭐ 첫 로그인 시 비밀번호 직접 설정
+            // 첫 로그인 시 비밀번호 4자리 직접 설정
             if (data.isFirstLogin) {
                 let newPw = prompt("🎉 환영합니다!\n앞으로 나만 사용할 [4자리 숫자] 비밀번호를 새로 설정해주세요.");
                 if (!newPw || !/^\d{4}$/.test(newPw)) {
@@ -280,8 +349,8 @@ window.handleLogin = async () => {
             
             setStatus("접속 성공!"); enterGame(idInput);
         } else {
-            // 마스터, 테스트 계정 최초 자동 생성 (대회 세팅용)
-            if (idInput === '마스터' || idInput === '테스트') {
+            // 테스트 계정이 없으면 자동 생성 허용 (마스터는 개설 시 이미 생성됨)
+            if (idInput === '테스트') {
                 const emptyStats = { level: 1, exp: 0, count: 0, caughtWords: {}, wins: 0, victories: {}, partnerWord: null, usedPokemonCooldown: {}, savedEncounters: {}, defenseLogs: [], testScores: {} };
                 await setDoc(docRef, { id: idInput, password: pwInput, isFirstLogin: false, gameStats: emptyStats, createdAt: new Date().toISOString(), forceLogout: false });
                 enterGame(idInput);
