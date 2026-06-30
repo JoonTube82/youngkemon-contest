@@ -159,7 +159,6 @@ window.handleExcelUpload = (e) => {
     e.target.value = ''; 
 };
 
-// ⭐ 에러 수정된 데이터베이스 덮어쓰기 로직!
 window.applyExcelData = async () => {
     if(!window.excelDataTemp || window.excelDataTemp.length === 0) return window.showCustomAlert("적용할 데이터가 없습니다.");
     if(!await window.showCustomConfirm(`기존 도감을 모두 삭제하고 엑셀 데이터(${window.excelDataTemp.length}개)로 덮어쓰시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
@@ -174,7 +173,6 @@ window.applyExcelData = async () => {
         const addPromises = [];
         window.excelDataTemp.forEach(w => {
             const wordId = w.word.toLowerCase().replace(/\s+/g, '_') + '_' + Math.random().toString(36).substr(2,5); 
-            // 💡 문제 해결: doc() 대신 안전한 getWordDoc() 함수 사용!
             addPromises.push(setDoc(getWordDoc(wordId), {
                 chapter: w.chapter, word: w.word, meaning: w.meaning, createdAt: Date.now()
             }));
@@ -189,7 +187,7 @@ window.applyExcelData = async () => {
 };
 
 // ==========================================
-// 4. 학생(모험가) 계정 동적 추가 및 삭제 로직
+// 4. 모험가 계정 동적 추가 및 삭제 로직
 // ==========================================
 window.addStudentAccount = async () => {
     const nameInput = document.getElementById('new-student-name');
@@ -236,7 +234,8 @@ window.renderAdminStudentList = async () => {
         let html = '';
         let students = [];
         snap.forEach(doc => {
-            if(!['마스터', '선생님', '테스트', '테스트2'].includes(doc.id)) students.push({id: doc.id, data: doc.data()});
+            // 마스터, 테스트 계정은 '계정 삭제 목록'에서 제외 (안전 보호)
+            if(!['마스터', '테스트'].includes(doc.id)) students.push({id: doc.id, data: doc.data()});
         });
         
         students.sort((a,b) => {
@@ -278,7 +277,7 @@ window.deleteStudentAccount = async (id) => {
 window.resetStudentPassword = async () => {
     const selectEl = document.getElementById('reset-pw-student');
     const studentId = selectEl.value;
-    if (!studentId) return window.showCustomAlert("비밀번호를 재설정할 모험가를 선택하세요.");
+    if (!studentId) return window.showCustomAlert("비밀번호를 재설정할 계정을 선택하세요.");
 
     const newPw = prompt(`[${studentId}] 새로운 비밀번호를 입력하세요.\n(빈칸으로 두면 '1234'로 설정됩니다)`);
     if (newPw === null) return; 
@@ -296,7 +295,7 @@ window.resetStudentPassword = async () => {
 // 5. 서버 전체 초기화 및 로그아웃
 // ==========================================
 window.resetAllStudentsData = async () => {
-    const confirmed = await window.showCustomConfirm("정말로 모든 학생의 게임 데이터를 초기화하시겠습니까? (비밀번호는 유지됩니다)");
+    const confirmed = await window.showCustomConfirm("정말로 모든 모험가의 게임 데이터를 초기화하시겠습니까? (비밀번호는 유지됩니다)");
     if (!confirmed) return;
 
     try {
@@ -306,7 +305,8 @@ window.resetAllStudentsData = async () => {
         
         const promises = [];
         snap.forEach(docSnap => {
-            if(!['마스터', '선생님', '테스트', '테스트2'].includes(docSnap.id)) {
+            // 마스터, 테스트 계정은 제외하여 안전 보호
+            if(!['마스터', '테스트'].includes(docSnap.id)) {
                 const data = docSnap.data();
                 promises.push(setDoc(docSnap.ref, { 
                     id: data.id || docSnap.id, password: data.password || "1234", createdAt: data.createdAt || new Date().toISOString(),
@@ -321,7 +321,7 @@ window.resetAllStudentsData = async () => {
 };
 
 window.forceLogoutAll = async () => {
-    const confirmed = await window.showCustomConfirm("접속 중인 모든 학생을 강제로 로그아웃하시겠습니까?\n(업데이트 적용을 위해 사용합니다)");
+    const confirmed = await window.showCustomConfirm("접속 중인 모든 계정을 강제로 로그아웃하시겠습니까?\n(업데이트 적용을 위해 사용합니다)");
     if (!confirmed) return;
 
     try {
@@ -329,7 +329,7 @@ window.forceLogoutAll = async () => {
         const snap = await getDocs(getStudentsCollection());
         const promises = [];
         snap.forEach(docSnap => { 
-            if(!['마스터', '선생님'].includes(docSnap.id)) promises.push(setDoc(docSnap.ref, { forceLogout: true }, { merge: true })); 
+            if(!['마스터'].includes(docSnap.id)) promises.push(setDoc(docSnap.ref, { forceLogout: true }, { merge: true })); 
         });
         await Promise.all(promises);
         window.showCustomAlert("전원 강제 로그아웃 신호 전송이 완료되었습니다.");
@@ -348,7 +348,7 @@ window.renderTestStudentCheckboxes = async () => {
         let html = '';
         let students = [];
         snap.forEach(docSnap => {
-            if (!['마스터', '선생님', '테스트', '테스트2'].includes(docSnap.id)) students.push(docSnap.id);
+            if (!['마스터', '테스트'].includes(docSnap.id)) students.push(docSnap.id);
         });
         students.sort((a,b) => parseInt(a.split('.')[0] || 999) - parseInt(b.split('.')[0] || 999));
         
@@ -439,7 +439,7 @@ window.renderTestScores = async () => {
         let students = [];
         snap.forEach(docSnap => {
             const id = docSnap.id;
-            if (!['마스터', '선생님', '테스트', '테스트2'].includes(id)) students.push({ id, data: docSnap.data() });
+            if (!['마스터', '테스트'].includes(id)) students.push({ id, data: docSnap.data() });
         });
         
         students.sort((a, b) => {
@@ -484,7 +484,7 @@ window.downloadTestScoresCSV = async () => {
         let students = [];
         snap.forEach(docSnap => {
             const id = docSnap.id;
-            if (!['마스터', '선생님', '테스트', '테스트2'].includes(id)) students.push({ id, data: docSnap.data() });
+            if (!['마스터', '테스트'].includes(id)) students.push({ id, data: docSnap.data() });
         });
 
         students.sort((a, b) => {
