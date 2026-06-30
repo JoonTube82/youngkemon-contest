@@ -955,12 +955,11 @@ window.checkMagic = () => {
     } else {
         window.state.shake = 15;
         
-        // ⭐ 알파벳 스크램블 (무작위 섞기) 로직
+        // 알파벳 스크램블 (무작위 섞기) 로직
         let arr = correctWord.split('');
         let scrambled = correctWord;
         let attempts = 0;
         
-        // 단어가 2글자 이상일 경우 원래 단어와 모양이 달라질 때까지 섞음
         if (correctWord.length > 1) {
             while (scrambled === correctWord && attempts < 10) {
                 for (let i = arr.length - 1; i > 0; i--) {
@@ -972,10 +971,10 @@ window.checkMagic = () => {
             }
         }
         
-        // ⭐ 힌트 텍스트 크기를 대폭 키우고 알파벳 사이 간격을 벌림 (text-4xl 적용)
-        const scrambledText = arr.join(' &nbsp; ');
-        hint.innerHTML = `<span class="text-xl text-red-500 font-bold">틀렸어요! 단어 힌트:</span><br><span class="text-4xl text-red-600 font-black tracking-widest mt-2 inline-block">${scrambledText.toUpperCase()}</span>`;
-        hint.className = "mt-4 animate-bounce";
+        // ⭐ 수정된 부분: 알파벳만 먼저 대문자로 변환 후 연결, 문구 수정, 위아래 떨림(animate-bounce) 제거
+        const scrambledText = arr.map(char => char.toUpperCase()).join(' &nbsp; ');
+        hint.innerHTML = `<span class="text-xl text-red-500 font-bold">단어 힌트:</span><br><span class="text-4xl text-red-600 font-black tracking-widest mt-2 inline-block">${scrambledText}</span>`;
+        hint.className = "mt-4"; 
         
         input.value = ''; input.focus();
     }
