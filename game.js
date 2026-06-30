@@ -2010,10 +2010,10 @@ window.renderTestPaper = (chapter) => {
     document.getElementById('test-mode-desc').innerHTML = `[${chapter}단원] 시험이 시작되었습니다.<br>빈칸에 알맞은 영어 스펠링을 입력하세요.`;
 };
 
-// 2. 제출하기 함수 (이 부분이 지워졌던 것입니다!)
+// 2. 제출하기 함수 (채점 결과 시각화 추가)
 window.submitTest = async () => {
     const btn = document.getElementById('btn-submit-test');
-    if (btn && btn.disabled) return; // 중복 클릭 방지
+    if (btn && btn.disabled) return; 
     
     if (btn) {
         btn.disabled = true;
@@ -2044,7 +2044,6 @@ window.submitTest = async () => {
             let stats = data.gameStats || {};
             if (!stats.testScores) stats.testScores = {};
             
-            // 점수 저장
             stats.testScores[chapter] = {
                 score: score,
                 total: total,
@@ -2055,7 +2054,27 @@ window.submitTest = async () => {
             await setDoc(docRef, { gameStats: stats }, { merge: true });
         }
         
-        // 성공 시 버튼을 숨기고 완료 메시지 표시
+        // ⭐ 추가된 부분: 화면에 즉시 채점 결과를 보여줌
+        inputs.forEach(input => {
+            const correctWord = input.getAttribute('data-word').trim().toLowerCase();
+            const userWord = input.value.trim().toLowerCase();
+            
+            input.disabled = true; // 입력창 잠금
+            input.classList.replace('bg-slate-800', 'bg-slate-900'); // 배경 어둡게
+            
+            if (userWord === correctWord) {
+                // 정답 (초록색)
+                input.style.setProperty('color', '#10b981', 'important'); // emerald-500
+                input.classList.replace('border-slate-400', 'border-emerald-500');
+                input.value = `${correctWord} (정답!)`;
+            } else {
+                // 오답 (빨간색 및 정답 표시)
+                input.style.setProperty('color', '#ef4444', 'important'); // red-500
+                input.classList.replace('border-slate-400', 'border-red-500');
+                input.value = `${userWord || '미입력'} ➔ 정답: ${correctWord}`;
+            }
+        });
+        
         if (btn) btn.style.display = 'none';
         const msgEl = document.getElementById('test-submit-msg');
         if (msgEl) {
@@ -2065,7 +2084,6 @@ window.submitTest = async () => {
     } catch (error) {
         console.error("Test Submit Error:", error);
         alert("서버 통신 중 오류가 발생했습니다. 다시 눌러주세요.");
-        // 에러 시 버튼 원상복구
         if (btn) {
             btn.disabled = false;
             btn.classList.remove('bg-slate-500');
