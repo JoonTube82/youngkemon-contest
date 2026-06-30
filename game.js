@@ -972,7 +972,7 @@ window.checkMagic = () => {
         }
         
         // ⭐ 수정된 부분: 알파벳만 먼저 대문자로 변환 후 연결, 문구 수정, 위아래 떨림(animate-bounce) 제거
-        const scrambledText = arr.map(char => char.toUpperCase()).join(' &nbsp; ');
+        const scrambledText = arr.map(char => char.toLowerCase()).join(' &nbsp; ');
         hint.innerHTML = `<span class="text-xl text-red-500 font-bold">단어 힌트:</span><br><span class="text-4xl text-red-600 font-black tracking-widest mt-2 inline-block">${scrambledText}</span>`;
         hint.className = "mt-4"; 
         
