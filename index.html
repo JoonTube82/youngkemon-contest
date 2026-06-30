@@ -556,6 +556,32 @@
         </div>
     </div>
 
+    <!-- ⭐ 새롭게 추가된 배틀 퀴즈 모달 (스페셜 어택 / 실드 방어용) -->
+    <div id="battle-quiz-modal" translate="no" class="notranslate fixed inset-0 bg-slate-900/90 hidden flex-col items-center justify-center p-4 z-[9999]">
+        <div class="bg-white rounded-3xl p-6 sm:p-10 w-full max-w-lg shadow-2xl relative border-8 border-indigo-500 text-center">
+            <h2 id="b-quiz-title" class="text-3xl font-black text-indigo-600 mb-2">⚡ 스페셜 어택!</h2>
+            <p id="b-quiz-desc" class="text-slate-500 font-bold mb-6">제한 시간 10초! 정확한 영단어를 입력하세요!</p>
+            
+            <div class="bg-slate-800 rounded-2xl p-6 mb-6">
+                <span class="text-xs font-bold text-slate-400 block mb-2">다음 뜻을 가진 단어는?</span>
+                <h3 id="b-quiz-word" class="text-3xl font-black text-white break-keep">뜻</h3>
+            </div>
+            
+            <div class="relative w-full mb-6">
+                <input type="text" id="b-spell-in" class="spell-input border-indigo-200 w-full relative z-0" style="color: transparent; caret-color: white;" autocomplete="off" spellcheck="false" autocapitalize="off" onkeyup="if(event.key==='Enter')window.submitBattleQuiz()" oninput="document.getElementById('b-fake-text').textContent = this.value || '스펠링 입력'; document.getElementById('b-fake-text').style.color = this.value ? '#4f46e5' : '#9ca3af';">
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10 overflow-hidden px-4">
+                    <span id="b-fake-text" class="text-slate-400 text-2xl font-black whitespace-pre truncate">스펠링 입력</span>
+                </div>
+            </div>
+            
+            <div class="w-full bg-slate-200 h-3 rounded-full overflow-hidden border border-slate-300">
+                <div id="b-timer-bar" class="h-full bg-red-500 transition-all duration-1000 linear" style="width: 100%"></div>
+            </div>
+            
+            <button onclick="window.submitBattleQuiz()" class="mt-6 w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-2xl font-black text-xl shadow-lg transition-transform active:scale-95">입력 완료</button>
+        </div>
+    </div>
+
     <div id="custom-alert" class="modal-overlay">
         <div class="modal-box border-red-500">
             <h2 class="text-2xl font-bold mb-4 text-red-600">📢 알림</h2>
