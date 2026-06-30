@@ -485,6 +485,7 @@ function startMagicRPG() {
                 if (submitBtn) {
                     submitBtn.style.display = 'block'; submitBtn.disabled = false;
                     submitBtn.classList.replace('bg-slate-400', 'bg-red-600');
+                    submitBtn.innerText = '제출하기';
                 }
                 const msgEl = document.getElementById('test-submit-msg');
                 if (msgEl) msgEl.style.display = 'none';
@@ -1968,3 +1969,178 @@ const LOCAL_POKEMON_DB = (() => {
     });
     return db;
 })();
+
+// ==========================================
+// ⭐ 11. 시험(테스트) 및 함정(감옥) 모드 로직 (복구 완료)
+// ==========================================
+window.renderTestPaper = (chapter) => {
+    const listEl = document.getElementById('test-paper-list');
+    if (!listEl) return;
+    
+    const chapterWords = window.state.quizzes.filter(q => parseInt(q.chapter || 1) === parseInt(chapter));
+    
+    if (chapterWords.length === 0) {
+        listEl.innerHTML = '<p class="text-center text-slate-500 font-bold">출제될 단어가 없습니다.</p>';
+        return;
+    }
+
+    const shuffled = [...chapterWords].sort(() => Math.random() - 0.5);
+    let html = '';
+    shuffled.forEach((q, idx) => {
+        html += `
+        <div class="bg-slate-50 p-4 rounded-2xl border-2 border-slate-200 mb-3 flex flex-col gap-2 shadow-sm">
+            <div class="flex justify-between items-center">
+                <span class="text-xs font-bold text-slate-500 bg-slate-200 px-2 py-1 rounded-lg tracking-wider">Q ${idx + 1}</span>
+            </div>
+            <div class="text-lg sm:text-xl font-black text-slate-800 break-keep mt-1">${q.meaning}</div>
+            <input type="text" class="test-answer-input w-full p-3 border-2 border-slate-300 rounded-xl font-bold text-slate-700 outline-none focus:border-red-400 focus:bg-white transition-colors" placeholder="영단어 스펠링 입력" data-word="${q.word}" autocapitalize="off" autocomplete="off" spellcheck="false">
+        </div>`;
+    });
+    listEl.innerHTML = html;
+    document.getElementById('test-mode-desc').innerHTML = `[${chapter}단원] 시험이 시작되었습니다.<br>빈칸에 알맞은 영어 스펠링을 입력하세요.`;
+};
+
+window.submitTest = async () => {
+    const btn = document.getElementById('btn-submit-test');
+    if (btn && btn.disabled) return;
+    
+    if (btn) {
+        btn.disabled = true;
+        btn.classList.replace('bg-red-600', 'bg-slate-400');
+        btn.innerText = '제출 완료 (대기 중)';
+    }
+
+    const inputs = document.querySelectorAll('.test-answer-input');
+    let total = inputs.length;
+    let score = 0;
+    let wrongWords = [];
+
+    inputs.forEach(input => {
+        const correctWord = input.getAttribute('data-word').trim().toLowerCase();
+        const userWord = input.value.trim().toLowerCase();
+        if (userWord === correctWord) score++;
+        else wrongWords.push(correctWord);
+    });
+
+    const chapter = window.state.currentTestChapter || 1;
+    
+    try {
+        const docRef = getStudentDoc(window.state.user);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            let data = docSnap.data();
+            let stats = data.gameStats || {};
+            if (!stats.testScores) stats.testScores = {};
+            
+            stats.testScores[chapter] = {
+                score: score,
+                total: total,
+                wrongWords: wrongWords,
+                unsubmitted: false
+            };
+            
+            await setDoc(docRef, { gameStats: stats }, { merge: true });
+        }
+        
+        if (btn) btn.style.display = 'none';
+        const msgEl = document.getElementById('test-submit-msg');
+        if (msgEl) {
+            msgEl.innerHTML = `✅ 제출 완료! (${total}문제 중 ${score}점)<br>마스터의 시험 종료를 기다리세요.`;
+            msgEl.style.display = 'block';
+        }
+    } catch (error) {
+        console.error("Test Submit Error:", error);
+        if (btn) {
+            btn.disabled = false;
+            btn.classList.replace('bg-slate-400', 'bg-red-600');
+            btn.innerText = '제출하기';
+        }
+    }
+};
+
+window.renderPrisonPaper = () => {
+    const listEl = document.getElementById('prison-paper-list');
+    if (!listEl) return;
+    
+    const words = window.state.prisonWords || {};
+    let html = '';
+    
+    for (let word in words) {
+        const count = words[word];
+        if (count > 0) {
+            const quiz = window.state.quizzes.find(q => q.word.toLowerCase() === word.toLowerCase());
+            const meaning = quiz ? quiz.meaning : '알 수 없음';
+            
+            html += `
+            <div class="bg-slate-700 p-4 rounded-2xl border-2 border-slate-600 flex flex-col gap-2 shadow-inner">
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-base sm:text-lg font-black text-white break-keep pr-2">${meaning}</span>
+                    <span class="bg-purple-600 text-white text-[10px] sm:text-xs px-2.5 py-1 rounded-md font-bold shrink-0 shadow-sm border border-purple-400">남은 횟수: ${count}번</span>
+                </div>
+                <div class="relative w-full">
+                    <input type="text" class="prison-answer-input w-full p-3 border-2 border-slate-500 rounded-xl font-bold text-slate-800 bg-slate-100 outline-none focus:border-purple-400 focus:bg-white transition-all z-10 relative" style="color: transparent; caret-color: #1e293b;" placeholder="" onkeyup="if(event.key==='Enter') window.checkPrisonInput(this, '${word}')" oninput="this.nextElementSibling.textContent = this.value || '[${word}] 정확히 입력하세요'; this.nextElementSibling.style.color = this.value ? '#1e293b' : '#94a3b8';" autocapitalize="off" autocomplete="off" spellcheck="false" onpaste="return false;" ondrop="return false;">
+                    <div class="absolute inset-0 flex items-center px-3 pointer-events-none z-20 overflow-hidden text-slate-400 font-bold">
+                        <span>[${word}] 정확히 입력하세요</span>
+                    </div>
+                </div>
+            </div>`;
+        }
+    }
+    listEl.innerHTML = html;
+};
+
+window.checkPrisonInput = async (inputEl, word) => {
+    const val = inputEl.value.trim().toLowerCase();
+    const overlaySpan = inputEl.nextElementSibling.querySelector('span');
+
+    if (val === word.toLowerCase()) {
+        inputEl.value = '';
+        overlaySpan.textContent = `[${word}] 정확히 입력하세요`;
+        overlaySpan.style.color = '#94a3b8';
+        
+        try {
+            const docRef = getStudentDoc(window.state.user);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                let data = docSnap.data();
+                let prisonMode = data.prisonMode || {};
+                let wordsToType = prisonMode.wordsToType || {};
+                
+                if (wordsToType[word] > 0) {
+                    wordsToType[word]--;
+                }
+                
+                let active = false;
+                for (let w in wordsToType) {
+                    if (wordsToType[w] > 0) active = true;
+                }
+                
+                prisonMode.active = active;
+                prisonMode.wordsToType = wordsToType;
+                
+                await setDoc(docRef, { prisonMode: prisonMode }, { merge: true });
+                
+                if (!active) {
+                    window.showCustomAlert("🎉 축하합니다!\n모든 오답을 완벽하게 복습하여 함정에서 탈출했습니다!");
+                } else {
+                    window.state.prisonWords = wordsToType;
+                    window.renderPrisonPaper();
+                }
+            }
+        } catch (error) {
+            console.error("Prison check error:", error);
+        }
+    } else {
+        inputEl.value = '';
+        overlaySpan.textContent = "틀렸습니다! 다시 입력하세요.";
+        overlaySpan.style.color = '#ef4444';
+        inputEl.classList.add('border-red-500', 'bg-red-50');
+        setTimeout(() => {
+            inputEl.classList.remove('border-red-500', 'bg-red-50');
+            if(!inputEl.value) {
+                overlaySpan.textContent = `[${word}] 정확히 입력하세요`;
+                overlaySpan.style.color = '#94a3b8';
+            }
+        }, 800);
+    }
+};
