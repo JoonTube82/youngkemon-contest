@@ -20,9 +20,9 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 
 // ==========================================
-// ⭐ [신규] 학급 코드 상태 관리
+// ⭐ [신규] 학급 코드 상태 관리 및 레지스트리
 // ==========================================
-let currentClassCode = "대회초 6-1"; // 기본값 (기존 데이터 보호)
+let currentClassCode = "대회초 6-1"; // 기본값 (기존 데이터 보호용)
 
 export const setClassCode = (code) => {
     currentClassCode = code;
@@ -32,8 +32,12 @@ export const getClassCode = () => {
     return currentClassCode;
 };
 
+// 공식 개설된 학급 목록을 저장하고 확인하는 방 (오타 방지용)
+export const getClassesCollection = () => collection(db, 'class_registry');
+export const getClassDoc = (code) => doc(db, 'class_registry', code);
+
 // ==========================================
-// ⭐ [신규] 학급 코드에 따른 동적 데이터베이스 접근
+// ⭐ 학급 코드에 따른 동적 데이터베이스 접근
 // ==========================================
 export const getStudentsCollection = () => {
     // "대회초 6-1"이면 기존 방 사용, 아니면 새로운 방 생성/접근
