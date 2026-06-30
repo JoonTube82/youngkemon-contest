@@ -20,12 +20,41 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 
 // ==========================================
-// 데이터베이스(Firestore) 접근 도우미 함수
+// ⭐ [신규] 학급 코드 상태 관리
 // ==========================================
-export const getStudentsCollection = () => collection(db, 'contest_data');
-export const getStudentDoc = (studentId) => doc(db, 'contest_data', studentId);
-export const getWordListCollection = () => collection(db, 'wordList');
-export const getWordDoc = (wordId) => doc(db, 'wordList', wordId);
+let currentClassCode = "대회초 6-1"; // 기본값 (기존 데이터 보호)
 
-// (이전 코드 호환성을 위한 빈 객체 유지 - 이제 게임 내에서 전부 'male' 캐릭터로 자동 통일됩니다)
+export const setClassCode = (code) => {
+    currentClassCode = code;
+};
+
+export const getClassCode = () => {
+    return currentClassCode;
+};
+
+// ==========================================
+// ⭐ [신규] 학급 코드에 따른 동적 데이터베이스 접근
+// ==========================================
+export const getStudentsCollection = () => {
+    // "대회초 6-1"이면 기존 방 사용, 아니면 새로운 방 생성/접근
+    const colName = currentClassCode === "대회초 6-1" ? "contest_data" : `contest_data_${currentClassCode}`;
+    return collection(db, colName);
+};
+
+export const getStudentDoc = (studentId) => {
+    const colName = currentClassCode === "대회초 6-1" ? "contest_data" : `contest_data_${currentClassCode}`;
+    return doc(db, colName, studentId);
+};
+
+export const getWordListCollection = () => {
+    const colName = currentClassCode === "대회초 6-1" ? "wordList" : `wordList_${currentClassCode}`;
+    return collection(db, colName);
+};
+
+export const getWordDoc = (wordId) => {
+    const colName = currentClassCode === "대회초 6-1" ? "wordList" : `wordList_${currentClassCode}`;
+    return doc(db, colName, wordId);
+};
+
+// (이전 코드 호환성을 위한 빈 객체 유지)
 export const STUDENT_GENDER = {};
