@@ -1996,14 +1996,14 @@ window.renderTestPaper = (chapter) => {
     const shuffled = [...chapterWords].sort(() => Math.random() - 0.5);
     let html = '';
     shuffled.forEach((q, idx) => {
-        // 입력창에 style로 강제 검은색 및 그림자 제거 적용
+        // 문제 번호를 text-black으로, 입력창 배경을 bg-slate-800, 글씨를 text-white(#ffffff)로 변경
         html += `
         <div class="bg-slate-50 p-4 rounded-2xl border-2 border-slate-200 mb-3 flex flex-col gap-2 shadow-sm">
             <div class="flex justify-between items-center">
-                <span class="text-xs font-bold text-slate-500 bg-slate-200 px-2 py-1 rounded-lg tracking-wider">Q ${idx + 1}</span>
+                <span class="text-xs font-black text-black bg-slate-200 px-2 py-1 rounded-lg tracking-wider">Q ${idx + 1}</span>
             </div>
             <div class="text-lg sm:text-xl font-black text-slate-800 break-keep mt-1">${q.meaning}</div>
-            <input type="text" class="test-answer-input w-full p-4 border-2 border-slate-300 rounded-xl font-bold text-xl text-slate-900 bg-white outline-none focus:border-red-500 focus:ring-2 focus:ring-red-200 transition-all shadow-inner placeholder-slate-400" style="color: #0f172a !important; text-shadow: none !important; -webkit-text-stroke: 0 !important;" placeholder="영단어 스펠링 입력" data-word="${q.word}" autocapitalize="off" autocomplete="off" spellcheck="false">
+            <input type="text" class="test-answer-input w-full p-4 border-2 border-slate-400 rounded-xl font-bold text-xl text-white bg-slate-800 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500 transition-all shadow-inner placeholder-slate-400" style="color: #ffffff !important; text-shadow: none !important; -webkit-text-stroke: 0 !important;" placeholder="영단어 스펠링 입력" data-word="${q.word}" autocapitalize="off" autocomplete="off" spellcheck="false">
         </div>`;
     });
     listEl.innerHTML = html;
@@ -2023,15 +2023,19 @@ window.renderPrisonPaper = () => {
         if (count > 0) {
             const quiz = window.state.quizzes.find(q => q.word.toLowerCase() === word.toLowerCase());
             const meaning = quiz ? quiz.meaning : '알 수 없음';
+            const safeId = word.replace(/\s+/g, ''); // 띄어쓰기 방지 ID 생성
             
-            // 투명 겹치기 효과 완전히 제거 및 깔끔한 input으로 변경
+            // 입력창 글씨를 흰색(#ffffff)으로 바꾸고, 우측에 [입력] 버튼 추가
             html += `
             <div class="bg-slate-700 p-4 rounded-2xl border-2 border-slate-600 flex flex-col gap-2 shadow-inner">
                 <div class="flex justify-between items-center mb-2">
                     <span class="text-base sm:text-lg font-black text-white break-keep pr-2">${meaning}</span>
                     <span class="bg-purple-600 text-white text-[10px] sm:text-xs px-2.5 py-1 rounded-md font-bold shrink-0 shadow-sm border border-purple-400">남은 횟수: ${count}번</span>
                 </div>
-                <input type="text" class="prison-answer-input w-full p-4 border-2 border-slate-400 rounded-xl font-bold text-xl text-slate-900 bg-slate-100 outline-none focus:border-purple-500 focus:bg-white transition-all shadow-inner placeholder-slate-500" style="color: #0f172a !important; text-shadow: none !important; -webkit-text-stroke: 0 !important;" placeholder="[${word}] 정확히 입력하세요" onkeyup="if(event.key==='Enter') window.checkPrisonInput(this, '${word}')" autocapitalize="off" autocomplete="off" spellcheck="false" onpaste="return false;" ondrop="return false;">
+                <div class="flex gap-2">
+                    <input type="text" id="prison-in-${safeId}" class="prison-answer-input w-full p-4 border-2 border-slate-500 rounded-xl font-bold text-xl text-white bg-slate-800 outline-none focus:border-purple-400 transition-all shadow-inner placeholder-slate-400" style="color: #ffffff !important; text-shadow: none !important; -webkit-text-stroke: 0 !important;" placeholder="[${word}] 정확히 입력하세요" onkeyup="if(event.key==='Enter') window.checkPrisonInput(this, '${word}')" autocapitalize="off" autocomplete="off" spellcheck="false" onpaste="return false;" ondrop="return false;">
+                    <button onclick="window.checkPrisonInput(document.getElementById('prison-in-${safeId}'), '${word}')" class="bg-purple-500 hover:bg-purple-600 text-white font-bold text-lg px-6 rounded-xl shadow-md transition-transform active:scale-95 shrink-0">입력</button>
+                </div>
             </div>`;
         }
     }
