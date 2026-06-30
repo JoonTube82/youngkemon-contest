@@ -1,4 +1,4 @@
-import { auth, getStudentsCollection, getStudentDoc, getWordListCollection, setClassCode, getClassDoc } from './firebase.js';
+mport { auth, getStudentsCollection, getStudentDoc, getWordListCollection, setClassCode, getClassDoc } from './firebase.js';
 import { signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getDoc, getDocs, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
@@ -125,7 +125,7 @@ const TYPE_COLORS = {
 };
 
 // ==========================================
-// 2. 학급 접속 및 팝업, 로그인 처리
+// 2. 팝업, 학급 개설/접속 및 로그인 처리
 // ==========================================
 let confirmResolve = null;
 window.showCustomAlert = (msg) => {
@@ -181,7 +181,6 @@ window.checkClassCode = async () => {
     setStatus("학급 정보 확인 중...");
     
     try {
-        // "대회초 6-1"은 기존 데이터를 살리기 위해 프리패스
         if (codeInput !== "대회초 6-1") {
             const classSnap = await getDoc(getClassDoc(codeInput));
             if (!classSnap.exists()) {
@@ -190,7 +189,6 @@ window.checkClassCode = async () => {
             }
         }
 
-        // 통과 시, 해당 학급으로 DB 경로 고정
         setClassCode(codeInput);
         
         document.getElementById('login-step-1').style.display = 'none';
@@ -226,13 +224,10 @@ window.createClass = async () => {
             return window.showCustomAlert("이미 존재하는 학급 코드입니다.\n다른 이름으로 개설해주세요.");
         }
         
-        // 레지스트리에 학급 공식 등록
         await setDoc(classRef, { createdAt: new Date().toISOString(), createdBy: window.state.authUid });
         
-        // 현재 접속된 클래스를 새 클래스로 설정
         setClassCode(codeInput);
         
-        // 해당 반의 '마스터' 계정 자동 생성
         const emptyStats = { level: 1, exp: 0, count: 0, caughtWords: {}, wins: 0, victories: {}, partnerWord: null, usedPokemonCooldown: {}, savedEncounters: {}, defenseLogs: [], testScores: {} };
         await setDoc(getStudentDoc('마스터'), {
             id: '마스터',
@@ -248,7 +243,6 @@ window.createClass = async () => {
         document.getElementById('class-code-create').value = '';
         document.getElementById('class-master-pw').value = '';
         
-        // 모험가 탭으로 되돌아가고 방금 만든 코드 채워주기
         window.switchLoginTab('join');
         document.getElementById('class-code-join').value = codeInput;
         setStatus("학급 개설 완료. 학급에 접속하세요!");
@@ -267,6 +261,7 @@ window.backToClassSelect = () => {
     setStatus("학급 코드를 입력하세요.");
 };
 
+// 동적 학생 목록 불러오기 (마스터, 테스트만 특별 취급)
 window.loadDynamicStudentList = async () => {
     const loginSelect = document.getElementById('user-id');
     const adminSelect = document.getElementById('reset-pw-student'); 
@@ -349,10 +344,24 @@ window.handleLogin = async () => {
             
             setStatus("접속 성공!"); enterGame(idInput);
         } else {
-            // 테스트 계정이 없으면 자동 생성 허용 (마스터는 개설 시 이미 생성됨)
+            // ⭐ 대회 시연용 가짜 데이터 주입 기능 (테스트 계정 자동 생성)
             if (idInput === '테스트') {
-                const emptyStats = { level: 1, exp: 0, count: 0, caughtWords: {}, wins: 0, victories: {}, partnerWord: null, usedPokemonCooldown: {}, savedEncounters: {}, defenseLogs: [], testScores: {} };
-                await setDoc(docRef, { id: idInput, password: pwInput, isFirstLogin: false, gameStats: emptyStats, createdAt: new Date().toISOString(), forceLogout: false });
+                let demoCaughtWords = {};
+                if(window.state.quizzes && window.state.quizzes.length > 0) {
+                    window.state.quizzes.slice(0, 15).forEach(q => { demoCaughtWords[q.word] = 12; });
+                } else {
+                    demoCaughtWords['apple'] = 12; demoCaughtWords['banana'] = 12; demoCaughtWords['cat'] = 12;
+                }
+                const demoStats = { 
+                    level: 30, exp: 0, count: 180, 
+                    caughtWords: demoCaughtWords, wins: 50, victories: {}, 
+                    partnerWord: Object.keys(demoCaughtWords)[0] || null, 
+                    usedPokemonCooldown: {}, savedEncounters: {}, defenseLogs: [], testScores: {} 
+                };
+                await setDoc(docRef, { id: idInput, password: pwInput, isFirstLogin: false, gameStats: demoStats, createdAt: new Date().toISOString(), forceLogout: false });
+                
+                window.state.gameData = demoStats;
+                window.showCustomAlert("시연용 [테스트] 계정이 멋진 데이터와 함께 생성되었습니다!");
                 enterGame(idInput);
             } else {
                 btn.disabled = false; setStatus("계정 없음", true);
@@ -1687,11 +1696,12 @@ window.submitBattleQuiz = (isTimeout = false) => {
         } else { logBattleMsg("💦 스펠링을 틀려 스페셜 어택이 빗나갔다...", false); }
     }
 
+    // ⭐ 수정됨: active를 true로 바꿔야만 HP 깎인 화면이 업데이트 됨
+    window.battleState.active = true; 
     updateBattleUI();
     const isGameOver = checkFaint();
     
     if(!isGameOver) {
-        window.battleState.active = true;
         window.battleState.oppTimer = setInterval(() => { if(window.battleState.active) opponentAttack(); }, 200);
     }
 };
