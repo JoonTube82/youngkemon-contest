@@ -1646,7 +1646,8 @@ window.useUltimate = () => {
     const meaning = quiz ? quiz.meaning : "알 수 없음";
 
     document.getElementById('b-quiz-title').innerText = "⚡ 스페셜 어택!";
-    document.getElementById('b-quiz-desc').innerText = "제한 시간 10초! 정확한 영단어를 입력하세요!";
+    // 10초 -> 15초 텍스트 변경
+    document.getElementById('b-quiz-desc').innerText = "제한 시간 15초! 정확한 영단어를 입력하세요!"; 
     document.getElementById('b-quiz-word').innerText = meaning;
     document.getElementById('b-spell-in').value = '';
     document.getElementById('b-fake-text').textContent = '스펠링 입력';
@@ -1657,7 +1658,8 @@ window.useUltimate = () => {
     
     window.battleState.expectedWord = oppMon.word;
     window.battleState.isShieldMode = false;
-    startQuizTimer(10000); 
+    // 10000 -> 15000 으로 변경
+    startQuizTimer(15000); 
 };
 
 const triggerOpponentUltimate = () => {
@@ -1671,7 +1673,8 @@ const triggerOpponentUltimate = () => {
     const meaning = quiz ? quiz.meaning : "알 수 없음";
 
     document.getElementById('b-quiz-title').innerText = "🛡️ 방어 태세 (실드)!";
-    document.getElementById('b-quiz-desc').innerText = "적의 필살기가 날아옵니다! 10초 안에 내 파트너의 단어를 입력해 막아내세요!";
+    // 10초 -> 15초 텍스트 변경
+    document.getElementById('b-quiz-desc').innerText = "적의 필살기가 날아옵니다! 15초 안에 내 파트너의 단어를 입력해 막아내세요!";
     document.getElementById('b-quiz-word').innerText = meaning;
     document.getElementById('b-spell-in').value = '';
     document.getElementById('b-fake-text').textContent = '스펠링 입력';
@@ -1682,7 +1685,8 @@ const triggerOpponentUltimate = () => {
     
     window.battleState.expectedWord = myMon.word;
     window.battleState.isShieldMode = true;
-    startQuizTimer(10000); 
+    // 10000 -> 15000 으로 변경
+    startQuizTimer(15000); 
 };
 
 const startQuizTimer = (duration) => {
