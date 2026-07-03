@@ -556,15 +556,19 @@
         </div>
     </div>
 
-    <!-- ⭐ 새롭게 추가된 배틀 퀴즈 모달 (스페셜 어택 / 실드 방어용) -->
+<!-- ⭐ 새롭게 추가된 배틀 퀴즈 모달 (스페셜 어택 / 실드 방어용) -->
     <div id="battle-quiz-modal" translate="no" class="notranslate fixed inset-0 bg-slate-900/90 hidden flex-col items-center justify-center p-4 z-[9999]">
         <div class="bg-white rounded-3xl p-6 sm:p-10 w-full max-w-lg shadow-2xl relative border-8 border-indigo-500 text-center">
             <h2 id="b-quiz-title" class="text-3xl font-black text-indigo-600 mb-2">⚡ 스페셜 어택!</h2>
-            <p id="b-quiz-desc" class="text-slate-500 font-bold mb-6">제한 시간 10초! 정확한 영단어를 입력하세요!</p>
+            <p id="b-quiz-desc" class="text-slate-500 font-bold mb-6">제한 시간 15초! 정확한 영단어를 입력하세요!</p>
             
             <div class="bg-slate-800 rounded-2xl p-6 mb-6">
                 <span class="text-xs font-bold text-slate-400 block mb-2">다음 뜻을 가진 단어는?</span>
-                <h3 id="b-quiz-word" class="text-3xl font-black text-white break-keep">뜻</h3>
+                <!-- 스피커 버튼 복구됨 -->
+                <div class="flex justify-center items-center gap-3">
+                    <h3 id="b-quiz-word" class="text-3xl font-black text-white break-keep">뜻</h3>
+                    <button onclick="window.speakText(window.battleState.expectedWord, 'en-US')" class="bg-indigo-500 hover:bg-indigo-400 text-white rounded-full w-10 h-10 flex items-center justify-center text-xl transition-transform active:scale-90 shadow-sm" title="발음 듣기">🔊</button>
+                </div>
             </div>
             
             <div class="relative w-full mb-6">
