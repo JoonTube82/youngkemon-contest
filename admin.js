@@ -1,4 +1,4 @@
-import { db, getStudentsCollection, getStudentDoc, getWordListCollection, getWordDoc } from './firebase.js';
+import { db, getStudentsCollection, getStudentDoc, getWordListCollection, getWordDoc, getClassDoc, getClassCode } from './firebase.js';
 import { getDoc, getDocs, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // ==========================================
@@ -6,7 +6,7 @@ import { getDoc, getDocs, setDoc, deleteDoc } from "https://www.gstatic.com/fire
 // ==========================================
 window.showAdminMainMenu = () => {
     document.getElementById('admin-main-menu').style.display = 'grid';
-    ['admin-sec-dex', 'admin-sec-student', 'admin-sec-server', 'admin-sec-test'].forEach(id => {
+    ['admin-sec-dex', 'admin-sec-title', 'admin-sec-student', 'admin-sec-server', 'admin-sec-test'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.style.display = 'none';
     });
@@ -14,7 +14,7 @@ window.showAdminMainMenu = () => {
 
 window.showAdminSection = (secId) => {
     document.getElementById('admin-main-menu').style.display = 'none';
-    ['admin-sec-dex', 'admin-sec-student', 'admin-sec-server', 'admin-sec-test'].forEach(id => {
+    ['admin-sec-dex', 'admin-sec-title', 'admin-sec-student', 'admin-sec-server', 'admin-sec-test'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.style.display = 'none';
     });
@@ -28,6 +28,9 @@ window.showAdminSection = (secId) => {
     }
     if (secId === 'admin-sec-student') {
         window.renderAdminStudentList();
+    }
+    if (secId === 'admin-sec-title') {
+        window.renderAdminTitleInputs();
     }
 };
 
@@ -45,7 +48,64 @@ window.toggleAdmin = () => {
 };
 
 // ==========================================
-// 2. 단어 도감 직접 추가 및 삭제 로직
+// ⭐ 2. 단원 제목 직접 설정 로직 (신규)
+// ==========================================
+const DEFAULT_CHAPTER_TITLES = [
+    "",
+    "What Grade Are You In?", "What Do You Want to Be?", "When Is the Field Trip?",
+    "He Has Short Curly Hair", "How Often Do You Exercise?", "I'm Going to Go on a Trip",
+    "What Season Do You Like?", "I'm Faster Than You", "How Can I Get to the Museum?",
+    "I'd Like to Have the Fruit Salad", "Do You Know About Songpyeon?", "We Should Save the World"
+];
+
+window.renderAdminTitleInputs = () => {
+    const container = document.getElementById('admin-title-inputs');
+    if(!container) return;
+    
+    let html = '';
+    for(let i=1; i<=12; i++) {
+        const currentTitle = window.state.chapterTitles[i] || DEFAULT_CHAPTER_TITLES[i];
+        html += `
+        <div class="flex items-center gap-2 bg-slate-800 p-2 rounded-xl border border-slate-600">
+            <span class="text-xs font-bold text-yellow-400 bg-yellow-900/50 px-2 py-1 rounded-lg w-16 text-center shrink-0">${i}단원</span>
+            <input type="text" id="admin-ch-title-${i}" value="${currentTitle}" class="flex-1 p-2 bg-slate-100 border border-slate-300 rounded-lg outline-none text-sm font-bold text-slate-800 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 transition-all">
+        </div>
+        `;
+    }
+    container.innerHTML = html;
+};
+
+window.saveChapterTitles = async () => {
+    const classCode = getClassCode();
+    if(!classCode || classCode === "대회초 6-1") {
+        return window.showCustomAlert("기본 학급(대회초 6-1)의 단원 제목은 변경할 수 없습니다.\n새로운 학급을 개설하여 진행해주세요.");
+    }
+    
+    const newTitles = {};
+    for(let i=1; i<=12; i++) {
+        const inputEl = document.getElementById(`admin-ch-title-${i}`);
+        if(inputEl) {
+            newTitles[i] = inputEl.value.trim() || DEFAULT_CHAPTER_TITLES[i];
+        }
+    }
+    
+    try {
+        window.showCustomAlert("단원 제목을 서버에 저장 중입니다...");
+        const classRef = getClassDoc(classCode);
+        await setDoc(classRef, { chapterTitles: newTitles }, { merge: true });
+        
+        window.state.chapterTitles = newTitles;
+        if(window.updateChapterTitlesUI) window.updateChapterTitlesUI(); // 풀숲 UI 즉시 업데이트
+        
+        window.showCustomAlert("학급 단원 제목이 성공적으로 변경되었습니다!\n새로 접속하는 학생들의 화면에도 즉시 반영됩니다.");
+    } catch(e) {
+        window.showCustomAlert("저장 중 오류 발생: " + e.message);
+    }
+};
+
+
+// ==========================================
+// 3. 단어 도감 직접 추가 및 삭제 로직
 // ==========================================
 window.addWord = async () => {
     const cInput = document.getElementById('new-c');
@@ -99,7 +159,7 @@ window.updateAdminList = () => {
 };
 
 // ==========================================
-// 3. 엑셀 업로드 및 다운로드 로직 (SheetJS 연동)
+// 4. 엑셀 업로드 및 다운로드 로직 (SheetJS 연동)
 // ==========================================
 window.downloadWordExcel = async () => {
     if(!window.XLSX) return window.showCustomAlert("엑셀 라이브러리를 불러오지 못했습니다.");
@@ -187,14 +247,14 @@ window.applyExcelData = async () => {
 };
 
 // ==========================================
-// 4. 모험가 계정 동적 추가 및 삭제 로직
+// ⭐ 5. 모험가 계정 성별 토글 및 삭제 로직
 // ==========================================
 window.addStudentAccount = async () => {
     const nameInput = document.getElementById('new-student-name');
     if (!nameInput) return;
     
     const name = nameInput.value.trim();
-    const pw = "0000"; // 비밀번호 고정
+    const pw = "0000"; 
     
     if(!name) return window.showCustomAlert("이름을 입력하세요.");
     
@@ -208,6 +268,7 @@ window.addStudentAccount = async () => {
         await setDoc(docRef, { 
             id: name, 
             password: pw, 
+            gender: 'M', // 기본 성별 남자로 설정
             isFirstLogin: true, 
             gameStats: emptyStats, 
             createdAt: new Date().toISOString(), 
@@ -234,7 +295,6 @@ window.renderAdminStudentList = async () => {
         let html = '';
         let students = [];
         snap.forEach(doc => {
-            // 마스터, 테스트 계정은 '계정 삭제 목록'에서 제외 (안전 보호)
             if(!['마스터', '테스트'].includes(doc.id)) students.push({id: doc.id, data: doc.data()});
         });
         
@@ -248,17 +308,36 @@ window.renderAdminStudentList = async () => {
         }
 
         students.forEach(s => {
+            // ⭐ 성별 데이터 렌더링
+            const gender = s.data.gender || 'M';
+            const genderEmoji = gender === 'F' ? '👧' : '👦';
+            const genderColor = gender === 'F' ? 'bg-pink-100 text-pink-600 border-pink-300 hover:bg-pink-200' : 'bg-blue-100 text-blue-600 border-blue-300 hover:bg-blue-200';
+            
             html += `
             <div class="flex justify-between items-center bg-slate-800 p-2 rounded-lg border border-slate-600 mb-2">
-                <div>
-                    <span class="font-bold text-blue-300 text-sm">${s.id}</span>
-                    <span class="text-[10px] text-slate-400 ml-2">비번: ${s.data.password}</span>
+                <div class="flex items-center gap-2">
+                    <button onclick="window.toggleStudentGender('${s.id}', '${gender}')" class="text-lg w-8 h-8 flex items-center justify-center rounded-full border shadow-sm transition-colors ${genderColor}" title="클릭하여 성별 변경">${genderEmoji}</button>
+                    <div>
+                        <span class="font-bold text-blue-300 text-sm">${s.id}</span>
+                        <span class="text-[10px] text-slate-400 ml-2 block sm:inline">비번: ${s.data.password}</span>
+                    </div>
                 </div>
-                <button onclick="window.deleteStudentAccount('${s.id}')" class="text-red-400 text-xs font-bold bg-red-900/30 px-2 py-1 rounded hover:bg-red-500 hover:text-white transition-colors">삭제</button>
+                <button onclick="window.deleteStudentAccount('${s.id}')" class="text-red-400 text-xs font-bold bg-red-900/30 px-3 py-1.5 rounded-lg hover:bg-red-500 hover:text-white transition-colors shrink-0">삭제</button>
             </div>`;
         });
         container.innerHTML = html;
     } catch(e) { container.innerHTML = '<p class="text-red-400 text-xs">불러오기 실패</p>'; }
+};
+
+// ⭐ 성별 클릭 시 파이어베이스 실시간 업데이트 함수
+window.toggleStudentGender = async (studentId, currentGender) => {
+    const newGender = currentGender === 'F' ? 'M' : 'F';
+    try {
+        await setDoc(getStudentDoc(studentId), { gender: newGender }, { merge: true });
+        window.renderAdminStudentList(); // 리스트 새로고침
+    } catch(e) {
+        window.showCustomAlert("성별 변경 중 오류가 발생했습니다.");
+    }
 };
 
 window.deleteStudentAccount = async (id) => {
@@ -292,10 +371,10 @@ window.resetStudentPassword = async () => {
 };
 
 // ==========================================
-// 5. 서버 전체 초기화 및 로그아웃
+// 6. 서버 전체 초기화 및 로그아웃
 // ==========================================
 window.resetAllStudentsData = async () => {
-    const confirmed = await window.showCustomConfirm("정말로 모든 모험가의 게임 데이터를 초기화하시겠습니까? (비밀번호는 유지됩니다)");
+    const confirmed = await window.showCustomConfirm("정말로 모든 모험가의 게임 데이터를 초기화하시겠습니까? (비밀번호 및 성별 유지)");
     if (!confirmed) return;
 
     try {
@@ -305,11 +384,13 @@ window.resetAllStudentsData = async () => {
         
         const promises = [];
         snap.forEach(docSnap => {
-            // 마스터, 테스트 계정은 제외하여 안전 보호
             if(!['마스터', '테스트'].includes(docSnap.id)) {
                 const data = docSnap.data();
                 promises.push(setDoc(docSnap.ref, { 
-                    id: data.id || docSnap.id, password: data.password || "1234", createdAt: data.createdAt || new Date().toISOString(),
+                    id: data.id || docSnap.id, 
+                    password: data.password || "1234", 
+                    gender: data.gender || 'M', // 초기화 시에도 성별 유지
+                    createdAt: data.createdAt || new Date().toISOString(),
                     gameStats: emptyStats, forceLogout: true
                 }));
             }
@@ -337,7 +418,7 @@ window.forceLogoutAll = async () => {
 };
 
 // ==========================================
-// 6. 단어 시험(기습 테스트) 관리 및 성적표
+// 7. 단어 시험(기습 테스트) 관리 및 성적표
 // ==========================================
 window.renderTestStudentCheckboxes = async () => {
     const container = document.getElementById('test-student-checkboxes');
@@ -527,7 +608,7 @@ window.downloadTestScoresCSV = async () => {
 };
 
 // ==========================================
-// 7. 함정(오답 노트) 관리
+// 8. 함정(오답 노트) 관리
 // ==========================================
 window.renderPrisonList = async () => {
     const listEl = document.getElementById('prison-management-list');
