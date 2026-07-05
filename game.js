@@ -459,6 +459,37 @@ let unsubscribeStudent = null;
 function startMagicRPG() {
     unsubscribeWords = onSnapshot(getWordListCollection(), (snapshot) => {
         window.state.quizzes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // ⭐ 단원 내 몬스터 겹침 방지 및 엑셀 순서 고정 맵(Map) 생성
+        window.state.monsterMap = {};
+        const chapters = {};
+        window.state.quizzes.forEach(q => {
+            const ch = q.chapter || 1;
+            if(!chapters[ch]) chapters[ch] = [];
+            if(!chapters[ch].includes(q.word.toLowerCase())) chapters[ch].push(q.word.toLowerCase());
+        });
+        
+        for(let ch in chapters) {
+            chapters[ch].sort(); // 알파벳 순 정렬로 엑셀 업로드 순서 영향 완벽 차단!
+            const usedLines = new Set();
+            chapters[ch].forEach(w => {
+                let hash = 0;
+                for (let i = 0; i < w.length; i++) {
+                    hash = w.charCodeAt(i) + ((hash << 5) - hash);
+                }
+                let lineIndex = Math.abs(hash) % 62; // 전체 몬스터 62종류
+                
+                // ⭐ 이미 같은 단원 안에서 배정된 몬스터라면 옆으로 비켜가기 (중복 100% 방지)
+                let attempts = 0;
+                while(usedLines.has(lineIndex) && attempts < 62) {
+                    lineIndex = (lineIndex + 1) % 62;
+                    attempts++;
+                }
+                usedLines.add(lineIndex);
+                window.state.monsterMap[w] = lineIndex; // 최종 배정된 몬스터 번호 저장
+            });
+        }
+
         window.refreshQuiz();
         if(window.updateAdminList) window.updateAdminList();
         if (document.getElementById('prison-mode-view').style.display === 'flex') {
@@ -1927,21 +1958,16 @@ function gameLoop() {
 // 10. 오리지널 보카몬(VocaMon) 매핑 로직
 // ==========================================
 function getPokemonInfoForWord(word, count) {
-    // ⭐ 스펠링 계산 대신, 단어가 등록된 '순서'를 고유 번호(idx)로 사용합니다.
-    let idx = -1; 
-    if (window.state.quizzes && window.state.quizzes.length > 0) {
-        // 단어가 추가된 시간(createdAt) 순서대로 정렬하여 배정 순서를 고정
-        const sortedQuizzes = [...window.state.quizzes].sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
-        idx = sortedQuizzes.findIndex(q => q.word.toLowerCase() === word.toLowerCase());
-    }
-    
-    // 예외 방어: 만약 관리자가 지워서 도감에 없는 단어라면 기존의 스펠링 계산법 임시 사용
-    if (idx === -1) {
+    // 위에서 만든 '겹침 방지 맵'에서 번호를 꺼내옵니다.
+    let lineIndex = window.state.monsterMap ? window.state.monsterMap[word.toLowerCase()] : undefined;
+
+    // 만약 예전에 잡아서 도감에는 있는데, 단원장(퀴즈)에서 삭제된 단어라면 기존 해시 계산법으로 방어!
+    if (lineIndex === undefined) {
         let hash = 0; 
         for (let i = 0; i < word.length; i++) {
             hash = word.charCodeAt(i) + ((hash << 5) - hash);
         }
-        idx = Math.abs(hash);
+        lineIndex = Math.abs(hash) % 62;
     }
 
     const targetTier = count >= 10 ? 3 : (count >= 5 ? 2 : 1);
@@ -1961,10 +1987,7 @@ function getPokemonInfoForWord(word, count) {
         [62]
     ];
 
-    // 고유 번호를 62(전체 몬스터 트리 수)로 나누어 차례대로 배정
-    const lineIndex = idx % VOCAMON_LINES.length;
     const line = VOCAMON_LINES[lineIndex];
-
     const pIdx = Math.min(targetTier - 1, line.length - 1);
     const imageNumber = line[pIdx];
     const auraLevel = Math.max(0, targetTier - line.length);
