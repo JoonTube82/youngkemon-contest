@@ -77,8 +77,9 @@ window.renderAdminTitleInputs = () => {
 
 window.saveChapterTitles = async () => {
     const classCode = getClassCode();
-    if(!classCode || classCode === "대회초 6-1") {
-        return window.showCustomAlert("기본 학급(대회초 6-1)의 단원 제목은 변경할 수 없습니다.\n새로운 학급을 개설하여 진행해주세요.");
+    // "대회초 6-1" 조건을 지우고 학급 코드가 없을 때만 에러를 띄우게 변경합니다.
+    if(!classCode) {
+        return window.showCustomAlert("학급 코드를 찾을 수 없습니다.");
     }
     
     const newTitles = {};
