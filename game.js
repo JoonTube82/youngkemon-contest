@@ -1927,11 +1927,22 @@ function gameLoop() {
 // 10. 오리지널 보카몬(VocaMon) 매핑 로직
 // ==========================================
 function getPokemonInfoForWord(word, count) {
-    let hash = 0; 
-    for (let i = 0; i < word.length; i++) {
-        hash = word.charCodeAt(i) + ((hash << 5) - hash);
+    // ⭐ 스펠링 계산 대신, 단어가 등록된 '순서'를 고유 번호(idx)로 사용합니다.
+    let idx = -1; 
+    if (window.state.quizzes && window.state.quizzes.length > 0) {
+        // 단어가 추가된 시간(createdAt) 순서대로 정렬하여 배정 순서를 고정
+        const sortedQuizzes = [...window.state.quizzes].sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+        idx = sortedQuizzes.findIndex(q => q.word.toLowerCase() === word.toLowerCase());
     }
-    let idx = Math.abs(hash);
+    
+    // 예외 방어: 만약 관리자가 지워서 도감에 없는 단어라면 기존의 스펠링 계산법 임시 사용
+    if (idx === -1) {
+        let hash = 0; 
+        for (let i = 0; i < word.length; i++) {
+            hash = word.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        idx = Math.abs(hash);
+    }
 
     const targetTier = count >= 10 ? 3 : (count >= 5 ? 2 : 1);
 
@@ -1950,6 +1961,7 @@ function getPokemonInfoForWord(word, count) {
         [62]
     ];
 
+    // 고유 번호를 62(전체 몬스터 트리 수)로 나누어 차례대로 배정
     const lineIndex = idx % VOCAMON_LINES.length;
     const line = VOCAMON_LINES[lineIndex];
 
