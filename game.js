@@ -1,6 +1,7 @@
 import { auth, getStudentsCollection, getStudentDoc, getWordListCollection, setClassCode, getClassDoc } from './firebase.js';
 import { signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getDoc, getDocs, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
 // ==========================================
 // 1. 오디오 및 기초 상태 (State) 세팅
 // ==========================================
@@ -76,6 +77,8 @@ window.speakWord = (event) => {
 window.state = {
     user: null, 
     authUid: null,
+    gender: 'M', // 성별 기본값 추가
+    chapterTitles: {}, // 학급별 커스텀 단원 제목
     gameData: { level: 1, exp: 0, count: 0, wins: 0, caughtWords: {}, victories: {}, partnerWord: null, usedPokemonCooldown: {}, savedEncounters: {}, defenseLogs: [], testScores: {} },
     quizzes: [],
     currentQuiz: null,
@@ -172,7 +175,18 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-// ⭐ 기존/신규 학급 코드 체크
+// 풀숲 UI 제목 반영 함수
+window.updateChapterTitlesUI = () => {
+    for(let i=1; i<=12; i++) {
+        const el = document.getElementById(`hunt-ch-title-${i}`);
+        if(el) {
+            const title = window.state.chapterTitles[i] || CHAPTER_TITLES[i];
+            el.innerText = title;
+        }
+    }
+};
+
+// ⭐ 학급 코드 체크 (단원 제목 데이터 함께 로드)
 window.checkClassCode = async () => {
     const codeInput = document.getElementById('class-code-join').value.trim();
     if (!codeInput) return window.showCustomAlert("학급 코드를 입력해주세요.");
@@ -180,15 +194,20 @@ window.checkClassCode = async () => {
     setStatus("학급 정보 확인 중...");
     
     try {
-        if (codeInput !== "대회초 6-1") {
-            const classSnap = await getDoc(getClassDoc(codeInput));
-            if (!classSnap.exists()) {
-                setStatus("존재하지 않는 학급", true);
-                return window.showCustomAlert(`[${codeInput}] 학급이 존재하지 않습니다.\n오타가 없는지 확인하거나, 선생님께 문의하세요.`);
-            }
+        const classSnap = await getDoc(getClassDoc(codeInput));
+        if (codeInput !== "대회초 6-1" && !classSnap.exists()) {
+            setStatus("존재하지 않는 학급", true);
+            return window.showCustomAlert(`[${codeInput}] 학급이 존재하지 않습니다.\n오타가 없는지 확인하거나, 선생님께 문의하세요.`);
+        }
+        
+        if(classSnap.exists()) {
+            window.state.chapterTitles = classSnap.data().chapterTitles || {};
+        } else {
+            window.state.chapterTitles = {};
         }
 
         setClassCode(codeInput);
+        window.updateChapterTitlesUI();
         
         document.getElementById('login-step-1').style.display = 'none';
         document.getElementById('login-step-2').style.display = 'block';
@@ -223,14 +242,17 @@ window.createClass = async () => {
             return window.showCustomAlert("이미 존재하는 학급 코드입니다.\n다른 이름으로 개설해주세요.");
         }
         
-        await setDoc(classRef, { createdAt: new Date().toISOString(), createdBy: window.state.authUid });
+        await setDoc(classRef, { createdAt: new Date().toISOString(), createdBy: window.state.authUid, chapterTitles: {} });
         
         setClassCode(codeInput);
+        window.state.chapterTitles = {};
+        window.updateChapterTitlesUI();
         
         const emptyStats = { level: 1, exp: 0, count: 0, caughtWords: {}, wins: 0, victories: {}, partnerWord: null, usedPokemonCooldown: {}, savedEncounters: {}, defenseLogs: [], testScores: {} };
         await setDoc(getStudentDoc('마스터'), {
             id: '마스터',
             password: masterPw,
+            gender: 'M',
             isFirstLogin: false,
             gameStats: emptyStats,
             createdAt: new Date().toISOString(),
@@ -260,7 +282,6 @@ window.backToClassSelect = () => {
     setStatus("학급 코드를 입력하세요.");
 };
 
-// 동적 학생 목록 불러오기 (마스터, 테스트만 특별 취급)
 window.loadDynamicStudentList = async () => {
     const loginSelect = document.getElementById('user-id');
     const adminSelect = document.getElementById('reset-pw-student'); 
@@ -319,7 +340,6 @@ window.handleLogin = async () => {
                 return window.showCustomAlert("비밀번호가 틀렸습니다!");
             }
             
-            // 첫 로그인 시 비밀번호 4자리 직접 설정
             if (data.isFirstLogin) {
                 let newPw = prompt("🎉 환영합니다!\n앞으로 나만 사용할 [4자리 숫자] 비밀번호를 새로 설정해주세요.");
                 if (!newPw || !/^\d{4}$/.test(newPw)) {
@@ -332,6 +352,8 @@ window.handleLogin = async () => {
 
             if (data.forceLogout) await setDoc(docRef, { forceLogout: false }, { merge: true });
 
+            // ⭐ 성별 데이터 세팅
+            window.state.gender = data.gender || 'M';
             window.state.gameData = data.gameStats || { level: 1, exp: 0, count: 0, caughtWords: {}, wins: 0, victories: {}, partnerWord: null, usedPokemonCooldown: {}, savedEncounters: {}, defenseLogs: [], testScores: {} };
             if(window.state.gameData.wins === undefined) window.state.gameData.wins = 0;
             if(window.state.gameData.victories === undefined) window.state.gameData.victories = {};
@@ -343,7 +365,6 @@ window.handleLogin = async () => {
             
             setStatus("접속 성공!"); enterGame(idInput);
         } else {
-            // ⭐ 대회 시연용 가짜 데이터 주입 기능 (테스트 계정 자동 생성)
             if (idInput === '테스트') {
                 let demoCaughtWords = {};
                 if(window.state.quizzes && window.state.quizzes.length > 0) {
@@ -357,8 +378,9 @@ window.handleLogin = async () => {
                     partnerWord: Object.keys(demoCaughtWords)[0] || null, 
                     usedPokemonCooldown: {}, savedEncounters: {}, defenseLogs: [], testScores: {} 
                 };
-                await setDoc(docRef, { id: idInput, password: pwInput, isFirstLogin: false, gameStats: demoStats, createdAt: new Date().toISOString(), forceLogout: false });
+                await setDoc(docRef, { id: idInput, password: pwInput, gender: 'M', isFirstLogin: false, gameStats: demoStats, createdAt: new Date().toISOString(), forceLogout: false });
                 
+                window.state.gender = 'M';
                 window.state.gameData = demoStats;
                 window.showCustomAlert("시연용 [테스트] 계정이 멋진 데이터와 함께 생성되었습니다!");
                 enterGame(idInput);
@@ -456,6 +478,7 @@ function startMagicRPG() {
             }
 
             if (data.gameStats && data.gameStats.testScores) window.state.gameData.testScores = data.gameStats.testScores;
+            if (data.gender) window.state.gender = data.gender; // 실시간 성별 갱신
 
             if (data.testMode && data.testMode.active) {
                 if (document.getElementById('test-mode-view').style.display !== 'flex') {
@@ -483,7 +506,8 @@ function startMagicRPG() {
                 document.getElementById('test-mode-view').style.display = 'none';
                 if (submitBtn) {
                     submitBtn.style.display = 'block'; submitBtn.disabled = false;
-                    submitBtn.classList.replace('bg-slate-400', 'bg-red-600');
+                    submitBtn.classList.remove('bg-slate-500');
+                    submitBtn.classList.add('bg-red-600', 'hover:bg-red-700', 'active:scale-95');
                     submitBtn.innerText = '제출하기';
                 }
                 const msgEl = document.getElementById('test-submit-msg');
@@ -506,8 +530,9 @@ function startMagicRPG() {
         }
     });
     
-    window.trainerIdleImg = new Image(); window.trainerIdleImg.src = `trainer1_idle.png`;
-    window.trainerAttackImg = new Image(); window.trainerAttackImg.src = `trainer1_attack.png`;
+    // ⭐ 성별에 따른 기본 이미지 세팅
+    window.trainerIdleImg = new Image(); window.trainerIdleImg.src = window.state.gender === 'F' ? 'trainer2_idle.png' : 'trainer1_idle.png';
+    window.trainerAttackImg = new Image(); window.trainerAttackImg.src = window.state.gender === 'F' ? 'trainer2_attack.png' : 'trainer1_attack.png';
     window.charImg = window.trainerIdleImg; window.trainerAttackOffset = 0; 
 
     window.updateUI(); window.loadChapterDominators(); 
@@ -528,11 +553,14 @@ window.renderLearnChapterGrid = () => {
     if (!container) return;
     let html = '';
     for(let i=1; i<=12; i++) {
+        // ⭐ 설정된 단원 제목 적용 및 폰트 크기 확대
+        const title = window.state.chapterTitles[i] || CHAPTER_TITLES[i];
+        
         html += `
         <div class="bg-white border-2 border-emerald-100 p-3 rounded-2xl shadow-sm flex flex-col items-center justify-between transition-all hover:shadow-md hover:border-emerald-300">
             <div class="text-center mb-2 w-full">
-                <span class="text-emerald-500 font-black text-sm block mb-0.5">${i}단원</span>
-                <span class="text-slate-600 font-bold text-[10px] leading-tight block h-6 overflow-hidden">${CHAPTER_TITLES[i]}</span>
+                <span class="text-emerald-500 font-black text-sm sm:text-base block mb-1">${i}단원</span>
+                <span class="text-slate-700 font-black text-xs sm:text-sm leading-tight block h-8 overflow-hidden flex items-center justify-center">${title}</span>
             </div>
             <div class="flex gap-1 w-full mt-auto">
                 <button onclick="window.openLearnPlay(${i})" class="flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-200 py-2 rounded-lg text-xs font-bold transition-transform active:scale-95">학습</button>
@@ -775,6 +803,7 @@ window.loadChapterDominators = async () => {
             }
         });
 
+        // ⭐ 지배자 UI 강화 (더 돋보이게 변경)
         for(let i=1; i<=12; i++) {
             const domEl = document.getElementById(`dom-ch${i}`);
             if (!domEl) continue;
@@ -782,8 +811,11 @@ window.loadChapterDominators = async () => {
             for (let sId in chapterScores[i]) {
                 if (chapterScores[i][sId] > maxCount) { maxCount = chapterScores[i][sId]; dominator = sId; }
             }
-            if (maxCount > 0) domEl.innerHTML = `<span class="bg-yellow-900/60 text-yellow-400 px-2 py-0.5 rounded-md border border-yellow-700/50 font-bold shadow-sm">👑 지배자: ${dominator}</span>`;
-            else domEl.innerHTML = `<span class="bg-slate-800/50 text-slate-500 px-2 py-0.5 rounded-md border border-slate-700/50 font-bold">👑 지배자: 없음</span>`;
+            if (maxCount > 0) {
+                domEl.innerHTML = `<span class="inline-block mt-1 bg-yellow-400 text-yellow-900 px-2 py-1 rounded border-b-2 border-yellow-600 font-black text-[11px] shadow-sm">👑 지배자: ${dominator}</span>`;
+            } else {
+                domEl.innerHTML = `<span class="inline-block mt-1 bg-slate-200 text-slate-500 px-2 py-1 rounded border-b-2 border-slate-300 font-bold text-[10px]">👑 지배자: 없음</span>`;
+            }
         }
     } catch (e) { console.error("지배자 정보를 불러오는 중 오류", e); }
 };
@@ -795,10 +827,12 @@ window.showAdventurerProfile = async (studentId) => {
     try {
         const docSnap = await getDoc(getStudentDoc(studentId));
         if(!docSnap.exists()) throw new Error();
-        const stats = docSnap.data().gameStats || {};
+        const data = docSnap.data();
+        const stats = data.gameStats || {};
         const caughtWords = stats.caughtWords || {};
         const wins = stats.wins || 0; const level = stats.level || 1;
         const tier = getTierInfo(wins);
+        const genderEmoji = (data.gender === 'F') ? '👧' : '👦'; // 성별 반영
 
         const sortedWords = Object.keys(caughtWords).sort((a,b)=>caughtWords[b]-caughtWords[a]).slice(0, 3);
         let top3Html = '';
@@ -827,7 +861,7 @@ window.showAdventurerProfile = async (studentId) => {
         document.getElementById('trainer-modal-content').innerHTML = `
             <div class="mb-6 mt-2 text-center">
                 <div class="text-6xl mb-3 drop-shadow-lg">${tier.icon}</div>
-                <h3 class="text-3xl font-black ${tier.color} mb-2">${studentId}</h3>
+                <h3 class="text-3xl font-black ${tier.color} mb-2">${genderEmoji} ${studentId}</h3>
                 <p class="text-sm text-slate-300 font-bold">Lv.${level} • ${tier.name} 티어 (${wins}승)</p>
             </div>
             <div class="bg-slate-900/80 rounded-3xl p-5 mb-5 border border-slate-700 shadow-inner">
@@ -886,6 +920,11 @@ window.enterStage = (chapter) => {
     document.getElementById('hunt-map-view').style.display = 'none';
     document.getElementById('hunt-battle-view').style.display = 'flex';
     document.getElementById('hunt-battle-view').classList.replace('hidden', 'flex'); 
+    
+    // 캐릭터 이미지 동적 적용 (남/여)
+    window.trainerIdleImg.src = window.state.gender === 'F' ? 'trainer2_idle.png' : 'trainer1_idle.png';
+    window.charImg = window.trainerIdleImg;
+    
     window.refreshQuiz(); window.AudioManager.playBGM('hunt');
 };
 
@@ -927,7 +966,6 @@ window.refreshQuiz = () => {
 
     document.getElementById('quiz-txt').innerText = window.state.currentQuiz.meaning;
     
-    // ⭐ 기본 힌트 메시지도 큼직하고 뚜렷하게 변경
     if(hint) { 
         hint.innerHTML = "정답 영단어를 입력하면 몬스터를 포획합니다!"; 
         hint.className = "text-slate-400 text-lg mt-4 font-bold"; 
@@ -954,7 +992,6 @@ window.checkMagic = () => {
     } else {
         window.state.shake = 15;
         
-        // 알파벳 스크램블 (무작위 섞기) 로직
         let arr = correctWord.split('');
         let scrambled = correctWord;
         let attempts = 0;
@@ -970,7 +1007,6 @@ window.checkMagic = () => {
             }
         }
         
-        // ⭐ 수정된 부분: 알파벳만 먼저 대문자로 변환 후 연결, 문구 수정, 위아래 떨림(animate-bounce) 제거
         const scrambledText = arr.map(char => char.toLowerCase()).join(' &nbsp; ');
         hint.innerHTML = `<span class="text-xl text-red-500 font-bold">단어 힌트:</span><br><span class="text-4xl text-red-600 font-black tracking-widest mt-2 inline-block">${scrambledText}</span>`;
         hint.className = "mt-4"; 
@@ -989,7 +1025,10 @@ function handleAttack() {
     window.state.gameData.count++; window.state.monster.hp -= 100; window.state.monster.shake = 25;
     for (let i = 0; i < 20; i++) window.state.particles.push({ x: 280, y: 220, vx: (Math.random()-0.5)*20, vy: (Math.random()-0.5)*20, life: 1.0, color: "#ef4444" });
     
-    window.charImg = window.trainerAttackImg; window.trainerAttackOffset = 30; 
+    // 공격 시 이미지 반영
+    window.trainerAttackImg.src = window.state.gender === 'F' ? 'trainer2_attack.png' : 'trainer1_attack.png';
+    window.charImg = window.trainerAttackImg; 
+    window.trainerAttackOffset = 30; 
     setTimeout(() => { window.charImg = window.trainerIdleImg; window.trainerAttackOffset = 0; }, 300);
 
     const catchCount = window.state.gameData.caughtWords[word];
@@ -1139,7 +1178,8 @@ window.renderRanking = async () => {
                     if (quiz) maxCh = quiz.chapter || 1;
                 }
 
-                students.push({ id: doc.id, wins: stats.wins || 0, caught: Object.keys(caughtWords).length, level: stats.level || 1, bestWord, bestCount, maxCh, partnerStage });
+                // ⭐ 성별 데이터 추가
+                students.push({ id: doc.id, gender: data.gender || 'M', wins: stats.wins || 0, caught: Object.keys(caughtWords).length, level: stats.level || 1, bestWord, bestCount, maxCh, partnerStage });
             }
         });
 
@@ -1155,6 +1195,7 @@ window.renderRanking = async () => {
         students.forEach((student) => {
             const tier = getTierInfo(student.wins);
             const isMe = student.id === window.state.user;
+            const genderEmoji = (student.gender === 'F') ? '👧' : '👦';
             let pInfoHtml = '<span class="text-5xl opacity-20">🥚</span>';
             let chapterBadge = '';
             
@@ -1174,7 +1215,7 @@ window.renderRanking = async () => {
                 ${isMe ? '<div class="absolute -top-2 -left-2 bg-red-500 text-white text-[10px] px-2.5 py-0.5 rounded-full font-bold shadow-md z-10 border border-white/20">나</div>' : ''}
                 <div class="flex justify-between items-start mb-3">
                     <div class="truncate pr-1 w-full">
-                        <div class="text-base sm:text-lg font-black text-white drop-shadow-md truncate w-full">${student.id}</div>
+                        <div class="text-base sm:text-lg font-black text-white drop-shadow-md truncate w-full">${genderEmoji} ${student.id}</div>
                         <div class="text-xs sm:text-sm text-white/80 font-bold drop-shadow mt-0.5">Lv.${student.level}</div>
                     </div>
                     <div class="flex flex-col items-end shrink-0 pl-1">
@@ -1277,6 +1318,7 @@ window.loadArena = async () => {
         opponents.forEach(opp => {
             const oppId = opp.id; const docData = opp.data;
             const isBoss = (oppId === '마스터');
+            const oppGender = docData.gender === 'F' ? '👧' : '👦'; // 성별 반영
             let canBattle = true; let cooldownMsg = "";
 
             if (!isPrivileged) {
@@ -1315,7 +1357,7 @@ window.loadArena = async () => {
 
             html += `<div class="flex justify-between items-center ${isBoss?'bg-yellow-900/40 border-yellow-500/50':'bg-[#1f2937] border-slate-600'} p-4 sm:p-5 rounded-2xl shadow-lg border mb-4 hover:border-red-400 transition-colors overflow-hidden">
                 <div class="flex items-center gap-3 sm:gap-4 overflow-hidden">
-                    <div class="text-3xl sm:text-4xl shrink-0 drop-shadow-md">${isBoss?'👑':'👦'}</div>
+                    <div class="text-3xl sm:text-4xl shrink-0 drop-shadow-md">${isBoss?'👑':oppGender}</div>
                     <div class="flex flex-col sm:flex-row sm:items-center shrink-0 min-w-0">
                         <div class="min-w-[70px] truncate"><div class="font-bold text-white truncate text-base sm:text-lg">${oppId}</div><div class="text-xs sm:text-sm ${isBoss?'text-yellow-400':'text-slate-400'} font-bold mt-0.5">${isBoss?'체육관 관장':'모험가'}</div></div>
                         ${top3Html}
@@ -1645,8 +1687,7 @@ window.useUltimate = () => {
     const meaning = quiz ? quiz.meaning : "알 수 없음";
 
     document.getElementById('b-quiz-title').innerText = "⚡ 스페셜 어택!";
-    // 10초 -> 15초 텍스트 변경
-    document.getElementById('b-quiz-desc').innerText = "제한 시간 15초! 정확한 영단어를 입력하세요!"; 
+    document.getElementById('b-quiz-desc').innerText = "제한 시간 15초! 정확한 영단어를 입력하세요!";
     document.getElementById('b-quiz-word').innerText = meaning;
     document.getElementById('b-spell-in').value = '';
     document.getElementById('b-fake-text').textContent = '스펠링 입력';
@@ -1657,7 +1698,6 @@ window.useUltimate = () => {
     
     window.battleState.expectedWord = oppMon.word;
     window.battleState.isShieldMode = false;
-    // 10000 -> 15000 으로 변경
     startQuizTimer(15000); 
 };
 
@@ -1672,7 +1712,6 @@ const triggerOpponentUltimate = () => {
     const meaning = quiz ? quiz.meaning : "알 수 없음";
 
     document.getElementById('b-quiz-title').innerText = "🛡️ 방어 태세 (실드)!";
-    // 10초 -> 15초 텍스트 변경
     document.getElementById('b-quiz-desc').innerText = "적의 필살기가 날아옵니다! 15초 안에 내 파트너의 단어를 입력해 막아내세요!";
     document.getElementById('b-quiz-word').innerText = meaning;
     document.getElementById('b-spell-in').value = '';
@@ -1684,7 +1723,6 @@ const triggerOpponentUltimate = () => {
     
     window.battleState.expectedWord = myMon.word;
     window.battleState.isShieldMode = true;
-    // 10000 -> 15000 으로 변경
     startQuizTimer(15000); 
 };
 
@@ -1726,7 +1764,6 @@ window.submitBattleQuiz = (isTimeout = false) => {
         } else { logBattleMsg("💦 스펠링을 틀려 스페셜 어택이 빗나갔다...", false); }
     }
 
-    // ⭐ 수정됨: active를 true로 바꿔야만 HP 깎인 화면이 업데이트 됨
     window.battleState.active = true; 
     updateBattleUI();
     const isGameOver = checkFaint();
@@ -2002,8 +2039,6 @@ const LOCAL_POKEMON_DB = (() => {
 // ==========================================
 // ⭐ 11. 시험(테스트) 및 함정(감옥) 모드 로직
 // ==========================================
-
-// 1. 기습 테스트 화면 그리기
 window.renderTestPaper = (chapter) => {
     const listEl = document.getElementById('test-paper-list');
     if (!listEl) return;
@@ -2039,7 +2074,6 @@ window.renderTestPaper = (chapter) => {
     document.getElementById('test-mode-desc').innerHTML = `[${chapter}단원] 시험이 시작되었습니다.<br>빈칸에 알맞은 영어 스펠링을 입력하세요.`;
 };
 
-// 2. 제출하기 함수 (채점 결과 시각화 추가)
 window.submitTest = async () => {
     const btn = document.getElementById('btn-submit-test');
     if (btn && btn.disabled) return; 
@@ -2083,22 +2117,19 @@ window.submitTest = async () => {
             await setDoc(docRef, { gameStats: stats }, { merge: true });
         }
         
-        // ⭐ 추가된 부분: 화면에 즉시 채점 결과를 보여줌
         inputs.forEach(input => {
             const correctWord = input.getAttribute('data-word').trim().toLowerCase();
             const userWord = input.value.trim().toLowerCase();
             
-            input.disabled = true; // 입력창 잠금
-            input.classList.replace('bg-slate-800', 'bg-slate-900'); // 배경 어둡게
+            input.disabled = true;
+            input.classList.replace('bg-slate-800', 'bg-slate-900'); 
             
             if (userWord === correctWord) {
-                // 정답 (초록색)
-                input.style.setProperty('color', '#10b981', 'important'); // emerald-500
+                input.style.setProperty('color', '#10b981', 'important'); 
                 input.classList.replace('border-slate-400', 'border-emerald-500');
                 input.value = `${correctWord} (정답!)`;
             } else {
-                // 오답 (빨간색 및 정답 표시)
-                input.style.setProperty('color', '#ef4444', 'important'); // red-500
+                input.style.setProperty('color', '#ef4444', 'important'); 
                 input.classList.replace('border-slate-400', 'border-red-500');
                 input.value = `${userWord || '미입력'} ➔ 정답: ${correctWord}`;
             }
@@ -2122,7 +2153,6 @@ window.submitTest = async () => {
     }
 };
 
-// 3. 함정(감옥) 화면 그리기
 window.renderPrisonPaper = () => {
     const listEl = document.getElementById('prison-paper-list');
     if (!listEl) return;
@@ -2153,7 +2183,6 @@ window.renderPrisonPaper = () => {
     listEl.innerHTML = html;
 };
 
-// 4. 함정(감옥) 입력 체크
 window.checkPrisonInput = async (inputEl, word) => {
     const val = inputEl.value.trim().toLowerCase();
 
