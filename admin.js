@@ -212,9 +212,16 @@ window.handleExcelUpload = (e) => {
             let newWords = [];
             for(let i=0; i<data.length; i++) {
                 const row = data[i];
-                // ⭐ 상단 안내 문구나 제목 줄은 무시하고, 진짜 단어 데이터만 골라내서 읽기
-                if(row.length >= 3 && row[1] && row[2] && !row[1].toString().includes("영단어")) {
-                    newWords.push({ chapter: parseInt(row[0])||1, word: row[1].toString().trim(), meaning: row[2].toString().trim() });
+                if(!row) continue;
+                
+                // ⭐ 비어있는 칸이 있어도 에러가 나지 않도록 안전하게 읽어오기
+                let colA = row[0] !== undefined ? row[0].toString().trim() : "1";
+                let colB = row[1] !== undefined ? row[1].toString().trim() : "";
+                let colC = row[2] !== undefined ? row[2].toString().trim() : "";
+                
+                // 영단어, 뜻이 모두 존재하고 제목 줄(영단어, English 등)이 아닐 때만 담기
+                if(colB && colC && !colB.includes("영단어") && !colB.includes("English")) {
+                    newWords.push({ chapter: parseInt(colA) || 1, word: colB, meaning: colC });
                 }
             }
             window.excelDataTemp = newWords;
@@ -233,6 +240,46 @@ window.handleExcelUpload = (e) => {
     };
     reader.readAsBinaryString(file);
     e.target.value = ''; 
+};
+
+window.applyExcelData = async () => {
+    if(!window.excelDataTemp || window.excelDataTemp.length === 0) return window.showCustomAlert("적용할 데이터가 없습니다.\n(엑셀 파일의 양식을 다시 확인해주세요.)");
+    if(!await window.showCustomConfirm(`기존 도감을 모두 삭제하고 엑셀 데이터(${window.excelDataTemp.length}개)로 덮어쓰시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
+
+    window.showCustomAlert("기존 데이터를 삭제하고 새 데이터를 적용 중입니다... (잠시만 기다려주세요)");
+    try {
+        // 1. 기존 데이터 모두 삭제
+        const snap = await getDocs(getWordListCollection());
+        const deletePromises = [];
+        snap.forEach(d => deletePromises.push(deleteDoc(d.ref)));
+        await Promise.all(deletePromises);
+
+        // 2. 새 데이터 차례대로 안전하게 추가 (동시 전송 과부하 방지)
+        let now = Date.now();
+        for (let i = 0; i < window.excelDataTemp.length; i++) {
+            let w = window.excelDataTemp[i];
+            // 특수기호 등으로 인한 DB 에러를 막기 위한 완벽히 안전한 ID 생성
+            let safeWordId = 'word_' + now + '_' + i; 
+            
+            await setDoc(getWordDoc(safeWordId), {
+                chapter: w.chapter, 
+                word: w.word, 
+                meaning: w.meaning, 
+                createdAt: now + i 
+            });
+        }
+        
+        // 3. UI 정리 및 갱신
+        document.getElementById('excel-preview-container').style.display = 'none';
+        window.excelDataTemp = [];
+        
+        // 화면 즉시 새로고침
+        if(window.updateAdminList) window.updateAdminList(); 
+        
+        window.showCustomAlert("🎉 엑셀 데이터 적용이 완벽하게 완료되었습니다!");
+    } catch(e) { 
+        window.showCustomAlert("적용 중 오류 발생: " + e.message); 
+    }
 };
 // ==========================================
 // ⭐ 5. 모험가 계정 성별 토글 및 삭제 로직
