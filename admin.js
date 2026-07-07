@@ -191,7 +191,7 @@ window.downloadWordExcel = async () => {
 
         const wb = window.XLSX.utils.book_new();
         window.XLSX.utils.book_append_sheet(wb, ws, "단어장");
-        window.XLSX.writeFile(wb, "영켓몬_단어장_백업.xlsx");
+        window.XLSX.writeFile(wb, "보카몬_단어장_백업.xlsx");
         window.closeCustomAlert();
     } catch(e) { window.showCustomAlert("오류 발생: " + e.message); }
 };
