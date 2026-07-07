@@ -160,7 +160,7 @@ window.updateAdminList = () => {
 };
 
 // ==========================================
-// 4. 엑셀 업로드 및 다운로드 로직 (SheetJS 연동)
+// 4. 엑셀 업로드 및 다운로드 로직 (꾸며진 양식)
 // ==========================================
 window.downloadWordExcel = async () => {
     if(!window.XLSX) return window.showCustomAlert("엑셀 라이브러리를 불러오지 못했습니다.");
@@ -171,10 +171,24 @@ window.downloadWordExcel = async () => {
         snap.forEach(doc => words.push(doc.data()));
         words.sort((a,b) => (a.chapter || 1) - (b.chapter || 1));
 
-        let ws_data = [["단원(숫자)", "영단어", "뜻"]];
+        // ⭐ 엑셀 양식 상단 꾸미기 (안내 문구 및 헤더)
+        let ws_data = [
+            ["👑 [ 6학년 보카몬 영단어장 일괄 업로드 양식 ]"],
+            ["※ 안내: 아래 4번째 줄부터 단어를 입력하세요. 단원 칸에는 숫자만 적어주세요. (이 안내 문구는 지우지 않아도 알아서 무시됩니다)"],
+            ["단원(숫자)", "영단어 (English)", "뜻 (Korean)"]
+        ];
+        
         words.forEach(w => { ws_data.push([w.chapter || 1, w.word, w.meaning]); });
 
         const ws = window.XLSX.utils.aoa_to_sheet(ws_data);
+        
+        // ⭐ 엑셀 칸 너비(Column Width) 넓게 조정하여 답답함 해소
+        ws['!cols'] = [
+            { wpx: 100 }, // A열: 단원 너비
+            { wpx: 250 }, // B열: 영단어 너비
+            { wpx: 300 }  // C열: 뜻 너비
+        ];
+
         const wb = window.XLSX.utils.book_new();
         window.XLSX.utils.book_append_sheet(wb, ws, "단어장");
         window.XLSX.writeFile(wb, "영켓몬_단어장_백업.xlsx");
@@ -196,9 +210,10 @@ window.handleExcelUpload = (e) => {
             const data = window.XLSX.utils.sheet_to_json(ws, {header: 1});
             
             let newWords = [];
-            for(let i=1; i<data.length; i++) {
+            for(let i=0; i<data.length; i++) {
                 const row = data[i];
-                if(row.length >= 3 && row[1] && row[2]) {
+                // ⭐ 상단 안내 문구나 제목 줄은 무시하고, 진짜 단어 데이터만 골라내서 읽기
+                if(row.length >= 3 && row[1] && row[2] && !row[1].toString().includes("영단어")) {
                     newWords.push({ chapter: parseInt(row[0])||1, word: row[1].toString().trim(), meaning: row[2].toString().trim() });
                 }
             }
@@ -219,34 +234,6 @@ window.handleExcelUpload = (e) => {
     reader.readAsBinaryString(file);
     e.target.value = ''; 
 };
-
-window.applyExcelData = async () => {
-    if(!window.excelDataTemp || window.excelDataTemp.length === 0) return window.showCustomAlert("적용할 데이터가 없습니다.");
-    if(!await window.showCustomConfirm(`기존 도감을 모두 삭제하고 엑셀 데이터(${window.excelDataTemp.length}개)로 덮어쓰시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
-
-    window.showCustomAlert("기존 데이터를 삭제하고 새 데이터를 적용 중입니다... (잠시만 기다려주세요)");
-    try {
-        const snap = await getDocs(getWordListCollection());
-        const deletePromises = [];
-        snap.forEach(d => deletePromises.push(deleteDoc(d.ref)));
-        await Promise.all(deletePromises);
-
-        const addPromises = [];
-        window.excelDataTemp.forEach(w => {
-            const wordId = w.word.toLowerCase().replace(/\s+/g, '_') + '_' + Math.random().toString(36).substr(2,5); 
-            addPromises.push(setDoc(getWordDoc(wordId), {
-                chapter: w.chapter, word: w.word, meaning: w.meaning, createdAt: Date.now()
-            }));
-        });
-        await Promise.all(addPromises);
-        
-        document.getElementById('excel-preview-container').style.display = 'none';
-        window.excelDataTemp = [];
-        window.showCustomAlert("엑셀 데이터 적용이 완료되었습니다!");
-        window.updateAdminList();
-    } catch(e) { window.showCustomAlert("적용 중 오류 발생: " + e.message); }
-};
-
 // ==========================================
 // ⭐ 5. 모험가 계정 성별 토글 및 삭제 로직
 // ==========================================
