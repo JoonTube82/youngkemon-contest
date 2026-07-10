@@ -153,7 +153,7 @@ const setStatus = (msg, isError = false) => {
     const statusEl = document.getElementById('login-status');
     if (statusEl) {
         statusEl.innerText = msg;
-        statusEl.className = isError ? "text-red-500 text-xs mt-4 font-bold" : "text-red-500 text-xs mt-4 animate-pulse";
+        statusEl.className = isError ? "text-red-500 text-xs mt-4 font-bold" : "text-slate-500 text-xs mt-4 font-bold animate-pulse";
     }
 };
 
@@ -411,7 +411,6 @@ function enterGame(id) {
     window.switchTab('rank'); 
     window.AudioManager.playBGM('town');
 }
-
 // ==========================================
 // 4. 게임 핵심 흐름 (탭, 데이터 동기화)
 // ==========================================
@@ -461,12 +460,13 @@ function startMagicRPG() {
     unsubscribeWords = onSnapshot(getWordListCollection(), (snapshot) => {
         window.state.quizzes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
+        // ⭐ 철저한 예외 처리 적용된 맵 생성 (빈칸, 숫자, 특수문자 무시)
         window.state.monsterMap = {};
         const chapters = {};
         window.state.quizzes.forEach(q => {
             const ch = q.chapter || 1;
             const safeWord = (q.word || '').toString().toLowerCase().trim();
-            if(!safeWord) return; 
+            if(!safeWord) return; // 비어있는 단어 무시 (에러 방어)
             if(!chapters[ch]) chapters[ch] = [];
             if(!chapters[ch].includes(safeWord)) chapters[ch].push(safeWord);
         });
@@ -827,6 +827,8 @@ window.loadChapterDominators = async () => {
             const sId = doc.id;
             if (['마스터', '테스트'].includes(sId)) return;
             const caught = doc.data().gameStats?.caughtWords || {};
+            
+            // ⭐ 안전한 단어 매칭
             for (let word in caught) {
                 const safeWord = (word || '').toString().toLowerCase();
                 const quiz = window.state.quizzes.find(q => (q.word || '').toString().toLowerCase() === safeWord);
@@ -942,7 +944,6 @@ window.showCheatSheet = () => {
     document.getElementById('cheat-sheet-modal').style.display = 'flex';
 };
 window.closeCheatSheet = () => { document.getElementById('cheat-sheet-modal').style.display = 'none'; };
-
 // ==========================================
 // 6. 전투 및 사냥터 (풀숲) 로직
 // ==========================================
@@ -1053,655 +1054,39 @@ window.checkMagic = () => {
     if (fakeText) { fakeText.textContent = '영단어를 입력하세요'; fakeText.style.color = '#9ca3af'; }
 };
 
-window.renderDex = async () => {
-    const dexList = document.getElementById('dex-list');
-    if(!window.state.gameData.caughtWords) window.state.gameData.caughtWords = {};
-    const caughtWords = window.state.gameData.caughtWords;
-    const keys = Object.keys(caughtWords);
-    document.getElementById('dex-total').innerText = keys.length;
+function handleAttack() {
+    const word = (window.state.currentQuiz.word || '').toString();
+    if (!window.state.gameData.caughtWords) window.state.gameData.caughtWords = {};
+    window.state.gameData.caughtWords[word] = (window.state.gameData.caughtWords[word] || 0) + 1;
+    window.state.gameData.count++; window.state.monster.hp -= 100; window.state.monster.shake = 25;
+    for (let i = 0; i < 20; i++) window.state.particles.push({ x: 280, y: 220, vx: (Math.random()-0.5)*20, vy: (Math.random()-0.5)*20, life: 1.0, color: "#ef4444" });
     
-    if (keys.length === 0) {
-        dexList.innerHTML = `<p class="text-center text-slate-500 py-10 text-sm font-bold">아직 포획한 영켓몬이 없습니다.<br>사냥터에서 영단어를 맞혀보세요!</p>`; return;
+    window.trainerAttackImg.src = window.state.gender === 'F' ? 'trainer2_attack.png' : 'trainer1_attack.png';
+    window.charImg = window.trainerAttackImg; 
+    window.trainerAttackOffset = 30; 
+    setTimeout(() => { window.charImg = window.trainerIdleImg; window.trainerAttackOffset = 0; }, 300);
+
+    const catchCount = window.state.gameData.caughtWords[word];
+    let defeatExp = catchCount > 10 ? 1 : 40;
+    let hitExp = catchCount > 10 ? 0 : 15;
+
+    if (window.state.monster.hp <= 0) { 
+        window.state.gameData.exp += defeatExp; window.state.monster.hp = 100; 
+        if (window.state.gameData.savedEncounters) delete window.state.gameData.savedEncounters[window.state.currentChapter];
+    } else { window.state.gameData.exp += hitExp; }
+
+    let reqExp = 100 + (window.state.gameData.level * 100);
+    if (window.state.gameData.exp >= reqExp) {
+        window.state.gameData.exp -= reqExp; window.state.gameData.level++;
+        document.getElementById('modal').style.display = 'flex';
+        document.getElementById('modal-desc').innerText = `레벨 ${window.state.gameData.level} 모험가가 되었습니다!`;
     }
-    
-    const sortedKeys = keys.sort((a, b) => caughtWords[b] - caughtWords[a]);
-    const cardDataList = sortedKeys.map(w => {
-        const word = (w || '').toString();
-        const count = caughtWords[word];
-        const quizMatch = window.state.quizzes.find(q => (q.word || '').toString().toLowerCase() === word.toLowerCase());
-        const meaning = quizMatch ? quizMatch.meaning : "알 수 없음";
-        const pInfo = getPokemonInfoForWord(word, count);
-        const apiData = LOCAL_POKEMON_DB[pInfo.id] || { name: "알 수 없음", type: "normal" };
-        return { word, count, meaning, pInfo, apiData };
-    });
-    
-    let html = '<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-3">';
-    cardDataList.forEach(item => {
-        const typeInfo = TYPE_COLORS[item.apiData.type] || TYPE_COLORS['normal'];
-        let auraBg = 'bg-white/60 text-slate-800';
-        if (item.pInfo.auraLevel === 1) auraBg = 'bg-blue-200/80 shadow-[0_0_15px_rgba(186,230,253,0.8)] text-slate-800';
-        if (item.pInfo.auraLevel === 2) auraBg = 'bg-red-200/80 shadow-[0_0_20px_rgba(254,202,202,0.8)] animate-pulse text-slate-800';
-        
-        const isPartner = window.state.gameData.partnerWord === item.word;
-        const borderClass = isPartner ? 'border-yellow-400 ring-2 ring-yellow-400/50 scale-105' : 'border-slate-200 hover:scale-105';
-        const partnerBadge = isPartner ? '<div class="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-300 to-yellow-500 text-yellow-900 text-[10px] px-2 py-0.5 rounded-full font-black shadow-md z-10 border border-yellow-200">👑 파트너</div>' : '';
+    window.updateUI(); window.saveProgress();
+}
 
-        html += `
-        <div onclick="window.setPartner('${item.word.replace(/'/g, "\\'")}')" class="cursor-pointer relative flex flex-col items-center justify-center p-3 rounded-2xl ${typeInfo.bg} bg-opacity-30 border-2 ${borderClass} transition-all shadow-sm">
-            ${partnerBadge}
-            <div class="w-full flex justify-between items-center mb-1 px-1">
-                <span class="text-[10px] text-slate-800 bg-white/60 px-1.5 py-0.5 rounded-md font-bold">LV ${item.pInfo.tier}</span>
-                <span class="text-[10px] bg-white text-slate-700 px-1.5 py-0.5 rounded-md font-bold shadow-sm">★ ${item.count}</span>
-            </div>
-            <div class="h-24 w-24 flex items-center justify-center my-1 relative ${auraBg} rounded-full p-1 transition-all">
-                <img src="${item.pInfo.imgSrc}" crossorigin="anonymous" class="max-w-full max-h-full object-contain" style="image-rendering: pixelated;" />
-            </div>
-<div class="w-full text-center bg-white rounded-xl py-2 mt-2 shadow-sm border border-slate-100">
-                <div class="font-black text-slate-800 text-base capitalize truncate px-1 flex justify-center items-center gap-1">
-                    ${item.word}
-                    <button onclick="window.speakText('${item.word.replace(/'/g, "\\'")}', 'en-US'); event.stopPropagation();" class="hover:scale-125 transition-transform text-sm" title="발음 듣기">🔊</button>
-                </div>
-                <div class="text-slate-500 text-xs truncate px-1 font-bold">${item.meaning}</div>
-                <div class="mt-1 flex items-center justify-center gap-1">
-                    <span class="text-[9px] text-white ${typeInfo.bg} rounded px-1 font-bold shadow-sm">${typeInfo.name}</span>
-                    <span class="text-[9px] text-slate-600 font-bold">${item.apiData.name}</span>
-                </div>
-            </div>
-        </div>`;
-    });
-    dexList.innerHTML = html + '</div>';
-};
-
-window.renderRanking = async () => {
-    const listEl = document.getElementById('rank-list');
-    listEl.innerHTML = '<p class="text-center text-slate-500 py-10 text-sm font-bold animate-pulse col-span-full">랭킹 정보를 가져오는 중...</p>';
-    try {
-        const snap = await getDocs(getStudentsCollection());
-        let students = [];
-        snap.forEach(doc => {
-            if (!['마스터', '테스트'].includes(doc.id)) {
-                const data = doc.data(); const stats = data.gameStats || {};
-                const caughtWords = stats.caughtWords || {};
-                let maxCh = 0; let bestWord = null; let bestCount = 0; let partnerStage = null;
-                
-                if (stats.partnerWord && caughtWords[stats.partnerWord]) {
-                    bestWord = stats.partnerWord; bestCount = caughtWords[stats.partnerWord]; partnerStage = stats.partnerStage || null;
-                } else {
-                    for (let word in caughtWords) {
-                        if (caughtWords[word] > bestCount) { bestCount = caughtWords[word]; bestWord = word; }
-                    }
-                }
-
-                if (bestWord) {
-                    const safeBestWord = (bestWord || '').toString().toLowerCase();
-                    const quiz = window.state.quizzes.find(q => (q.word || '').toString().toLowerCase() === safeBestWord);
-                    if (quiz) maxCh = quiz.chapter || 1;
-                }
-
-                students.push({ id: doc.id, gender: data.gender || 'M', wins: stats.wins || 0, caught: Object.keys(caughtWords).length, level: stats.level || 1, bestWord, bestCount, maxCh, partnerStage });
-            }
-        });
-
-        students.sort((a, b) => {
-            const getPriority = (id) => {
-                if (id === '마스터') return -2; if (id === '선생님') return -1;
-                const num = parseInt(id.split('.')[0]); return isNaN(num) ? 999 : num;
-            };
-            return getPriority(a.id) - getPriority(b.id);
-        });
-
-        let html = '';
-        students.forEach((student) => {
-            const tier = getTierInfo(student.wins);
-            const isMe = student.id === window.state.user;
-            const genderEmoji = (student.gender === 'F') ? '👧' : '👦';
-            let pInfoHtml = '<span class="text-5xl opacity-20">🥚</span>';
-            let chapterBadge = '';
-            
-            if (student.bestWord) {
-                let pInfo;
-                if (student.partnerStage) {
-                    const fakeCount = student.partnerStage === 1 ? 1 : (student.partnerStage === 2 ? 5 : 10);
-                    pInfo = getPokemonInfoForWord(student.bestWord, fakeCount);
-                } else pInfo = getPokemonInfoForWord(student.bestWord, student.bestCount);
-                
-                pInfoHtml = `<img src="${pInfo.imgSrc}" class="max-w-full max-h-full object-contain drop-shadow-md" style="image-rendering:pixelated;">`;
-                chapterBadge = `<div class="absolute -bottom-2 -right-3 text-[11px] sm:text-xs bg-indigo-600 text-white px-2 py-0.5 rounded-md font-bold shadow-sm border border-indigo-400 z-10">${student.maxCh}단원</div>`;
-            }
-
-            html += `
-            <div onclick="window.showAdventurerProfile('${student.id}')" class="cursor-pointer border-2 border-slate-200 bg-white rounded-2xl p-4 flex flex-col relative overflow-visible shadow-md hover:scale-105 transition-transform hover:shadow-indigo-200 group ${isMe ? 'ring-2 ring-red-400' : ''}">
-                ${isMe ? '<div class="absolute -top-2 -left-2 bg-red-500 text-white text-[10px] px-2.5 py-0.5 rounded-full font-bold shadow-md z-10 border border-white/20">나</div>' : ''}
-                <div class="flex justify-between items-start mb-3">
-                    <div class="truncate pr-1 w-full">
-                        <div class="text-base sm:text-lg font-black text-slate-800 drop-shadow-sm truncate w-full">${genderEmoji} ${student.id}</div>
-                        <div class="text-xs sm:text-sm text-slate-500 font-bold drop-shadow-sm mt-0.5">Lv.${student.level}</div>
-                    </div>
-                    <div class="flex flex-col items-end shrink-0 pl-1">
-                        <div class="text-xs font-black ${tier.color} bg-slate-50 px-2 py-1 rounded-lg border border-slate-200 whitespace-nowrap shadow-sm">${tier.icon} ${tier.name}</div>
-                    </div>
-                </div>
-                <div class="h-24 w-24 sm:h-28 sm:w-28 mx-auto my-2 flex items-center justify-center relative bg-slate-50 rounded-full border border-slate-200 transition-colors shadow-inner">
-                    ${pInfoHtml} ${chapterBadge}
-                </div>
-                <div class="mt-auto pt-4 flex justify-between border-t border-slate-100">
-                    <div class="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200">
-                        <span class="text-xs sm:text-sm">📖</span> <span class="text-xs sm:text-sm font-bold text-slate-700 drop-shadow-sm">${student.caught}</span>
-                    </div>
-                    <div class="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200">
-                        <span class="text-xs sm:text-sm">⚔️</span> <span class="text-xs sm:text-sm font-bold text-slate-700 drop-shadow-sm">${student.wins}</span>
-                    </div>
-                </div>
-            </div>`;
-        });
-        listEl.innerHTML = html || '<p class="text-center py-10 col-span-full">랭킹 정보가 없습니다.</p>';
-    } catch (e) { listEl.innerHTML = '<p class="text-center text-red-500 py-10 col-span-full">네트워크 오류</p>'; }
-};
 // ==========================================
-// 8. 아레나(배틀) 관련 로직
+// 8. 아레나(배틀) 관련 로직 (무한 재도전 적용)
 // ==========================================
-const checkDailyLimit = () => {
-    const myId = window.state.user;
-    if (['마스터', '테스트'].includes(myId)) return false;
-    
-    const victories = window.state.gameData.victories || {};
-    const now = new Date(); const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    
-    let studentWins = 0; let masterWin = false; let teacherWin = false;
-    for (let opp in victories) { 
-        if (victories[opp] >= startOfToday) {
-            if (opp === '마스터') masterWin = true;
-            else if (opp === '선생님') teacherWin = true;
-            else if (opp !== '테스트' && opp !== '테스트2') studentWins++;
-        }
-    }
-    return studentWins >= 3 && masterWin && teacherWin;
-};
-
-window.battleState = { active: false, oppId: null, oppStats: null, mySelection: [], myTeam: [], oppTeam: [], myIdx: 0, oppIdx: 0, oppTimer: null, myEnergy: 0, oppEnergy: 0, energyMax: 35 };
-
-window.showOppMonDetail = (word, count) => {
-    const safeWord = (word || '').toString();
-    const pInfo = getPokemonInfoForWord(safeWord, count);
-    const apiData = LOCAL_POKEMON_DB[pInfo.id] || { name: "알 수 없음", type: "normal" };
-    const typeInfo = TYPE_COLORS[apiData.type] || TYPE_COLORS['normal'];
-    const quizMatch = window.state.quizzes.find(q => (q.word || '').toString().toLowerCase() === safeWord.toLowerCase());
-    const meaning = quizMatch ? quizMatch.meaning : "알 수 없음";
-
-    const msg = `✨ ${safeWord} ✨\n\n📖 뜻: ${meaning}\n🔥 속성: ${typeInfo.name}\n👾 종류: ${apiData.name} (LV.${pInfo.tier})\n⭐ 잡은 횟수: ${count}회`;
-    window.showCustomAlert(msg);
-};
-
-window.loadArena = async () => {
-    const listEl = document.getElementById('arena-list');
-    const myWords = Object.keys(window.state.gameData.caughtWords || {});
-    if (myWords.length === 0) {
-        listEl.innerHTML = '<p class="text-center text-slate-500 font-bold py-10">포획한 몬스터가 없어 도전할 수 없습니다.<br>사냥터에서 단어를 잡아보세요!</p>'; return;
-    }
-
-    if (checkDailyLimit()) {
-        listEl.innerHTML = `<div class="text-center py-10"><div class="text-5xl mb-4">💤</div><h3 class="text-xl font-bold text-indigo-600 mb-2">영어 마스터님의 휴식 권고</h3><p class="text-sm text-slate-500 font-bold">오늘의 배틀 에너지를 모두 소모했습니다! (학생 3승 + 관장 2승 달성)<br>던전에서 영단어를 더 포획하며 내일을 준비하세요!</p></div>`; return;
-    }
-
-    listEl.innerHTML = '<p class="text-center text-indigo-500 font-bold py-10 text-sm animate-pulse">상대 모험가를 찾고 있습니다...</p>';
-    try {
-        const snap = await getDocs(getStudentsCollection());
-        let opponents = [];
-        const myId = window.state.user;
-        const isPrivileged = ['마스터', '테스트'].includes(myId);
-        
-        const victories = window.state.gameData.victories || {};
-        const now = new Date(); const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-        
-        let studentWinsToday = 0;
-        for (let opp in victories) {
-            if (victories[opp] >= startOfToday && !['마스터', '테스트'].includes(opp)) studentWinsToday++;
-        }
-
-        snap.forEach(doc => {
-            const oppId = doc.id;
-            if (oppId === myId) return; 
-            if (oppId === '테스트' && !isPrivileged) return;
-            opponents.push({ id: oppId, data: doc.data() });
-        });
-
-        opponents.sort((a, b) => {
-            const getPriority = (id) => {
-                if (id === '마스터') return -2; if (id === '선생님') return -1;
-                const num = parseInt(id.split('.')[0]); return isNaN(num) ? 999 : num;
-            };
-            return getPriority(a.id) - getPriority(b.id);
-        });
-
-        let html = '';
-        opponents.forEach(opp => {
-            const oppId = opp.id; const docData = opp.data;
-            const isBoss = (oppId === '마스터');
-            const oppGender = docData.gender === 'F' ? '👧' : '👦'; 
-            let canBattle = true; let cooldownMsg = "";
-
-            if (!isPrivileged) {
-                const lastWinTime = victories[oppId] || 0;
-                if (isBoss) {
-                    if (lastWinTime >= startOfToday) { canBattle = false; cooldownMsg = `내일 재도전 가능`; }
-                } else {
-                    const cooldownMs = 3 * 24 * 60 * 60 * 1000; const elapsed = Date.now() - lastWinTime;
-                    if (lastWinTime > 0 && elapsed < cooldownMs) {
-                        canBattle = false; cooldownMsg = `재도전까지 ${Math.ceil((cooldownMs - elapsed) / (24 * 60 * 60 * 1000))}일`;
-                    } else if (studentWinsToday >= 3) {
-                        canBattle = false; cooldownMsg = `오늘 학생 배틀 완료`;
-                    }
-                }
-            }
-
-            const oppStats = docData.gameStats || {};
-            const oppCaughtWords = oppStats.caughtWords || {};
-            let oppDefenseWords = oppStats.defenseTeam || [];
-            oppDefenseWords = oppDefenseWords.filter(w => oppCaughtWords[w] >= 10);
-            if (oppDefenseWords.length === 0) oppDefenseWords = Object.keys(oppCaughtWords).sort((a,b)=>oppCaughtWords[b]-oppCaughtWords[a]).slice(0,3);
-
-            let top3Html = '<div class="flex gap-2 ml-2 sm:ml-4 items-center">';
-            if (oppDefenseWords.length > 0) {
-                oppDefenseWords.forEach(w => {
-                    const safeW = (w || '').toString();
-                    const count = oppCaughtWords[safeW];
-                    const pInfo = getPokemonInfoForWord(safeW, count);
-                    top3Html += `<div onclick="window.showOppMonDetail('${safeW.replace(/'/g, "\\'")}', ${count})" class="cursor-pointer w-12 h-12 sm:w-14 sm:h-14 bg-slate-50 hover:bg-slate-100 rounded-full flex items-center justify-center border border-slate-200 p-1.5 transition-transform hover:scale-110 shadow-sm" title="${safeW} 상세정보"><img src="${pInfo.imgSrc}" crossorigin="anonymous" class="max-w-full max-h-full object-contain drop-shadow-md scale-100" style="image-rendering:pixelated;"></div>`;
-                });
-            } else top3Html += `<span class="text-xs text-slate-500 font-bold pl-2">포획 없음</span>`;
-            top3Html += '</div>';
-
-            let btnHtml = canBattle 
-                ? `<button onclick="window.prepareBattle('${oppId}')" class="bg-red-500 hover:bg-red-600 text-white px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl font-bold text-sm sm:text-base shadow-md transition-transform active:scale-95 shrink-0">배틀 신청</button>`
-                : `<button disabled class="bg-slate-100 text-slate-400 border border-slate-200 px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl font-bold text-xs sm:text-sm shadow-inner cursor-not-allowed text-center leading-tight shrink-0">🏆 완료<br><span class="text-[10px]">${cooldownMsg}</span></button>`;
-
-            html += `<div class="flex justify-between items-center ${isBoss?'bg-yellow-50 border-yellow-300':'bg-white border-slate-200'} p-4 sm:p-5 rounded-2xl shadow-sm border mb-4 hover:border-red-400 transition-colors overflow-hidden">
-                <div class="flex items-center gap-3 sm:gap-4 overflow-hidden">
-                    <div class="text-3xl sm:text-4xl shrink-0 drop-shadow-md">${isBoss?'👑':oppGender}</div>
-                    <div class="flex flex-col sm:flex-row sm:items-center shrink-0 min-w-0">
-                        <div class="min-w-[70px] truncate"><div class="font-bold text-slate-800 truncate text-base sm:text-lg">${oppId}</div><div class="text-xs sm:text-sm ${isBoss?'text-yellow-600':'text-slate-500'} font-bold mt-0.5">${isBoss?'체육관 관장':'모험가'}</div></div>
-                        ${top3Html}
-                    </div>
-                </div>
-                ${btnHtml}
-            </div>`;
-        });
-        listEl.innerHTML = html || '<p class="text-center font-bold text-slate-500 py-10">현재 도전 가능한 상대가 없습니다.</p>';
-    } catch(e) { listEl.innerHTML = '<p class="text-center text-red-500 font-bold py-10">네트워크 오류</p>'; }
-};
-
-window.openDefenseSetup = () => {
-    document.getElementById('arena-list-view').style.display = 'none';
-    document.getElementById('arena-defense-view').style.display = 'block';
-    if(!window.state.gameData.defenseTeam) window.state.gameData.defenseTeam = [];
-    window.defenseSelectionTemp = [...window.state.gameData.defenseTeam];
-    renderDefenseSelection();
-};
-
-window.cancelDefenseSelect = () => {
-    document.getElementById('arena-list-view').style.display = 'block';
-    document.getElementById('arena-defense-view').style.display = 'none';
-    window.loadArena();
-};
-
-const renderDefenseSelection = () => {
-    const listEl = document.getElementById('arena-defense-list');
-    const caughtWords = window.state.gameData.caughtWords || {};
-    const eligibleWords = Object.keys(caughtWords).filter(w => caughtWords[w] >= 10).sort((a,b) => caughtWords[b] - caughtWords[a]);
-    
-    if (eligibleWords.length === 0) {
-        listEl.innerHTML = '<p class="text-center text-slate-500 font-bold py-10 col-span-3 text-sm">10회 이상 포획한 보카몬이 없습니다.<br>단어를 더 사냥하세요!</p>';
-        document.getElementById('btn-save-defense').disabled = true;
-        document.getElementById('btn-save-defense').className = "w-full bg-slate-200 text-slate-400 py-3 rounded-2xl font-bold text-lg shadow-sm transition-all";
-        document.getElementById('defense-sel-cnt').innerText = "0"; return;
-    }
-
-    let html = '';
-    eligibleWords.forEach(w => {
-        const safeW = (w || '').toString();
-        const count = caughtWords[safeW];
-        const pInfo = getPokemonInfoForWord(safeW, count);
-        const apiData = LOCAL_POKEMON_DB[pInfo.id] || { name: "알 수 없음", type: "normal" };
-        const typeInfo = TYPE_COLORS[apiData.type] || TYPE_COLORS['normal'];
-        const isSelected = window.defenseSelectionTemp.includes(safeW);
-        
-        let clickEvent = `onclick="window.toggleDefenseSelection('${safeW.replace(/'/g, "\\'")}')"`;
-        let wrapperClass = isSelected ? 'border-green-500 bg-green-50 scale-105 shadow-md' : 'border-slate-200 bg-white hover:bg-slate-50 cursor-pointer shadow-sm';
-        
-        html += `
-        <div ${clickEvent} class="relative border-4 rounded-2xl p-2 flex flex-col items-center justify-center transition-all ${wrapperClass}">
-            <div class="h-16 flex items-center justify-center"><img src="${pInfo.imgSrc}" class="max-h-full drop-shadow-sm" style="image-rendering:pixelated;"></div>
-            <div class="text-[10px] font-black text-slate-800 truncate w-full text-center mt-1">${safeW}</div>
-            <div class="flex items-center gap-1 mt-1"><span class="text-[8px] text-white ${typeInfo.bg} px-1 rounded">${typeInfo.name}</span><span class="text-[9px] font-bold text-slate-500">★${count}</span></div>
-        </div>`;
-    });
-    listEl.innerHTML = html;
-    document.getElementById('defense-sel-cnt').innerText = window.defenseSelectionTemp.length;
-    
-    const btn = document.getElementById('btn-save-defense');
-    if (window.defenseSelectionTemp.length > 0) {
-        btn.disabled = false; btn.className = "w-full bg-green-500 text-white py-3 rounded-2xl font-black text-lg shadow-md active:scale-95 transition-all hover:bg-green-600";
-    } else {
-        btn.disabled = true; btn.className = "w-full bg-slate-200 text-slate-400 py-3 rounded-2xl font-black text-lg shadow-sm transition-all";
-    }
-};
-
-window.toggleDefenseSelection = (word) => {
-    const idx = window.defenseSelectionTemp.indexOf(word);
-    if (idx > -1) window.defenseSelectionTemp.splice(idx, 1);
-    else {
-        if (window.defenseSelectionTemp.length >= 3) return window.showCustomAlert("최대 3마리까지만 방어 포켓몬으로 선택 가능합니다!");
-        window.defenseSelectionTemp.push(word);
-    }
-    renderDefenseSelection();
-};
-
-window.saveDefenseTeam = () => {
-    window.state.gameData.defenseTeam = [...window.defenseSelectionTemp];
-    window.saveProgress(); window.showCustomAlert("방어 팀이 성공적으로 설정되었습니다!"); window.cancelDefenseSelect();
-};
-
-window.prepareBattle = async (oppId) => {
-    const myId = window.state.user;
-    const isPrivileged = ['마스터', '테스트'].includes(myId);
-    if (!isPrivileged && checkDailyLimit()) return window.showCustomAlert("오늘의 배틀 에너지를 모두 소모했습니다!\n내일 다시 도전하세요.");
-
-    const docSnap = await getDoc(getStudentDoc(oppId));
-    if (!docSnap.exists()) return window.showCustomAlert("상대 정보를 불러올 수 없습니다.");
-    
-    const oppStats = docSnap.data().gameStats || {};
-    const oppWords = Object.keys(oppStats.caughtWords || {});
-    if(oppWords.length === 0) return window.showCustomAlert("상대방이 아직 포켓몬을 잡지 않았습니다!");
-
-    window.battleState.oppId = oppId; window.battleState.oppStats = oppStats; window.battleState.mySelection = [];
-    document.getElementById('arena-list-view').style.display = 'none'; document.getElementById('arena-team-view').style.display = 'block';
-    document.getElementById('arena-team-title').innerText = `VS ${oppId}`;
-    renderTeamSelection();
-};
-
-window.cancelBattleSelect = () => {
-    if(window.battleState.oppTimer) clearInterval(window.battleState.oppTimer);
-    clearTimeout(window.battleState.quizTimeout);
-    window.battleState.active = false;
-    document.getElementById('battle-quiz-modal').style.display = 'none';
-    document.getElementById('arena-list-view').style.display = 'block'; document.getElementById('arena-team-view').style.display = 'none';
-    document.getElementById('arena-battle-view').style.display = 'none'; document.getElementById('arena-battle-view').classList.remove('flex');
-    window.loadArena(); window.AudioManager.playBGM('town');
-};
-
-const renderTeamSelection = () => {
-    const listEl = document.getElementById('arena-team-list');
-    const caughtWords = window.state.gameData.caughtWords || {};
-    const sortedWords = Object.keys(caughtWords).sort((a,b)=>caughtWords[b]-caughtWords[a]);
-    
-    let html = '';
-    const now = new Date(); const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    const usedCooldown = window.state.gameData.usedPokemonCooldown || {};
-
-    sortedWords.forEach(w => {
-        const safeW = (w || '').toString();
-        const count = caughtWords[safeW];
-        const pInfo = getPokemonInfoForWord(safeW, count);
-        const apiData = LOCAL_POKEMON_DB[pInfo.id] || { name: "알 수 없음", type: "normal" };
-        const typeInfo = TYPE_COLORS[apiData.type] || TYPE_COLORS['normal'];
-        const isSelected = window.battleState.mySelection.includes(safeW);
-        
-        const lastUsed = usedCooldown[safeW] || 0; const isFatigued = lastUsed >= startOfToday;
-        
-        let clickEvent = `onclick="window.toggleTeamSelection('${safeW.replace(/'/g, "\\'")}')"`;
-        let wrapperClass = isSelected ? 'border-red-500 bg-red-50 scale-105 shadow-md' : 'border-slate-200 bg-white hover:bg-slate-50 cursor-pointer shadow-sm';
-        let imgClass = 'max-h-full drop-shadow-sm'; let badgeHtml = '';
-
-        if (isFatigued) {
-            clickEvent = ''; wrapperClass = 'border-slate-300 bg-slate-100 opacity-60 cursor-not-allowed shadow-none';
-            imgClass += ' grayscale'; badgeHtml = `<div class="absolute -top-2 -right-2 bg-slate-500 text-white text-[9px] px-2 py-0.5 rounded-full font-black shadow-sm z-10 border border-slate-300">💤 오늘 휴식</div>`;
-        }
-        
-        html += `
-        <div ${clickEvent} class="relative border-4 rounded-2xl p-2 flex flex-col items-center justify-center transition-all ${wrapperClass}">
-            ${badgeHtml}
-            <div class="h-16 flex items-center justify-center"><img src="${pInfo.imgSrc}" class="${imgClass}" style="image-rendering:pixelated;"></div>
-            <div class="text-[10px] font-black text-slate-800 truncate w-full text-center mt-1">${safeW}</div>
-            <div class="flex items-center gap-1 mt-1"><span class="text-[8px] text-white ${typeInfo.bg} px-1 rounded">${typeInfo.name}</span><span class="text-[9px] font-bold text-slate-500">★${count}</span></div>
-        </div>`;
-    });
-    listEl.innerHTML = html;
-    document.getElementById('team-sel-cnt').innerText = window.battleState.mySelection.length;
-    
-    const btn = document.getElementById('btn-start-real-battle');
-    if (window.battleState.mySelection.length > 0) {
-        btn.disabled = false; btn.className = "w-full bg-red-500 text-white py-3 rounded-2xl font-black text-lg shadow-md active:scale-95 transition-all hover:bg-red-600";
-    } else {
-        btn.disabled = true; btn.className = "w-full bg-slate-200 text-slate-400 py-3 rounded-2xl font-black text-lg shadow-sm transition-all";
-    }
-};
-
-window.toggleTeamSelection = (word) => {
-    const idx = window.battleState.mySelection.indexOf(word);
-    if (idx > -1) window.battleState.mySelection.splice(idx, 1);
-    else {
-        if (window.battleState.mySelection.length >= 3) return window.showCustomAlert("최대 3마리까지만 선택 가능합니다!");
-        window.battleState.mySelection.push(word);
-    }
-    renderTeamSelection();
-};
-
-const createBattleMon = (word, count, trainerLevel = 1) => {
-    const safeWord = (word || '').toString();
-    const pInfo = getPokemonInfoForWord(safeWord, count);
-    const apiData = LOCAL_POKEMON_DB[pInfo.id] || { name: "알 수 없음", type: "normal" };
-    const effectiveCount = Math.min(count, 15);
-    const quizMatch = window.state.quizzes.find(q => (q.word || '').toString().toLowerCase() === safeWord.toLowerCase());
-    const chapter = quizMatch ? (quizMatch.chapter || 1) : 1; const chapterBonus = 1 + (chapter * 0.1);
-
-    let maxHp = Math.floor((100 + (effectiveCount * 20)) * chapterBonus);
-    let atk = Math.floor((10 + (effectiveCount * 3)) * chapterBonus);
-    maxHp += (trainerLevel * 5); atk += (trainerLevel * 1);
-
-    return { word: safeWord, name: apiData.name, type: apiData.type, imgSrc: pInfo.imgSrc, hp: maxHp, maxHp, atk };
-};
-
-window.startRealBattle = () => {
-    document.getElementById('arena-team-view').style.display = 'none';
-    const battleView = document.getElementById('arena-battle-view');
-    battleView.style.display = 'flex'; battleView.classList.add('flex');
-
-    const myCaught = window.state.gameData.caughtWords || {}; const myLevel = window.state.gameData.level || 1;
-    window.battleState.myTeam = window.battleState.mySelection.map(w => {
-        let mon = createBattleMon(w, myCaught[w], myLevel);
-        mon.hp *= 5; mon.maxHp *= 5; 
-        return mon;
-    });
-    
-    const oppCaught = window.battleState.oppStats.caughtWords || {}; 
-    const oppLevel = Math.min((window.battleState.oppStats.level || 1), myLevel + 5);
-    let oppDefenseWords = window.battleState.oppStats.defenseTeam || [];
-    oppDefenseWords = oppDefenseWords.filter(w => oppCaught[w] >= 10);
-    if (oppDefenseWords.length === 0) oppDefenseWords = Object.keys(oppCaught).sort((a,b)=>oppCaught[b]-oppCaught[a]).slice(0,3);
-    
-    window.battleState.oppTeam = oppDefenseWords.map(w => {
-        let mon = createBattleMon(w, oppCaught[w], oppLevel);
-        mon.hp = Math.floor(mon.hp * 6); mon.maxHp = Math.floor(mon.maxHp * 6); mon.atk = Math.floor(mon.atk * 1.2);
-        return mon;
-    });
-
-    window.battleState.myIdx = 0; window.battleState.oppIdx = 0; 
-    window.battleState.myEnergy = 0; window.battleState.oppEnergy = 0; window.battleState.energyMax = 35; 
-    window.battleState.active = true;
-    updateBattleUI(); logBattleMsg(`배틀 시작! 가랏, ${window.battleState.myTeam[0].word}!`);
-    if(window.battleState.oppTimer) clearInterval(window.battleState.oppTimer);
-    window.battleState.oppTimer = setInterval(() => { if(window.battleState.active) opponentAttack(); }, 200);
-};
-
-const updateBattleUI = () => {
-    if(!window.battleState.active) return;
-    const myMon = window.battleState.myTeam[window.battleState.myIdx]; const oppMon = window.battleState.oppTeam[window.battleState.oppIdx];
-
-    document.getElementById('my-b-img').src = myMon.imgSrc; document.getElementById('my-b-name').innerText = myMon.word;
-    document.getElementById('my-b-hp').style.width = `${Math.max(0, (myMon.hp / myMon.maxHp) * 100)}%`;
-    const myTypeInfo = TYPE_COLORS[myMon.type] || TYPE_COLORS['normal'];
-    document.getElementById('my-b-type').innerText = myTypeInfo.name; document.getElementById('my-b-type').style.backgroundColor = myTypeInfo.color;
-    document.getElementById('my-b-remain').innerText = window.battleState.myTeam.length - window.battleState.myIdx;
-
-    document.getElementById('opp-b-img').src = oppMon.imgSrc; document.getElementById('opp-b-name').innerText = oppMon.word;
-    document.getElementById('opp-b-hp').style.width = `${Math.max(0, (oppMon.hp / oppMon.maxHp) * 100)}%`;
-    const oppTypeInfo = TYPE_COLORS[oppMon.type] || TYPE_COLORS['normal'];
-    document.getElementById('opp-b-type').innerText = oppTypeInfo.name; document.getElementById('opp-b-type').style.backgroundColor = oppTypeInfo.color;
-
-    document.getElementById('my-b-energy').style.width = `${(window.battleState.myEnergy / window.battleState.energyMax) * 100}%`;
-    document.getElementById('opp-b-energy').style.width = `${(window.battleState.oppEnergy / window.battleState.energyMax) * 100}%`;
-
-    const ultBtn = document.getElementById('btn-ultimate');
-    if (window.battleState.myEnergy >= window.battleState.energyMax) ultBtn.classList.add('ultimate-ready');
-    else ultBtn.classList.remove('ultimate-ready');
-};
-
-const logBattleMsg = (msg, isStrong = false) => {
-    const logEl = document.getElementById('battle-log');
-    logEl.innerText = msg; logEl.className = `text-center font-black text-sm h-6 ${isStrong ? 'text-red-600 scale-110 transition-transform' : 'text-slate-800'}`;
-    setTimeout(() => { logEl.classList.remove('scale-110'); }, 300);
-};
-
-const showDmgText = (dmg, isOpponent, isCrit = false) => {
-    const text = document.createElement('div');
-    text.innerText = isCrit ? `💥-${dmg}` : `-${dmg}`;
-    let colorClass = isOpponent ? 'text-red-600' : 'text-slate-900';
-    if (isCrit) colorClass = 'text-yellow-500 text-3xl drop-shadow-[0_0_10px_rgba(234,179,8,1)] z-[100] font-black';
-    text.className = `dmg-text ${isCrit ? '' : 'text-xl font-bold'} ${colorClass}`;
-    text.style.top = isOpponent ? '20%' : '70%'; text.style.left = isOpponent ? '70%' : '20%';
-    document.getElementById('arena-battle-view').appendChild(text);
-    setTimeout(() => text.remove(), 1000);
-};
-
-window.tapAttack = () => {
-    if(!window.battleState.active) return;
-    const myMon = window.battleState.myTeam[window.battleState.myIdx]; const oppMon = window.battleState.oppTeam[window.battleState.oppIdx];
-    
-    const multiplier = getMatchup(myMon.type, oppMon.type);
-    let dmg = Math.floor((myMon.atk * multiplier) * (0.8 + Math.random()*0.4));
-    const trainerLevel = window.state.gameData.level || 1; const critChance = 0.05 + (trainerLevel * 0.01);
-    const isCrit = Math.random() < critChance;
-    
-    if (isCrit) dmg = Math.floor(dmg * 1.5);
-    oppMon.hp -= dmg; showDmgText(dmg, true, isCrit);
-
-    window.battleState.myEnergy = Math.min(window.battleState.energyMax, window.battleState.myEnergy + 1);
-
-    const oppImg = document.getElementById('opp-b-img');
-    oppImg.classList.remove('animate-hit'); void oppImg.offsetWidth; oppImg.classList.add('animate-hit');
-
-    if(isCrit) logBattleMsg("크리티컬 히트!!", true);
-    else if(multiplier > 1) logBattleMsg("효과가 굉장했다!", true);
-    else if(multiplier < 1) logBattleMsg("효과가 별로인 것 같다...", false);
-    
-    updateBattleUI(); checkFaint();
-};
-
-const opponentAttack = () => {
-    if(!window.battleState.active) return;
-    const myMon = window.battleState.myTeam[window.battleState.myIdx]; const oppMon = window.battleState.oppTeam[window.battleState.oppIdx];
-    
-    const multiplier = getMatchup(oppMon.type, myMon.type);
-    let dmg = Math.floor((oppMon.atk * multiplier) * (0.8 + Math.random()*0.4));
-    const oppLevel = window.battleState.oppStats.level || 1; const critChance = 0.05 + (oppLevel * 0.01);
-    const isCrit = Math.random() < critChance;
-    
-    if (isCrit) dmg = Math.floor(dmg * 1.5);
-    myMon.hp -= dmg; showDmgText(dmg, false, isCrit);
-
-    window.battleState.oppEnergy = Math.min(window.battleState.energyMax + 10, window.battleState.oppEnergy + 1);
-
-    const myImg = document.getElementById('my-b-img');
-    myImg.classList.remove('animate-hit'); void myImg.offsetWidth; myImg.classList.add('animate-hit');
-
-    if(isCrit) logBattleMsg("상대방의 크리티컬 히트!!", true);
-    
-    if (window.battleState.oppEnergy >= window.battleState.energyMax + 10) {
-        triggerOpponentUltimate();
-    } else {
-        updateBattleUI(); checkFaint();
-    }
-};
-
-const checkFaint = () => {
-    const myMon = window.battleState.myTeam[window.battleState.myIdx]; const oppMon = window.battleState.oppTeam[window.battleState.oppIdx];
-    if(oppMon.hp <= 0) {
-        window.battleState.oppIdx++;
-        if(window.battleState.oppIdx >= window.battleState.oppTeam.length) { endBattle(true); return true; } 
-        else { logBattleMsg(`상대의 ${window.battleState.oppTeam[window.battleState.oppIdx].word}(이)가 나왔다!`); updateBattleUI(); }
-    } else if (myMon.hp <= 0) {
-        window.battleState.myIdx++;
-        if(window.battleState.myIdx >= window.battleState.myTeam.length) { endBattle(false); return true; } 
-        else { logBattleMsg(`가랏, ${window.battleState.myTeam[window.battleState.myIdx].word}!`); updateBattleUI(); }
-    }
-    return false;
-};
-
-window.useUltimate = () => {
-    if (window.battleState.myEnergy < window.battleState.energyMax || !window.battleState.active) return;
-    
-    window.battleState.active = false; 
-    clearInterval(window.battleState.oppTimer);
-    window.battleState.myEnergy = 0; 
-    updateBattleUI();
-
-    const oppMon = window.battleState.oppTeam[window.battleState.oppIdx];
-    const quizMatch = window.state.quizzes.find(q => (q.word || '').toString().toLowerCase() === oppMon.word.toLowerCase());
-    const meaning = quizMatch ? quizMatch.meaning : "알 수 없음";
-
-    document.getElementById('b-quiz-title').innerText = "⚡ 스페셜 어택!";
-    document.getElementById('b-quiz-desc').innerText = "제한 시간 15초! 정확한 영단어를 입력하세요!";
-    document.getElementById('b-quiz-word').innerText = meaning;
-    document.getElementById('b-spell-in').value = '';
-    document.getElementById('b-fake-text').textContent = '스펠링 입력';
-    document.getElementById('b-fake-text').style.color = '#9ca3af';
-
-    document.getElementById('battle-quiz-modal').style.display = 'flex';
-    document.getElementById('b-spell-in').focus();
-    
-    window.battleState.expectedWord = oppMon.word;
-    window.battleState.isShieldMode = false;
-    startQuizTimer(15000); 
-};
-
-const triggerOpponentUltimate = () => {
-    window.battleState.active = false; 
-    clearInterval(window.battleState.oppTimer);
-    window.battleState.oppEnergy = 0;
-    updateBattleUI();
-
-    const myMon = window.battleState.myTeam[window.battleState.myIdx];
-    const quizMatch = window.state.quizzes.find(q => (q.word || '').toString().toLowerCase() === myMon.word.toLowerCase());
-    const meaning = quizMatch ? quizMatch.meaning : "알 수 없음";
-
-    document.getElementById('b-quiz-title').innerText = "🛡️ 방어 태세 (실드)!";
-    document.getElementById('b-quiz-desc').innerText = "적의 필살기가 날아옵니다! 15초 안에 내 파트너의 단어를 입력해 막아내세요!";
-    document.getElementById('b-quiz-word').innerText = meaning;
-    document.getElementById('b-spell-in').value = '';
-    document.getElementById('b-fake-text').textContent = '스펠링 입력';
-    document.getElementById('b-fake-text').style.color = '#9ca3af';
-
-    document.getElementById('battle-quiz-modal').style.display = 'flex';
-    document.getElementById('b-spell-in').focus();
-    
-    window.battleState.expectedWord = myMon.word;
-    window.battleState.isShieldMode = true;
-    startQuizTimer(15000); 
-};
-
-const startQuizTimer = (duration) => {
-    const bar = document.getElementById('b-timer-bar');
-    bar.style.transition = 'none'; bar.style.width = '100%';
-    void bar.offsetWidth; 
-    bar.style.transition = `width ${duration}ms linear`;
-    bar.style.width = '0%';
-
-    window.battleState.quizTimeout = setTimeout(() => {
-        window.submitBattleQuiz(true); 
-    }, duration);
-};
-
-// ⭐ 무한 재도전 기능 구현
 window.submitBattleQuiz = (isTimeout = false) => {
     const inputEl = document.getElementById('b-spell-in');
     const inputVal = inputEl.value.trim().toLowerCase();
@@ -1711,7 +1096,7 @@ window.submitBattleQuiz = (isTimeout = false) => {
     const myMon = window.battleState.myTeam[window.battleState.myIdx];
     const oppMon = window.battleState.oppTeam[window.battleState.oppIdx];
 
-    // ⭐ 1. 틀렸지만 아직 시간이 남았을 때 (무한 재도전 기회)
+    // ⭐ 1. 틀렸지만 아직 시간이 남았을 때 (무한 재도전 기회 부여)
     if (!isTimeout && !success) {
         inputEl.value = '';
         inputEl.classList.add('border-red-500', 'bg-red-50');
@@ -1726,10 +1111,10 @@ window.submitBattleQuiz = (isTimeout = false) => {
                 fakeText.style.color = '#9ca3af';
             }
         }, 500);
-        return; 
+        return; // 함수 종료 (창을 닫지 않고 대기)
     }
 
-    // ⭐ 2. 정답을 맞혔거나 시간이 다 끝났을 때 (최종 판정)
+    // ⭐ 2. 정답을 맞혔거나 시간이 다 끝났을 때 (최종 판정 후 창 닫기)
     clearTimeout(window.battleState.quizTimeout);
     document.getElementById('battle-quiz-modal').style.display = 'none';
 
