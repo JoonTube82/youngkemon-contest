@@ -48,7 +48,7 @@ window.toggleAdmin = () => {
 };
 
 // ==========================================
-// ⭐ 2. 단원 제목 직접 설정 로직 (신규)
+// 2. 단원 제목 직접 설정 로직 (라이트 모드)
 // ==========================================
 const DEFAULT_CHAPTER_TITLES = [
     "",
@@ -66,9 +66,9 @@ window.renderAdminTitleInputs = () => {
     for(let i=1; i<=12; i++) {
         const currentTitle = window.state.chapterTitles[i] || DEFAULT_CHAPTER_TITLES[i];
         html += `
-        <div class="flex items-center gap-2 bg-slate-800 p-2 rounded-xl border border-slate-600">
-            <span class="text-xs font-bold text-yellow-400 bg-yellow-900/50 px-2 py-1 rounded-lg w-16 text-center shrink-0">${i}단원</span>
-            <input type="text" id="admin-ch-title-${i}" value="${currentTitle}" class="flex-1 p-2 bg-slate-100 border border-slate-300 rounded-lg outline-none text-sm font-bold text-slate-800 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 transition-all">
+        <div class="flex items-center gap-2 bg-white p-2 rounded-xl border border-slate-200 shadow-sm">
+            <span class="text-xs font-black text-yellow-700 bg-yellow-100 px-2 py-1 rounded-lg w-16 text-center shrink-0 border border-yellow-200">${i}단원</span>
+            <input type="text" id="admin-ch-title-${i}" value="${currentTitle}" class="flex-1 p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none text-sm font-bold text-slate-800 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 transition-all">
         </div>
         `;
     }
@@ -77,7 +77,7 @@ window.renderAdminTitleInputs = () => {
 
 window.saveChapterTitles = async () => {
     const classCode = getClassCode();
-    // "대회초 6-1" 조건을 지우고 학급 코드가 없을 때만 에러를 띄우게 변경합니다.
+    // ⭐ 대회초 제한 해제: 어떤 학급 코드든 무조건 설정 저장 가능하도록 변경
     if(!classCode) {
         return window.showCustomAlert("학급 코드를 찾을 수 없습니다.");
     }
@@ -96,14 +96,13 @@ window.saveChapterTitles = async () => {
         await setDoc(classRef, { chapterTitles: newTitles }, { merge: true });
         
         window.state.chapterTitles = newTitles;
-        if(window.updateChapterTitlesUI) window.updateChapterTitlesUI(); // 풀숲 UI 즉시 업데이트
+        if(window.updateChapterTitlesUI) window.updateChapterTitlesUI(); 
         
         window.showCustomAlert("학급 단원 제목이 성공적으로 변경되었습니다!\n새로 접속하는 학생들의 화면에도 즉시 반영됩니다.");
     } catch(e) {
         window.showCustomAlert("저장 중 오류 발생: " + e.message);
     }
 };
-
 
 // ==========================================
 // 3. 단어 도감 직접 추가 및 삭제 로직
@@ -141,20 +140,20 @@ window.updateAdminList = () => {
     const filteredQuizzes = window.state.quizzes.filter(q => (q.chapter || 1) === selectedChapter);
 
     if (filteredQuizzes.length === 0) {
-        list.innerHTML = `<p class="text-center text-slate-400 py-6 text-sm font-bold">해당 단원에 등록된 단어가 없습니다.</p>`;
+        list.innerHTML = `<p class="text-center text-slate-500 py-6 text-sm font-bold">해당 단원에 등록된 단어가 없습니다.</p>`;
         return;
     }
 
     list.innerHTML = filteredQuizzes.map(q => {
         const chapterNum = q.chapter || 1;
         return `
-        <div class="flex justify-between items-center bg-white p-3 rounded-xl shadow-sm border border-slate-100 mb-2">
+        <div class="flex justify-between items-center bg-white p-3 rounded-xl shadow-sm border border-slate-200 mb-2">
             <div class="truncate flex items-center gap-2">
-                <span class="bg-slate-100 text-slate-500 text-[10px] px-2 py-0.5 rounded font-bold shrink-0">${chapterNum}단원</span>
+                <span class="bg-slate-100 text-slate-600 text-[10px] px-2 py-0.5 rounded font-black shrink-0 border border-slate-200">${chapterNum}단원</span>
                 <span class="font-black text-red-600 text-lg">${q.word}</span>
-                <span class="text-slate-600 text-sm">${q.meaning}</span>
+                <span class="text-slate-600 font-bold text-sm">${q.meaning}</span>
             </div>
-            <button onclick="window.delWord('${q.id}')" class="text-red-400 p-2 font-bold text-xs shrink-0">삭제</button>
+            <button onclick="window.delWord('${q.id}')" class="text-red-500 p-2 font-black text-xs hover:text-red-700 shrink-0">삭제</button>
         </div>
     `}).join('');
 };
@@ -171,7 +170,6 @@ window.downloadWordExcel = async () => {
         snap.forEach(doc => words.push(doc.data()));
         words.sort((a,b) => (a.chapter || 1) - (b.chapter || 1));
 
-        // ⭐ 엑셀 양식 상단 꾸미기 (안내 문구 및 헤더)
         let ws_data = [
             ["👑 [ 6학년 보카몬 영단어장 일괄 업로드 양식 ]"],
             ["※ 안내: 아래 4번째 줄부터 단어를 입력하세요. 단원 칸에는 숫자만 적어주세요. (이 안내 문구는 지우지 않아도 알아서 무시됩니다)"],
@@ -182,15 +180,15 @@ window.downloadWordExcel = async () => {
 
         const ws = window.XLSX.utils.aoa_to_sheet(ws_data);
         
-        // ⭐ 엑셀 칸 너비(Column Width) 넓게 조정하여 답답함 해소
         ws['!cols'] = [
-            { wpx: 100 }, // A열: 단원 너비
-            { wpx: 250 }, // B열: 영단어 너비
-            { wpx: 300 }  // C열: 뜻 너비
+            { wpx: 100 }, 
+            { wpx: 250 }, 
+            { wpx: 300 }  
         ];
 
         const wb = window.XLSX.utils.book_new();
         window.XLSX.utils.book_append_sheet(wb, ws, "단어장");
+        // ⭐ 이름 변경 완료
         window.XLSX.writeFile(wb, "보카몬_단어장_백업.xlsx");
         window.closeCustomAlert();
     } catch(e) { window.showCustomAlert("오류 발생: " + e.message); }
@@ -214,12 +212,10 @@ window.handleExcelUpload = (e) => {
                 const row = data[i];
                 if(!row) continue;
                 
-                // ⭐ 비어있는 칸이 있어도 에러가 나지 않도록 안전하게 읽어오기
                 let colA = row[0] !== undefined ? row[0].toString().trim() : "1";
                 let colB = row[1] !== undefined ? row[1].toString().trim() : "";
                 let colC = row[2] !== undefined ? row[2].toString().trim() : "";
                 
-                // 영단어, 뜻이 모두 존재하고 제목 줄(영단어, English 등)이 아닐 때만 담기
                 if(colB && colC && !colB.includes("영단어") && !colB.includes("English")) {
                     newWords.push({ chapter: parseInt(colA) || 1, word: colB, meaning: colC });
                 }
@@ -242,23 +238,21 @@ window.handleExcelUpload = (e) => {
     e.target.value = ''; 
 };
 
+// ⭐ 안전하게 순서대로 넣는 엑셀 업로드 
 window.applyExcelData = async () => {
     if(!window.excelDataTemp || window.excelDataTemp.length === 0) return window.showCustomAlert("적용할 데이터가 없습니다.\n(엑셀 파일의 양식을 다시 확인해주세요.)");
     if(!await window.showCustomConfirm(`기존 도감을 모두 삭제하고 엑셀 데이터(${window.excelDataTemp.length}개)로 덮어쓰시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
 
     window.showCustomAlert("기존 데이터를 삭제하고 새 데이터를 적용 중입니다... (잠시만 기다려주세요)");
     try {
-        // 1. 기존 데이터 모두 삭제
         const snap = await getDocs(getWordListCollection());
         const deletePromises = [];
         snap.forEach(d => deletePromises.push(deleteDoc(d.ref)));
         await Promise.all(deletePromises);
 
-        // 2. 새 데이터 차례대로 안전하게 추가 (동시 전송 과부하 방지)
         let now = Date.now();
         for (let i = 0; i < window.excelDataTemp.length; i++) {
             let w = window.excelDataTemp[i];
-            // 특수기호 등으로 인한 DB 에러를 막기 위한 완벽히 안전한 ID 생성
             let safeWordId = 'word_' + now + '_' + i; 
             
             await setDoc(getWordDoc(safeWordId), {
@@ -269,11 +263,9 @@ window.applyExcelData = async () => {
             });
         }
         
-        // 3. UI 정리 및 갱신
         document.getElementById('excel-preview-container').style.display = 'none';
         window.excelDataTemp = [];
         
-        // 화면 즉시 새로고침
         if(window.updateAdminList) window.updateAdminList(); 
         
         window.showCustomAlert("🎉 엑셀 데이터 적용이 완벽하게 완료되었습니다!");
@@ -281,8 +273,9 @@ window.applyExcelData = async () => {
         window.showCustomAlert("적용 중 오류 발생: " + e.message); 
     }
 };
+
 // ==========================================
-// ⭐ 5. 모험가 계정 성별 토글 및 삭제 로직
+// 5. 모험가 계정 성별 토글 및 삭제 로직 (라이트 모드 적용)
 // ==========================================
 window.addStudentAccount = async () => {
     const nameInput = document.getElementById('new-student-name');
@@ -303,7 +296,7 @@ window.addStudentAccount = async () => {
         await setDoc(docRef, { 
             id: name, 
             password: pw, 
-            gender: 'M', // 기본 성별 남자로 설정
+            gender: 'M',
             isFirstLogin: true, 
             gameStats: emptyStats, 
             createdAt: new Date().toISOString(), 
@@ -324,7 +317,7 @@ window.addStudentAccount = async () => {
 window.renderAdminStudentList = async () => {
     const container = document.getElementById('admin-student-list');
     if(!container) return;
-    container.innerHTML = '<p class="text-xs text-slate-400">목록을 불러오는 중...</p>';
+    container.innerHTML = '<p class="text-xs text-slate-500 font-bold">목록을 불러오는 중...</p>';
     try {
         const snap = await getDocs(getStudentsCollection());
         let html = '';
@@ -339,37 +332,35 @@ window.renderAdminStudentList = async () => {
         });
 
         if(students.length === 0) {
-            container.innerHTML = '<p class="text-xs text-slate-400">등록된 모험가가 없습니다.</p>'; return;
+            container.innerHTML = '<p class="text-xs text-slate-500 font-bold">등록된 모험가가 없습니다.</p>'; return;
         }
 
         students.forEach(s => {
-            // ⭐ 성별 데이터 렌더링
             const gender = s.data.gender || 'M';
             const genderEmoji = gender === 'F' ? '👧' : '👦';
-            const genderColor = gender === 'F' ? 'bg-pink-100 text-pink-600 border-pink-300 hover:bg-pink-200' : 'bg-blue-100 text-blue-600 border-blue-300 hover:bg-blue-200';
+            const genderColor = gender === 'F' ? 'bg-pink-50 text-pink-600 border-pink-200 hover:bg-pink-100' : 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100';
             
             html += `
-            <div class="flex justify-between items-center bg-slate-800 p-2 rounded-lg border border-slate-600 mb-2">
+            <div class="flex justify-between items-center bg-white p-2 rounded-lg border border-slate-200 shadow-sm mb-2">
                 <div class="flex items-center gap-2">
                     <button onclick="window.toggleStudentGender('${s.id}', '${gender}')" class="text-lg w-8 h-8 flex items-center justify-center rounded-full border shadow-sm transition-colors ${genderColor}" title="클릭하여 성별 변경">${genderEmoji}</button>
                     <div>
-                        <span class="font-bold text-blue-300 text-sm">${s.id}</span>
-                        <span class="text-[10px] text-slate-400 ml-2 block sm:inline">비번: ${s.data.password}</span>
+                        <span class="font-black text-blue-700 text-sm">${s.id}</span>
+                        <span class="text-[10px] text-slate-500 font-bold ml-2 block sm:inline">비번: ${s.data.password}</span>
                     </div>
                 </div>
-                <button onclick="window.deleteStudentAccount('${s.id}')" class="text-red-400 text-xs font-bold bg-red-900/30 px-3 py-1.5 rounded-lg hover:bg-red-500 hover:text-white transition-colors shrink-0">삭제</button>
+                <button onclick="window.deleteStudentAccount('${s.id}')" class="text-red-600 text-xs font-black bg-red-50 border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-500 hover:text-white transition-colors shrink-0 shadow-sm">삭제</button>
             </div>`;
         });
         container.innerHTML = html;
-    } catch(e) { container.innerHTML = '<p class="text-red-400 text-xs">불러오기 실패</p>'; }
+    } catch(e) { container.innerHTML = '<p class="text-red-500 font-bold text-xs">불러오기 실패</p>'; }
 };
 
-// ⭐ 성별 클릭 시 파이어베이스 실시간 업데이트 함수
 window.toggleStudentGender = async (studentId, currentGender) => {
     const newGender = currentGender === 'F' ? 'M' : 'F';
     try {
         await setDoc(getStudentDoc(studentId), { gender: newGender }, { merge: true });
-        window.renderAdminStudentList(); // 리스트 새로고침
+        window.renderAdminStudentList(); 
     } catch(e) {
         window.showCustomAlert("성별 변경 중 오류가 발생했습니다.");
     }
@@ -424,7 +415,7 @@ window.resetAllStudentsData = async () => {
                 promises.push(setDoc(docSnap.ref, { 
                     id: data.id || docSnap.id, 
                     password: data.password || "1234", 
-                    gender: data.gender || 'M', // 초기화 시에도 성별 유지
+                    gender: data.gender || 'M', 
                     createdAt: data.createdAt || new Date().toISOString(),
                     gameStats: emptyStats, forceLogout: true
                 }));
@@ -453,7 +444,7 @@ window.forceLogoutAll = async () => {
 };
 
 // ==========================================
-// 7. 단어 시험(기습 테스트) 관리 및 성적표
+// 7. 단어 시험(기습 테스트) 관리 및 성적표 (라이트 모드)
 // ==========================================
 window.renderTestStudentCheckboxes = async () => {
     const container = document.getElementById('test-student-checkboxes');
@@ -470,9 +461,9 @@ window.renderTestStudentCheckboxes = async () => {
         
         students.forEach(name => {
             html += `
-            <label class="flex items-center gap-1.5 p-1.5 bg-slate-700 border border-slate-600 rounded-lg cursor-pointer hover:bg-slate-600">
-                <input type="checkbox" value="${name}" class="test-student-cb w-4 h-4 text-emerald-500 bg-slate-800 border-slate-500 rounded focus:ring-emerald-500 cursor-pointer" checked>
-                <span class="text-xs font-bold text-emerald-100 truncate">${name}</span>
+            <label class="flex items-center gap-1.5 p-1.5 bg-white border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 shadow-sm">
+                <input type="checkbox" value="${name}" class="test-student-cb w-4 h-4 text-emerald-500 bg-white border-slate-300 rounded focus:ring-emerald-500 cursor-pointer" checked>
+                <span class="text-xs font-black text-slate-700 truncate">${name}</span>
             </label>
             `;
         });
@@ -548,7 +539,7 @@ window.renderTestScores = async () => {
     const tbody = document.getElementById('test-scores-tbody');
     if(!tbody) return;
 
-    tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4">데이터를 불러오는 중...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 font-bold text-slate-500">데이터를 불러오는 중...</td></tr>`;
     
     try {
         const snap = await getDocs(getStudentsCollection());
@@ -569,28 +560,28 @@ window.renderTestScores = async () => {
             const chaptersTaken = Object.keys(scores).sort((a,b) => parseInt(a) - parseInt(b));
             
             if (chaptersTaken.length === 0) {
-                html += `<tr class="border-b border-slate-600 hover:bg-slate-700 transition-colors">
-                    <td class="p-3 font-bold text-emerald-300 bg-slate-800 border-r border-slate-600 align-middle">${student.id}</td>
-                    <td class="p-3 text-center text-slate-500" colspan="3">응시 기록 없음</td>
+                html += `<tr class="border-b border-slate-200 hover:bg-slate-50 transition-colors">
+                    <td class="p-3 font-black text-emerald-700 bg-white border-r border-slate-200 align-middle">${student.id}</td>
+                    <td class="p-3 text-center text-slate-500 font-bold" colspan="3">응시 기록 없음</td>
                 </tr>`;
             } else {
                 chaptersTaken.forEach((ch, index) => {
                     const scoreData = scores[ch];
                     const isPerfect = scoreData.score === scoreData.total && scoreData.total > 0;
                     const wrongList = scoreData.wrongWords && scoreData.wrongWords.length > 0 ? scoreData.wrongWords.join(', ') : (scoreData.unsubmitted ? '미제출' : '없음 (만점!)');
-                    const wrongClass = isPerfect ? 'text-emerald-400 font-bold' : (scoreData.unsubmitted ? 'text-slate-500' : 'text-red-400 font-bold');
+                    const wrongClass = isPerfect ? 'text-emerald-600 font-black' : (scoreData.unsubmitted ? 'text-slate-400 font-bold' : 'text-red-600 font-black');
                     
-                    html += `<tr class="border-b border-slate-600 hover:bg-slate-700 transition-colors">
-                        ${index === 0 ? `<td class="p-3 font-bold text-emerald-300 bg-slate-800 border-r border-slate-600 align-middle" rowspan="${chaptersTaken.length}">${student.id}</td>` : ''}
-                        <td class="p-3 text-center text-slate-300 align-middle">${ch}단원</td>
-                        <td class="p-3 text-center font-bold ${isPerfect ? 'text-sky-400' : 'text-slate-300'} align-middle">${scoreData.score}/${scoreData.total}</td>
+                    html += `<tr class="border-b border-slate-200 hover:bg-slate-50 transition-colors">
+                        ${index === 0 ? `<td class="p-3 font-black text-emerald-700 bg-white border-r border-slate-200 align-middle" rowspan="${chaptersTaken.length}">${student.id}</td>` : ''}
+                        <td class="p-3 text-center text-slate-700 font-bold align-middle">${ch}단원</td>
+                        <td class="p-3 text-center font-black ${isPerfect ? 'text-sky-600' : 'text-slate-700'} align-middle">${scoreData.score}/${scoreData.total}</td>
                         <td class="p-3 ${wrongClass} break-words whitespace-normal max-w-[200px] align-middle leading-snug">${wrongList}</td>
                     </tr>`;
                 });
             }
         });
-        tbody.innerHTML = html || '<tr><td colspan="4" class="text-center py-4 text-slate-400">모험가 데이터가 없습니다.</td></tr>';
-    } catch(e) { tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-red-500">오류 발생</td></tr>'; }
+        tbody.innerHTML = html || '<tr><td colspan="4" class="text-center py-4 text-slate-500 font-bold">모험가 데이터가 없습니다.</td></tr>';
+    } catch(e) { tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-red-500 font-bold">오류 발생</td></tr>'; }
 };
 
 window.downloadTestScoresCSV = async () => {
@@ -643,13 +634,13 @@ window.downloadTestScoresCSV = async () => {
 };
 
 // ==========================================
-// 8. 함정(오답 노트) 관리
+// 8. 함정(오답 노트) 관리 (라이트 모드 적용)
 // ==========================================
 window.renderPrisonList = async () => {
     const listEl = document.getElementById('prison-management-list');
     if (!listEl) return;
     
-    listEl.innerHTML = '<p class="text-center text-slate-400 text-xs py-2 animate-pulse">불러오는 중...</p>';
+    listEl.innerHTML = '<p class="text-center text-slate-500 font-bold text-xs py-2 animate-pulse">불러오는 중...</p>';
     try {
         const snap = await getDocs(getStudentsCollection());
         let prisoners = [];
@@ -669,7 +660,7 @@ window.renderPrisonList = async () => {
         });
         
         if (prisoners.length === 0) {
-            listEl.innerHTML = '<p class="text-center text-slate-400 text-sm py-4 font-bold">함정에 갇힌 모험가가 없습니다.</p>';
+            listEl.innerHTML = '<p class="text-center text-slate-500 text-sm py-4 font-bold">함정에 갇힌 모험가가 없습니다.</p>';
             return;
         }
         
@@ -677,17 +668,17 @@ window.renderPrisonList = async () => {
         prisoners.forEach(p => {
             const wordsSummary = Object.keys(p.words).map(w => `${w}(${p.words[w]}회)`).join(', ');
             html += `
-            <div class="flex justify-between items-center bg-slate-700 p-3 rounded-xl border border-slate-600 mb-2">
+            <div class="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-200 shadow-sm mb-2">
                 <div class="truncate pr-2 flex-1">
-                    <span class="font-bold text-emerald-300 mr-2">${p.id}</span>
-                    <span class="text-xs text-slate-300 truncate">${wordsSummary}</span>
+                    <span class="font-black text-emerald-700 mr-2">${p.id}</span>
+                    <span class="text-xs text-slate-600 font-bold truncate">${wordsSummary}</span>
                 </div>
-                <button onclick="window.forceEscape('${p.id}')" class="bg-indigo-500 text-white text-xs px-3 py-1.5 rounded-lg font-bold shadow hover:bg-indigo-600 transition-colors shrink-0">강제 탈출</button>
+                <button onclick="window.forceEscape('${p.id}')" class="bg-indigo-500 text-white text-xs px-3 py-1.5 rounded-lg font-bold shadow-sm hover:bg-indigo-600 transition-colors shrink-0 border border-indigo-600">강제 탈출</button>
             </div>
             `;
         });
         listEl.innerHTML = html;
-    } catch(e) { listEl.innerHTML = '<p class="text-red-400 text-xs py-2 text-center">오류 발생</p>'; }
+    } catch(e) { listEl.innerHTML = '<p class="text-red-500 font-bold text-xs py-2 text-center">오류 발생</p>'; }
 };
 
 window.forceEscape = async (studentId) => {
