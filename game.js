@@ -365,7 +365,10 @@ window.handleLogin = async () => {
             if (idInput === '테스트') {
                 let demoCaughtWords = {};
                 if(window.state.quizzes && window.state.quizzes.length > 0) {
-                    window.state.quizzes.slice(0, 15).forEach(q => { demoCaughtWords[q.word] = 12; });
+                    window.state.quizzes.slice(0, 15).forEach(q => { 
+                        const safeW = (q.word || '').toString().trim();
+                        if(safeW) demoCaughtWords[safeW] = 12; 
+                    });
                 } else {
                     demoCaughtWords['apple'] = 12; demoCaughtWords['banana'] = 12; demoCaughtWords['cat'] = 12;
                 }
@@ -457,13 +460,15 @@ function startMagicRPG() {
     unsubscribeWords = onSnapshot(getWordListCollection(), (snapshot) => {
         window.state.quizzes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        // ⭐ 단원 내 몬스터 겹침 방지 및 엑셀 순서 고정 맵(Map) 생성
+        // ⭐ 철저한 예외 처리 적용된 맵 생성
         window.state.monsterMap = {};
         const chapters = {};
         window.state.quizzes.forEach(q => {
             const ch = q.chapter || 1;
+            const safeWord = (q.word || '').toString().toLowerCase().trim();
+            if(!safeWord) return; // 비어있는 단어 무시 (에러 방어)
             if(!chapters[ch]) chapters[ch] = [];
-            if(!chapters[ch].includes(q.word.toLowerCase())) chapters[ch].push(q.word.toLowerCase());
+            if(!chapters[ch].includes(safeWord)) chapters[ch].push(safeWord);
         });
         
         for(let ch in chapters) {
@@ -520,7 +525,7 @@ function startMagicRPG() {
                     const inputs = document.querySelectorAll('.test-answer-input');
                     let wrongWords = [];
                     inputs.forEach(input => {
-                        const correctWord = input.getAttribute('data-word').toLowerCase().trim();
+                        const correctWord = (input.getAttribute('data-word') || '').toString().toLowerCase().trim();
                         if (input.value.trim().toLowerCase() !== correctWord) wrongWords.push(correctWord);
                     });
                     if(window.submitTest) window.submitTest();
@@ -598,8 +603,8 @@ window.renderLearnChapterGrid = () => {
 };
 
 window.openLearnPlay = (ch) => {
-    const chapterWords = window.state.quizzes.filter(q => (q.chapter || 1) === ch);
-    if(chapterWords.length === 0) return window.showCustomAlert(`${ch}단원에 등록된 단어가 없습니다.`);
+    const chapterWords = window.state.quizzes.filter(q => parseInt(q.chapter || 1) === ch && (q.word || '').toString().trim());
+    if(chapterWords.length === 0) return window.showCustomAlert(`${ch}단원에 정상적으로 등록된 단어가 없습니다.`);
     
     window.learnState.list = chapterWords;
     window.learnState.index = 0;
@@ -614,8 +619,8 @@ window.openLearnPlay = (ch) => {
 };
 
 window.openLearnQuiz = (ch) => {
-    const chapterWords = window.state.quizzes.filter(q => (q.chapter || 1) === ch);
-    if(chapterWords.length === 0) return window.showCustomAlert(`${ch}단원에 등록된 단어가 없습니다.`);
+    const chapterWords = window.state.quizzes.filter(q => parseInt(q.chapter || 1) === ch && (q.word || '').toString().trim());
+    if(chapterWords.length === 0) return window.showCustomAlert(`${ch}단원에 정상적으로 등록된 단어가 없습니다.`);
     
     window.learnState.isPlaying = false;
     document.getElementById('learn-chapter-view').style.display = 'none';
@@ -646,10 +651,11 @@ const playLearnWordStep1 = () => {
     document.getElementById('learn-progress-txt').innerText = `${modeTxt} (${currentNum} / ${totalNum})`;
     
     const wordObj = window.learnState.list[window.learnState.index];
-    document.getElementById('learn-en-word').innerText = wordObj.word;
+    const safeWord = (wordObj.word || '').toString();
+    document.getElementById('learn-en-word').innerText = safeWord;
     document.getElementById('learn-kr-word').innerText = ""; 
     
-    window.speakText(wordObj.word, 'en-US');
+    window.speakText(safeWord, 'en-US');
     
     window.learnState.timer1 = setTimeout(() => {
         playLearnWordStep2(wordObj);
@@ -659,8 +665,8 @@ const playLearnWordStep1 = () => {
 const playLearnWordStep2 = (wordObj) => {
     if (!window.learnState.isPlaying) return;
     
-    document.getElementById('learn-kr-word').innerText = wordObj.meaning;
-    window.speakText(wordObj.meaning, 'ko-KR');
+    document.getElementById('learn-kr-word').innerText = wordObj.meaning || '';
+    window.speakText(wordObj.meaning || '', 'ko-KR');
     
     window.learnState.timer2 = setTimeout(() => {
         if (!window.learnState.isPlaying) return;
@@ -728,11 +734,12 @@ const renderLearnQuiz = () => {
     document.getElementById('learn-quiz-progress').innerText = `${window.learnState.quizIndex + 1} / ${window.learnState.quizList.length}`;
     document.getElementById('learn-quiz-meaning').innerText = currentWordObj.meaning;
     
-    let options = [currentWordObj.word];
-    let wrongPool = window.state.quizzes.filter(q => q.word !== currentWordObj.word);
+    const correctSafeWord = (currentWordObj.word || '').toString();
+    let options = [correctSafeWord];
+    let wrongPool = window.state.quizzes.filter(q => (q.word || '').toString() !== correctSafeWord && (q.word || '').toString().trim());
     wrongPool.sort(() => Math.random() - 0.5);
     
-    options.push(...wrongPool.slice(0, 3).map(q => q.word));
+    options.push(...wrongPool.slice(0, 3).map(q => (q.word || '').toString()));
     options.sort(() => Math.random() - 0.5); 
     
     const optionsContainer = document.getElementById('learn-quiz-options');
@@ -740,7 +747,6 @@ const renderLearnQuiz = () => {
     
     options.forEach(opt => {
         let btn = document.createElement('button');
-        // 라이트 모드 스타일
         btn.className = "w-full bg-white text-slate-800 py-6 rounded-2xl font-black text-lg sm:text-xl shadow-sm border-2 border-slate-300 transition-colors flex items-center justify-center break-all px-2 focus:outline-none select-none";
         btn.innerText = opt;
         btn.onclick = () => window.checkLearnQuiz(opt, currentWordObj, btn);
@@ -750,7 +756,7 @@ const renderLearnQuiz = () => {
 
 window.checkLearnQuiz = (selected, currentWordObj, btnEl) => {
     if (btnEl.disabled) return;
-    const correctWord = currentWordObj.word;
+    const correctWord = (currentWordObj.word || '').toString();
     
     if (selected === correctWord) {
         const allBtns = document.getElementById('learn-quiz-options').querySelectorAll('button');
@@ -766,7 +772,7 @@ window.checkLearnQuiz = (selected, currentWordObj, btnEl) => {
         btnEl.disabled = true; 
         btnEl.className = "w-full bg-red-500 text-white py-6 rounded-2xl font-black text-lg sm:text-xl shadow-inner border-2 border-red-600 opacity-70 transition-colors flex items-center justify-center break-all px-2 focus:outline-none select-none";
         
-        if(!window.learnState.wrongWords.find(w => w.word === correctWord)) {
+        if(!window.learnState.wrongWords.find(w => (w.word||'').toString() === correctWord)) {
             window.learnState.wrongWords.push(currentWordObj);
         }
     }
@@ -776,7 +782,8 @@ window.checkLearnQuiz = (selected, currentWordObj, btnEl) => {
 // 5. 부가 기능 (도감 파트너, 지배자 등)
 // ==========================================
 window.setPartner = (word) => {
-    const count = window.state.gameData.caughtWords[word] || 0;
+    const safeWord = (word || '').toString();
+    const count = window.state.gameData.caughtWords[safeWord] || 0;
     if (count < 10) return window.showCustomAlert(`포획 횟수가 10회 이상인 진정한 파트너만 등록할 수 있습니다!\n(현재: ${count}회)`);
 
     const listEl = document.getElementById('partner-stage-list');
@@ -784,14 +791,14 @@ window.setPartner = (word) => {
 
     [1, 2, 3].forEach(tier => {
         let fakeCount = tier === 1 ? 1 : (tier === 2 ? 5 : 10);
-        const pInfo = getPokemonInfoForWord(word, fakeCount);
+        const pInfo = getPokemonInfoForWord(safeWord, fakeCount);
         if (!seenIds.has(pInfo.id)) { seenIds.add(pInfo.id); uniqueStages.push({ tier, pInfo }); }
     });
 
     uniqueStages.forEach(stage => {
         const apiData = LOCAL_POKEMON_DB[stage.pInfo.id] || { name: "알 수 없음", type: "normal" };
         html += `
-        <div onclick="window.confirmPartner('${word}', ${stage.tier})" class="cursor-pointer bg-slate-50 border-2 border-slate-200 hover:border-yellow-400 rounded-2xl p-4 flex flex-col items-center hover:scale-105 transition-all shadow-md w-28 sm:w-32">
+        <div onclick="window.confirmPartner('${safeWord}', ${stage.tier})" class="cursor-pointer bg-slate-50 border-2 border-slate-200 hover:border-yellow-400 rounded-2xl p-4 flex flex-col items-center hover:scale-105 transition-all shadow-md w-28 sm:w-32">
             <img src="${stage.pInfo.imgSrc}" crossorigin="anonymous" class="h-16 w-16 sm:h-20 sm:w-20 object-contain mb-2 drop-shadow-md" style="image-rendering:pixelated;">
             <span class="text-xs font-bold text-yellow-600 bg-yellow-100 px-2 py-0.5 rounded mb-1 border border-yellow-200">Lv.${stage.tier}</span>
             <span class="text-sm font-black text-slate-800 truncate w-full text-center">${apiData.name}</span>
@@ -804,7 +811,8 @@ window.setPartner = (word) => {
 window.closePartnerStageModal = () => { document.getElementById('partner-stage-modal').style.display = 'none'; };
 
 window.confirmPartner = (word, tier) => {
-    window.state.gameData.partnerWord = word; window.state.gameData.partnerStage = tier;
+    window.state.gameData.partnerWord = (word || '').toString(); 
+    window.state.gameData.partnerStage = tier;
     window.saveProgress(); window.renderDex(); window.closePartnerStageModal();
     window.showCustomAlert(`[${word}] 파트너가 성공적으로 전시되었습니다!`);
 };
@@ -820,7 +828,8 @@ window.loadChapterDominators = async () => {
             if (['마스터', '테스트'].includes(sId)) return;
             const caught = doc.data().gameStats?.caughtWords || {};
             for (let word in caught) {
-                const quiz = window.state.quizzes.find(q => q.word.toLowerCase() === word.toLowerCase());
+                const safeWord = (word || '').toString().toLowerCase();
+                const quiz = window.state.quizzes.find(q => (q.word || '').toString().toLowerCase() === safeWord);
                 if (quiz) {
                     const ch = quiz.chapter || 1;
                     if (!chapterScores[ch][sId]) chapterScores[ch][sId] = 0;
@@ -864,13 +873,14 @@ window.showAdventurerProfile = async (studentId) => {
         if (sortedWords.length === 0) top3Html = '<p class="text-slate-500 text-sm font-bold text-center py-6">포획한 영켓몬이 없습니다.</p>';
         else {
             top3Html = '<div class="flex justify-center gap-3">';
-            sortedWords.forEach(word => {
-                const count = caughtWords[word];
-                const pInfo = getPokemonInfoForWord(word, count);
+            sortedWords.forEach(w => {
+                const safeWord = (w || '').toString();
+                const count = caughtWords[safeWord];
+                const pInfo = getPokemonInfoForWord(safeWord, count);
                 top3Html += `
                     <div class="bg-white border border-slate-200 rounded-2xl p-3 flex flex-col items-center w-28 sm:w-32 shadow-sm hover:scale-105 transition-transform">
                         <img src="${pInfo.imgSrc}" crossorigin="anonymous" class="h-16 sm:h-20 object-contain drop-shadow-md mb-2" style="image-rendering:pixelated;">
-                        <span class="text-xs sm:text-sm font-black text-slate-800 truncate w-full text-center mt-1">${word}</span>
+                        <span class="text-xs sm:text-sm font-black text-slate-800 truncate w-full text-center mt-1">${safeWord}</span>
                         <span class="text-[10px] sm:text-xs text-yellow-600 font-bold mt-1">★ ${count}회</span>
                     </div>`;
             });
@@ -879,7 +889,8 @@ window.showAdventurerProfile = async (studentId) => {
 
         let maxCh = 1;
         for (let w in caughtWords) {
-            const quiz = window.state.quizzes.find(q => q.word.toLowerCase() === w.toLowerCase());
+            const safeWord = (w || '').toString().toLowerCase();
+            const quiz = window.state.quizzes.find(q => (q.word || '').toString().toLowerCase() === safeWord);
             if (quiz && quiz.chapter > maxCh) maxCh = quiz.chapter;
         }
 
@@ -910,17 +921,18 @@ window.showCheatSheet = () => {
     const ch = window.state.currentChapter || 1;
     document.getElementById('cheat-sheet-title').innerText = `${ch}단원`;
     const listEl = document.getElementById('cheat-sheet-list');
-    const filteredQuizzes = window.state.quizzes.filter(q => (q.chapter || 1) === ch);
+    const filteredQuizzes = window.state.quizzes.filter(q => parseInt(q.chapter || 1) === ch && (q.word || '').toString().trim());
     
-    if (filteredQuizzes.length === 0) listEl.innerHTML = '<p class="text-center text-slate-500 py-10 text-sm">등록된 영단어가 없습니다.</p>';
+    if (filteredQuizzes.length === 0) listEl.innerHTML = '<p class="text-center text-slate-500 py-10 text-sm font-bold">등록된 영단어가 없습니다.</p>';
     else {
         let html = '';
        filteredQuizzes.forEach(q => {
+            const safeW = (q.word || '').toString();
             html += `
             <div class="bg-white rounded-xl p-3 border border-slate-200 shadow-sm flex flex-col gap-1 select-none">
                 <div class="font-black text-indigo-700 text-lg flex items-center justify-between">
-                    ${q.word}
-                    <button onclick="window.speakText('${q.word}', 'en-US')" class="hover:scale-125 transition-transform" title="발음 듣기">🔊</button>
+                    ${safeW}
+                    <button onclick="window.speakText('${safeW.replace(/'/g, "\\'")}', 'en-US')" class="hover:scale-125 transition-transform" title="발음 듣기">🔊</button>
                 </div>
                 <div class="text-sm text-slate-600 font-bold">${q.meaning}</div>
             </div>`;
@@ -962,9 +974,9 @@ window.exitStage = () => {
 window.refreshQuiz = () => {
     const input = document.getElementById('spell-in');
     const hint = document.getElementById('hint-msg');
-    if (window.state.quizzes.length === 0) return;
+    if (!window.state.quizzes || window.state.quizzes.length === 0) return;
 
-    const chapterQuizzes = window.state.quizzes.filter(q => (q.chapter || 1) === window.state.currentChapter);
+    const chapterQuizzes = window.state.quizzes.filter(q => parseInt(q.chapter || 1) === window.state.currentChapter && (q.word || '').toString().trim());
     if (chapterQuizzes.length === 0) {
         document.getElementById('quiz-txt').innerText = "해당 단원에 보카몬이 없습니다.";
         if(input) input.disabled = true; return;
@@ -975,27 +987,27 @@ window.refreshQuiz = () => {
     const savedWord = window.state.gameData.savedEncounters[window.state.currentChapter];
     
     let foundQuiz = null;
-    if (savedWord) foundQuiz = chapterQuizzes.find(q => q.word.toLowerCase() === savedWord.toLowerCase());
+    if (savedWord) foundQuiz = chapterQuizzes.find(q => (q.word || '').toString().toLowerCase() === savedWord.toString().toLowerCase());
 
     if (foundQuiz) window.state.currentQuiz = foundQuiz;
     else {
         let availableQuizzes = chapterQuizzes;
         if (window.state.currentQuiz && chapterQuizzes.length > 1) {
-            availableQuizzes = chapterQuizzes.filter(q => q.word.toLowerCase() !== window.state.currentQuiz.word.toLowerCase());
+            availableQuizzes = chapterQuizzes.filter(q => (q.word || '').toString().toLowerCase() !== (window.state.currentQuiz.word || '').toString().toLowerCase());
         }
         window.state.currentQuiz = availableQuizzes[Math.floor(Math.random() * availableQuizzes.length)];
-        window.state.gameData.savedEncounters[window.state.currentChapter] = window.state.currentQuiz.word;
+        window.state.gameData.savedEncounters[window.state.currentChapter] = (window.state.currentQuiz.word || '').toString();
         window.saveProgress();
     }
 
-    document.getElementById('quiz-txt').innerText = window.state.currentQuiz.meaning;
+    document.getElementById('quiz-txt').innerText = window.state.currentQuiz.meaning || "알 수 없음";
     
     if(hint) { 
         hint.innerHTML = "정답 영단어를 입력하면 몬스터를 포획합니다!"; 
         hint.className = "text-slate-500 text-lg mt-4 font-bold"; 
     }
 
-    const word = window.state.currentQuiz.word;
+    const word = (window.state.currentQuiz.word || '').toString();
     const catchCount = window.state.gameData.caughtWords?.[word] || 0;
     const pInfo = getPokemonInfoForWord(word, catchCount);
     window.state.monster.name = word;
@@ -1009,7 +1021,7 @@ window.checkMagic = () => {
     if (!window.state.currentQuiz) return;
     const input = document.getElementById('spell-in');
     const hint = document.getElementById('hint-msg');
-    const correctWord = window.state.currentQuiz.word;
+    const correctWord = (window.state.currentQuiz.word || '').toString();
     
     if (input.value.trim().toLowerCase() === correctWord.toLowerCase()) { 
         handleAttack(); window.refreshQuiz(); input.value = ''; input.focus();
@@ -1043,7 +1055,7 @@ window.checkMagic = () => {
 };
 
 function handleAttack() {
-    const word = window.state.currentQuiz.word;
+    const word = (window.state.currentQuiz.word || '').toString();
     if (!window.state.gameData.caughtWords) window.state.gameData.caughtWords = {};
     window.state.gameData.caughtWords[word] = (window.state.gameData.caughtWords[word] || 0) + 1;
     window.state.gameData.count++; window.state.monster.hp -= 100; window.state.monster.shake = 25;
@@ -1126,14 +1138,18 @@ window.renderDex = async () => {
     const keys = Object.keys(caughtWords);
     document.getElementById('dex-total').innerText = keys.length;
     
+    // ⭐ 예외 처리 1: 0마리일 때 명확히 처리
     if (keys.length === 0) {
         dexList.innerHTML = `<p class="text-center text-slate-500 py-10 text-sm font-bold">아직 포획한 영켓몬이 없습니다.<br>사냥터에서 영단어를 맞혀보세요!</p>`; return;
     }
     
+    // ⭐ 예외 처리 2: 데이터베이스에서 안전하게 단어 찾기
     const sortedKeys = keys.sort((a, b) => caughtWords[b] - caughtWords[a]);
-    const cardDataList = sortedKeys.map(word => {
+    const cardDataList = sortedKeys.map(w => {
+        const word = (w || '').toString();
         const count = caughtWords[word];
-        const meaning = window.state.quizzes.find(q => q.word.toLowerCase() === word.toLowerCase())?.meaning || "알 수 없음";
+        const quizMatch = window.state.quizzes.find(q => (q.word || '').toString().toLowerCase() === word.toLowerCase());
+        const meaning = quizMatch ? quizMatch.meaning : "알 수 없음";
         const pInfo = getPokemonInfoForWord(word, count);
         const apiData = LOCAL_POKEMON_DB[pInfo.id] || { name: "알 수 없음", type: "normal" };
         return { word, count, meaning, pInfo, apiData };
@@ -1151,7 +1167,7 @@ window.renderDex = async () => {
         const partnerBadge = isPartner ? '<div class="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-300 to-yellow-500 text-yellow-900 text-[10px] px-2 py-0.5 rounded-full font-black shadow-md z-10 border border-yellow-200">👑 파트너</div>' : '';
 
         html += `
-        <div onclick="window.setPartner('${item.word}')" class="cursor-pointer relative flex flex-col items-center justify-center p-3 rounded-2xl ${typeInfo.bg} bg-opacity-30 border-2 ${borderClass} transition-all shadow-sm">
+        <div onclick="window.setPartner('${item.word.replace(/'/g, "\\'")}')" class="cursor-pointer relative flex flex-col items-center justify-center p-3 rounded-2xl ${typeInfo.bg} bg-opacity-30 border-2 ${borderClass} transition-all shadow-sm">
             ${partnerBadge}
             <div class="w-full flex justify-between items-center mb-1 px-1">
                 <span class="text-[10px] text-slate-800 bg-white/60 px-1.5 py-0.5 rounded-md font-bold">LV ${item.pInfo.tier}</span>
@@ -1163,7 +1179,7 @@ window.renderDex = async () => {
 <div class="w-full text-center bg-white rounded-xl py-2 mt-2 shadow-sm border border-slate-100">
                 <div class="font-black text-slate-800 text-base capitalize truncate px-1 flex justify-center items-center gap-1">
                     ${item.word}
-                    <button onclick="window.speakText('${item.word}', 'en-US'); event.stopPropagation();" class="hover:scale-125 transition-transform text-sm" title="발음 듣기">🔊</button>
+                    <button onclick="window.speakText('${item.word.replace(/'/g, "\\'")}', 'en-US'); event.stopPropagation();" class="hover:scale-125 transition-transform text-sm" title="발음 듣기">🔊</button>
                 </div>
                 <div class="text-slate-500 text-xs truncate px-1 font-bold">${item.meaning}</div>
                 <div class="mt-1 flex items-center justify-center gap-1">
@@ -1197,7 +1213,8 @@ window.renderRanking = async () => {
                 }
 
                 if (bestWord) {
-                    const quiz = window.state.quizzes.find(q => q.word.toLowerCase() === bestWord.toLowerCase());
+                    const safeBestWord = (bestWord || '').toString().toLowerCase();
+                    const quiz = window.state.quizzes.find(q => (q.word || '').toString().toLowerCase() === safeBestWord);
                     if (quiz) maxCh = quiz.chapter || 1;
                 }
 
@@ -1285,13 +1302,14 @@ const checkDailyLimit = () => {
 window.battleState = { active: false, oppId: null, oppStats: null, mySelection: [], myTeam: [], oppTeam: [], myIdx: 0, oppIdx: 0, oppTimer: null, myEnergy: 0, oppEnergy: 0, energyMax: 35 };
 
 window.showOppMonDetail = (word, count) => {
-    const pInfo = getPokemonInfoForWord(word, count);
+    const safeWord = (word || '').toString();
+    const pInfo = getPokemonInfoForWord(safeWord, count);
     const apiData = LOCAL_POKEMON_DB[pInfo.id] || { name: "알 수 없음", type: "normal" };
     const typeInfo = TYPE_COLORS[apiData.type] || TYPE_COLORS['normal'];
-    const quiz = window.state.quizzes.find(q => q.word.toLowerCase() === word.toLowerCase());
-    const meaning = quiz ? quiz.meaning : "알 수 없음";
+    const quizMatch = window.state.quizzes.find(q => (q.word || '').toString().toLowerCase() === safeWord.toLowerCase());
+    const meaning = quizMatch ? quizMatch.meaning : "알 수 없음";
 
-    const msg = `✨ ${word} ✨\n\n📖 뜻: ${meaning}\n🔥 속성: ${typeInfo.name}\n👾 종류: ${apiData.name} (LV.${pInfo.tier})\n⭐ 잡은 횟수: ${count}회`;
+    const msg = `✨ ${safeWord} ✨\n\n📖 뜻: ${meaning}\n🔥 속성: ${typeInfo.name}\n👾 종류: ${apiData.name} (LV.${pInfo.tier})\n⭐ 잡은 횟수: ${count}회`;
     window.showCustomAlert(msg);
 };
 
@@ -1365,10 +1383,11 @@ window.loadArena = async () => {
 
             let top3Html = '<div class="flex gap-2 ml-2 sm:ml-4 items-center">';
             if (oppDefenseWords.length > 0) {
-                oppDefenseWords.forEach(word => {
-                    const count = oppCaughtWords[word];
-                    const pInfo = getPokemonInfoForWord(word, count);
-                    top3Html += `<div onclick="window.showOppMonDetail('${word}', ${count})" class="cursor-pointer w-12 h-12 sm:w-14 sm:h-14 bg-slate-50 hover:bg-slate-100 rounded-full flex items-center justify-center border border-slate-200 p-1.5 transition-transform hover:scale-110 shadow-sm" title="${word} 상세정보"><img src="${pInfo.imgSrc}" crossorigin="anonymous" class="max-w-full max-h-full object-contain drop-shadow-md scale-100" style="image-rendering:pixelated;"></div>`;
+                oppDefenseWords.forEach(w => {
+                    const safeW = (w || '').toString();
+                    const count = oppCaughtWords[safeW];
+                    const pInfo = getPokemonInfoForWord(safeW, count);
+                    top3Html += `<div onclick="window.showOppMonDetail('${safeW.replace(/'/g, "\\'")}', ${count})" class="cursor-pointer w-12 h-12 sm:w-14 sm:h-14 bg-slate-50 hover:bg-slate-100 rounded-full flex items-center justify-center border border-slate-200 p-1.5 transition-transform hover:scale-110 shadow-sm" title="${safeW} 상세정보"><img src="${pInfo.imgSrc}" crossorigin="anonymous" class="max-w-full max-h-full object-contain drop-shadow-md scale-100" style="image-rendering:pixelated;"></div>`;
                 });
             } else top3Html += `<span class="text-xs text-slate-500 font-bold pl-2">포획 없음</span>`;
             top3Html += '</div>';
@@ -1419,20 +1438,21 @@ const renderDefenseSelection = () => {
     }
 
     let html = '';
-    eligibleWords.forEach(word => {
-        const count = caughtWords[word];
-        const pInfo = getPokemonInfoForWord(word, count);
+    eligibleWords.forEach(w => {
+        const safeW = (w || '').toString();
+        const count = caughtWords[safeW];
+        const pInfo = getPokemonInfoForWord(safeW, count);
         const apiData = LOCAL_POKEMON_DB[pInfo.id] || { name: "알 수 없음", type: "normal" };
         const typeInfo = TYPE_COLORS[apiData.type] || TYPE_COLORS['normal'];
-        const isSelected = window.defenseSelectionTemp.includes(word);
+        const isSelected = window.defenseSelectionTemp.includes(safeW);
         
-        let clickEvent = `onclick="window.toggleDefenseSelection('${word}')"`;
+        let clickEvent = `onclick="window.toggleDefenseSelection('${safeW.replace(/'/g, "\\'")}')"`;
         let wrapperClass = isSelected ? 'border-green-500 bg-green-50 scale-105 shadow-md' : 'border-slate-200 bg-white hover:bg-slate-50 cursor-pointer shadow-sm';
         
         html += `
         <div ${clickEvent} class="relative border-4 rounded-2xl p-2 flex flex-col items-center justify-center transition-all ${wrapperClass}">
             <div class="h-16 flex items-center justify-center"><img src="${pInfo.imgSrc}" class="max-h-full drop-shadow-sm" style="image-rendering:pixelated;"></div>
-            <div class="text-[10px] font-black text-slate-800 truncate w-full text-center mt-1">${word}</div>
+            <div class="text-[10px] font-black text-slate-800 truncate w-full text-center mt-1">${safeW}</div>
             <div class="flex items-center gap-1 mt-1"><span class="text-[8px] text-white ${typeInfo.bg} px-1 rounded">${typeInfo.name}</span><span class="text-[9px] font-bold text-slate-500">★${count}</span></div>
         </div>`;
     });
@@ -1499,16 +1519,17 @@ const renderTeamSelection = () => {
     const now = new Date(); const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
     const usedCooldown = window.state.gameData.usedPokemonCooldown || {};
 
-    sortedWords.forEach(word => {
-        const count = caughtWords[word];
-        const pInfo = getPokemonInfoForWord(word, count);
+    sortedWords.forEach(w => {
+        const safeW = (w || '').toString();
+        const count = caughtWords[safeW];
+        const pInfo = getPokemonInfoForWord(safeW, count);
         const apiData = LOCAL_POKEMON_DB[pInfo.id] || { name: "알 수 없음", type: "normal" };
         const typeInfo = TYPE_COLORS[apiData.type] || TYPE_COLORS['normal'];
-        const isSelected = window.battleState.mySelection.includes(word);
+        const isSelected = window.battleState.mySelection.includes(safeW);
         
-        const lastUsed = usedCooldown[word] || 0; const isFatigued = lastUsed >= startOfToday;
+        const lastUsed = usedCooldown[safeW] || 0; const isFatigued = lastUsed >= startOfToday;
         
-        let clickEvent = `onclick="window.toggleTeamSelection('${word}')"`;
+        let clickEvent = `onclick="window.toggleTeamSelection('${safeW.replace(/'/g, "\\'")}')"`;
         let wrapperClass = isSelected ? 'border-red-500 bg-red-50 scale-105 shadow-md' : 'border-slate-200 bg-white hover:bg-slate-50 cursor-pointer shadow-sm';
         let imgClass = 'max-h-full drop-shadow-sm'; let badgeHtml = '';
 
@@ -1521,7 +1542,7 @@ const renderTeamSelection = () => {
         <div ${clickEvent} class="relative border-4 rounded-2xl p-2 flex flex-col items-center justify-center transition-all ${wrapperClass}">
             ${badgeHtml}
             <div class="h-16 flex items-center justify-center"><img src="${pInfo.imgSrc}" class="${imgClass}" style="image-rendering:pixelated;"></div>
-            <div class="text-[10px] font-black text-slate-800 truncate w-full text-center mt-1">${word}</div>
+            <div class="text-[10px] font-black text-slate-800 truncate w-full text-center mt-1">${safeW}</div>
             <div class="flex items-center gap-1 mt-1"><span class="text-[8px] text-white ${typeInfo.bg} px-1 rounded">${typeInfo.name}</span><span class="text-[9px] font-bold text-slate-500">★${count}</span></div>
         </div>`;
     });
@@ -1547,17 +1568,18 @@ window.toggleTeamSelection = (word) => {
 };
 
 const createBattleMon = (word, count, trainerLevel = 1) => {
-    const pInfo = getPokemonInfoForWord(word, count);
+    const safeWord = (word || '').toString();
+    const pInfo = getPokemonInfoForWord(safeWord, count);
     const apiData = LOCAL_POKEMON_DB[pInfo.id] || { name: "알 수 없음", type: "normal" };
     const effectiveCount = Math.min(count, 15);
-    const quiz = window.state.quizzes.find(q => q.word.toLowerCase() === word.toLowerCase());
-    const chapter = quiz ? (quiz.chapter || 1) : 1; const chapterBonus = 1 + (chapter * 0.1);
+    const quizMatch = window.state.quizzes.find(q => (q.word || '').toString().toLowerCase() === safeWord.toLowerCase());
+    const chapter = quizMatch ? (quizMatch.chapter || 1) : 1; const chapterBonus = 1 + (chapter * 0.1);
 
     let maxHp = Math.floor((100 + (effectiveCount * 20)) * chapterBonus);
     let atk = Math.floor((10 + (effectiveCount * 3)) * chapterBonus);
     maxHp += (trainerLevel * 5); atk += (trainerLevel * 1);
 
-    return { word, name: apiData.name, type: apiData.type, imgSrc: pInfo.imgSrc, hp: maxHp, maxHp, atk };
+    return { word: safeWord, name: apiData.name, type: apiData.type, imgSrc: pInfo.imgSrc, hp: maxHp, maxHp, atk };
 };
 
 window.startRealBattle = () => {
@@ -1705,8 +1727,8 @@ window.useUltimate = () => {
     updateBattleUI();
 
     const oppMon = window.battleState.oppTeam[window.battleState.oppIdx];
-    const quiz = window.state.quizzes.find(q => q.word.toLowerCase() === oppMon.word.toLowerCase());
-    const meaning = quiz ? quiz.meaning : "알 수 없음";
+    const quizMatch = window.state.quizzes.find(q => (q.word || '').toString().toLowerCase() === oppMon.word.toLowerCase());
+    const meaning = quizMatch ? quizMatch.meaning : "알 수 없음";
 
     document.getElementById('b-quiz-title').innerText = "⚡ 스페셜 어택!";
     document.getElementById('b-quiz-desc').innerText = "제한 시간 15초! 정확한 영단어를 입력하세요!";
@@ -1730,8 +1752,8 @@ const triggerOpponentUltimate = () => {
     updateBattleUI();
 
     const myMon = window.battleState.myTeam[window.battleState.myIdx];
-    const quiz = window.state.quizzes.find(q => q.word.toLowerCase() === myMon.word.toLowerCase());
-    const meaning = quiz ? quiz.meaning : "알 수 없음";
+    const quizMatch = window.state.quizzes.find(q => (q.word || '').toString().toLowerCase() === myMon.word.toLowerCase());
+    const meaning = quizMatch ? quizMatch.meaning : "알 수 없음";
 
     document.getElementById('b-quiz-title').innerText = "🛡️ 방어 태세 (실드)!";
     document.getElementById('b-quiz-desc').innerText = "적의 필살기가 날아옵니다! 15초 안에 내 파트너의 단어를 입력해 막아내세요!";
@@ -1776,9 +1798,8 @@ window.submitBattleQuiz = (isTimeout = false) => {
         inputEl.classList.add('border-red-500', 'bg-red-50');
         const fakeText = document.getElementById('b-fake-text');
         fakeText.textContent = '다시 입력하세요!';
-        fakeText.style.color = '#ef4444'; // 빨간색 경고
+        fakeText.style.color = '#ef4444';
         
-        // 0.5초 뒤 원래 상태로 복구
         setTimeout(() => {
             inputEl.classList.remove('border-red-500', 'bg-red-50');
             if(!inputEl.value) {
@@ -1786,7 +1807,7 @@ window.submitBattleQuiz = (isTimeout = false) => {
                 fakeText.style.color = '#9ca3af';
             }
         }, 500);
-        return; // 창을 닫지 않고 여기서 함수 종료! (다시 칠 수 있게 함)
+        return; 
     }
 
     // ⭐ 2. 정답을 맞혔거나 시간이 다 끝났을 때 (최종 판정)
@@ -1974,12 +1995,13 @@ function gameLoop() {
 // 10. 오리지널 보카몬(VocaMon) 매핑 로직
 // ==========================================
 function getPokemonInfoForWord(word, count) {
-    let lineIndex = window.state.monsterMap ? window.state.monsterMap[word.toLowerCase()] : undefined;
+    const safeWord = (word || '').toString().toLowerCase();
+    let lineIndex = window.state.monsterMap ? window.state.monsterMap[safeWord] : undefined;
 
     if (lineIndex === undefined) {
         let hash = 0; 
-        for (let i = 0; i < word.length; i++) {
-            hash = word.charCodeAt(i) + ((hash << 5) - hash);
+        for (let i = 0; i < safeWord.length; i++) {
+            hash = safeWord.charCodeAt(i) + ((hash << 5) - hash);
         }
         lineIndex = Math.abs(hash) % 62;
     }
@@ -2013,3 +2035,205 @@ function getPokemonInfoForWord(word, count) {
         imgSrc: `./media/mon_${imageNumber}.png` 
     };
 }
+
+// ==========================================
+// ⭐ 11. 시험(테스트) 및 함정(감옥) 모드 로직 
+// ==========================================
+window.renderTestPaper = (chapter) => {
+    const listEl = document.getElementById('test-paper-list');
+    if (!listEl) return;
+    
+    if (!window.state.quizzes || window.state.quizzes.length === 0) {
+        listEl.innerHTML = '<p class="text-center text-slate-500 font-bold py-4">단어 데이터가 없습니다.</p>';
+        return;
+    }
+
+    const chapterWords = window.state.quizzes.filter(q => parseInt(q.chapter || 1) === parseInt(chapter) && (q.word || '').toString().trim());
+    
+    if (chapterWords.length === 0) {
+        listEl.innerHTML = `<div class="bg-red-50 border border-red-200 text-red-500 rounded-xl p-4 text-center font-bold">출제할 단어가 없습니다!<br>관리자 화면에서 [${chapter}단원] 영단어를 먼저 추가해주세요.</div>`;
+        document.getElementById('btn-submit-test').style.display = 'none';
+        return;
+    }
+
+    document.getElementById('btn-submit-test').style.display = 'block';
+
+    const shuffled = [...chapterWords].sort(() => Math.random() - 0.5);
+    let html = '';
+    shuffled.forEach((q, idx) => {
+        html += `
+        <div class="bg-slate-50 p-4 rounded-2xl border-2 border-slate-200 mb-3 flex flex-col gap-2 shadow-sm">
+            <div class="flex justify-between items-center">
+                <span class="text-xs font-black text-black bg-slate-200 px-2 py-1 rounded-lg tracking-wider">Q ${idx + 1}</span>
+            </div>
+            <div class="text-lg sm:text-xl font-black text-slate-800 break-keep mt-1">${q.meaning}</div>
+            <input type="text" class="test-answer-input w-full p-4 border-2 border-slate-400 rounded-xl font-bold text-xl text-slate-900 bg-white outline-none focus:border-red-500 focus:ring-2 focus:ring-red-200 transition-all shadow-inner placeholder-slate-400" style="color: #0f172a !important; text-shadow: none !important; -webkit-text-stroke: 0 !important;" placeholder="영단어 스펠링 입력" data-word="${(q.word||'').toString()}" autocapitalize="off" autocomplete="off" spellcheck="false">
+        </div>`;
+    });
+    listEl.innerHTML = html;
+    document.getElementById('test-mode-desc').innerHTML = `[${chapter}단원] 시험이 시작되었습니다.<br>빈칸에 알맞은 영어 스펠링을 입력하세요.`;
+};
+
+window.submitTest = async () => {
+    const btn = document.getElementById('btn-submit-test');
+    if (btn && btn.disabled) return; 
+    
+    if (btn) {
+        btn.disabled = true;
+        btn.classList.remove('bg-red-600', 'hover:bg-red-700', 'active:scale-95');
+        btn.classList.add('bg-slate-500');
+        btn.innerText = '제출 처리 중...';
+    }
+
+    const inputs = document.querySelectorAll('.test-answer-input');
+    let total = inputs.length;
+    let score = 0;
+    let wrongWords = [];
+
+    inputs.forEach(input => {
+        const correctWord = (input.getAttribute('data-word') || '').toString().trim().toLowerCase();
+        const userWord = input.value.trim().toLowerCase();
+        if (userWord === correctWord) score++;
+        else wrongWords.push(correctWord);
+    });
+
+    const chapter = window.state.currentTestChapter || 1;
+    
+    try {
+        const docRef = getStudentDoc(window.state.user);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            let data = docSnap.data();
+            let stats = data.gameStats || {};
+            if (!stats.testScores) stats.testScores = {};
+            
+            stats.testScores[chapter] = {
+                score: score,
+                total: total,
+                wrongWords: wrongWords,
+                unsubmitted: false
+            };
+            
+            await setDoc(docRef, { gameStats: stats }, { merge: true });
+        }
+        
+        inputs.forEach(input => {
+            const correctWord = (input.getAttribute('data-word') || '').toString().trim().toLowerCase();
+            const userWord = input.value.trim().toLowerCase();
+            
+            input.disabled = true;
+            input.classList.replace('bg-white', 'bg-slate-100'); 
+            
+            if (userWord === correctWord) {
+                input.style.setProperty('color', '#059669', 'important'); 
+                input.classList.replace('border-slate-400', 'border-emerald-500');
+                input.value = `${correctWord} (정답!)`;
+            } else {
+                input.style.setProperty('color', '#dc2626', 'important'); 
+                input.classList.replace('border-slate-400', 'border-red-500');
+                input.value = `${userWord || '미입력'} ➔ 정답: ${correctWord}`;
+            }
+        });
+        
+        if (btn) btn.style.display = 'none';
+        const msgEl = document.getElementById('test-submit-msg');
+        if (msgEl) {
+            msgEl.innerHTML = `✅ 정상적으로 제출되었습니다! (${total}문제 중 ${score}점)<br><span class="text-sm text-slate-500">선생님이 시험을 종료할 때까지 화면을 끄지 말고 대기하세요.</span>`;
+            msgEl.style.display = 'block';
+        }
+    } catch (error) {
+        console.error("Test Submit Error:", error);
+        alert("서버 통신 중 오류가 발생했습니다. 다시 눌러주세요.");
+        if (btn) {
+            btn.disabled = false;
+            btn.classList.remove('bg-slate-500');
+            btn.classList.add('bg-red-600', 'hover:bg-red-700', 'active:scale-95');
+            btn.innerText = '제출하기';
+        }
+    }
+};
+
+window.renderPrisonPaper = () => {
+    const listEl = document.getElementById('prison-paper-list');
+    if (!listEl) return;
+    
+    const words = window.state.prisonWords || {};
+    let html = '';
+    
+    for (let word in words) {
+        const count = words[word];
+        if (count > 0) {
+            const safeW = (word || '').toString();
+            const quiz = window.state.quizzes.find(q => (q.word || '').toString().toLowerCase() === safeW.toLowerCase());
+            const meaning = quiz ? quiz.meaning : '알 수 없음';
+            const safeId = safeW.replace(/[^a-zA-Z0-9]/g, '');
+            
+            html += `
+            <div class="bg-slate-100 p-4 rounded-2xl border-2 border-slate-300 flex flex-col gap-2 shadow-sm">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-base sm:text-lg font-black text-slate-800 break-keep pr-2">${meaning}</span>
+                    <span class="bg-purple-100 text-purple-700 text-[10px] sm:text-xs px-2.5 py-1 rounded-md font-bold shrink-0 shadow-sm border border-purple-300">남은 횟수: ${count}번</span>
+                </div>
+                <div class="flex gap-2">
+                    <input type="text" id="prison-in-${safeId}" class="prison-answer-input w-full p-4 border-2 border-slate-400 rounded-xl font-bold text-xl text-slate-900 bg-white outline-none focus:border-purple-500 transition-all shadow-inner placeholder-slate-400" style="color: #0f172a !important; text-shadow: none !important; -webkit-text-stroke: 0 !important;" placeholder="[${safeW}] 정확히 입력하세요" onkeyup="if(event.key==='Enter') window.checkPrisonInput(this, '${safeW.replace(/'/g, "\\'")}')" autocapitalize="off" autocomplete="off" spellcheck="false" onpaste="return false;" ondrop="return false;">
+                    <button onclick="window.checkPrisonInput(document.getElementById('prison-in-${safeId}'), '${safeW.replace(/'/g, "\\'")}')" class="bg-purple-500 hover:bg-purple-600 text-white font-bold text-lg px-6 rounded-xl shadow-md transition-transform active:scale-95 shrink-0">입력</button>
+                </div>
+            </div>`;
+        }
+    }
+    listEl.innerHTML = html;
+};
+
+window.checkPrisonInput = async (inputEl, word) => {
+    const val = inputEl.value.trim().toLowerCase();
+    const safeWord = (word || '').toString().toLowerCase();
+
+    if (val === safeWord) {
+        inputEl.value = '';
+        inputEl.setAttribute('placeholder', `[${word}] 정확히 입력하세요`);
+        
+        try {
+            const docRef = getStudentDoc(window.state.user);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                let data = docSnap.data();
+                let prisonMode = data.prisonMode || {};
+                let wordsToType = prisonMode.wordsToType || {};
+                
+                if (wordsToType[word] > 0) {
+                    wordsToType[word]--;
+                }
+                
+                let active = false;
+                for (let w in wordsToType) {
+                    if (wordsToType[w] > 0) active = true;
+                }
+                
+                prisonMode.active = active;
+                prisonMode.wordsToType = wordsToType;
+                
+                await setDoc(docRef, { prisonMode: prisonMode }, { merge: true });
+                
+                if (!active) {
+                    window.showCustomAlert("🎉 축하합니다!\n모든 오답을 완벽하게 복습하여 함정에서 탈출했습니다!");
+                } else {
+                    window.state.prisonWords = wordsToType;
+                    window.renderPrisonPaper();
+                }
+            }
+        } catch (error) {
+            console.error("Prison check error:", error);
+        }
+    } else {
+        inputEl.value = '';
+        inputEl.setAttribute('placeholder', "틀렸습니다! 다시 입력하세요.");
+        inputEl.classList.add('border-red-500', 'bg-red-100', 'placeholder-red-500');
+        
+        setTimeout(() => {
+            inputEl.classList.remove('border-red-500', 'bg-red-100', 'placeholder-red-500');
+            if(!inputEl.value) {
+                inputEl.setAttribute('placeholder', `[${word}] 정확히 입력하세요`);
+            }
+        }, 800);
+    }
+};
