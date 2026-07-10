@@ -2146,7 +2146,76 @@ function getPokemonInfoForWord(word, count) {
         imgSrc: `./media/mon_${imageNumber}.png` 
     };
 }
+const DB_STR = 
+    "1:물방울쥐:water|2:물보라쥐:water|3:해일마우스:water|" + 
+    "4:꼬마해마:water|5:파도해마:water|6:심연해마:water|" +
+    "7:조개동자:water|8:진주동자:water|" +
+    "9:이슬요정:water|10:시냇물요정:water|" +
+    "11:물장구오리:water|12:파도오리:water|" +
+    "13:구름해파리:water|14:독해파리:water|" +
+    "15:수달꼬마:water|16:잠수수달:water|" +
+    "17:심해고래:water|18:해달꼬마:water|19:얼음펭귄:water|20:소라게:water|" +
+    "21:파카몽:normal|22:파카파카몽:normal|23:알파카몽:normal|" + 
+    "24:다람냥:normal|25:비행다람냥:normal|26:마스터다람냥:normal|" +
+    "27:솜털양:normal|28:구름양:normal|" +
+    "29:통통쥐:normal|30:뚱뚱쥐:normal|" +
+    "31:아기참새:normal|32:날쌘참새:normal|" +
+    "33:얼룩고양이:normal|34:호랑고양이:normal|" +
+    "35:바둑강쥐:normal|36:늠름하운드:normal|" +
+    "37:아기낙타:normal|38:사막낙타:normal|" +
+    "39:게으른곰:normal|40:찹쌀토끼:normal|41:꼬마팬더:normal|" +
+    "42:불꽃여우:fire|43:화염여우:fire|44:마그마여우:fire|" +
+    "45:숯불강쥐:fire|46:화염강쥐:fire|47:마그마하운드:fire|" +
+    "48:아기불냥:fire|49:화염불냥:fire|" +
+    "50:불씨꼬꼬:fire|51:열기꼬꼬:fire|" +
+    "52:아기불숭이:fire|53:열기불숭이:fire|" +
+    "54:불도롱뇽:fire|55:화염도롱뇽:fire|" +
+    "56:화산거북:fire|57:폭발거북:fire|" +
+    "58:마그마도마뱀:fire|59:태양불새:fire|60:불꽃나방:fire|61:숯불송아지:fire|62:불꽃망아지:fire|" +
+    "63:이끼거북:grass|64:덤불거북:grass|65:거목거북:grass|" +
+    "66:잎사귀벌레:grass|67:수풀벌레:grass|68:거목벌레:grass|" +
+    "69:씨앗동자:grass|70:새싹동자:grass|71:숲속정령:grass|" +
+    "72:덩굴뱀:grass|73:밀림뱀:grass|" +
+    "74:꽃잎새:grass|75:만개새:grass|" +
+    "76:풀피리새:grass|77:수호부엉이:grass|" +
+    "78:버섯돼지:grass|79:맹독돼지:grass|" +
+    "80:도토리다람쥐:grass|81:거목다람쥐:grass|" +
+    "82:네잎토끼:grass|83:신비사마귀:grass|" +
+    "84:진흙개구리:ground|85:황토개구리:ground|86:바위개구리:ground|" +
+    "87:모래두더지:ground|88:사막두더지:ground|89:지진두더지:ground|" +
+    "90:찰흙곰:ground|91:단단곰:ground|" +
+    "92:돌멩게:ground|93:암석게:ground|" +
+    "94:사막여우:ground|95:황야여우:ground|" +
+    "96:흙먼지나방:ground|97:모래바람나방:ground|" +
+    "98:꼬마돌도치:ground|99:바위고도치:ground|" +
+    "100:황토뱀:ground|101:사막코브라:ground|" +
+    "102:고대공룡:ground|103:땅굴벌레:ground|104:모래거북:ground|" +
+    "105:새끼까마귀:dark|106:회색까마귀:dark|107:어둠까마귀:dark|" +
+    "108:꼬마유령:dark|109:깜깜유령:dark|110:심연유령:dark|" +
+    "111:새끼박쥐:dark|112:흡혈박쥐:dark|" +
+    "113:회색늑대:dark|114:검은늑대:dark|" +
+    "115:흑마술사고양이:dark|116:마녀고양이:dark|" +
+    "117:꼬마전갈:dark|118:맹독전갈:dark|" +
+    "119:그림자쥐:dark|120:어둠쥐:dark|" +
+    "121:검은올빼미:dark|122:흑호랑이:dark|123:어둠거미:dark|124:칠흑도마뱀:dark|" +
+    "125:꼬마전기새:light|126:섬광새:light|127:벼락새:light|" +
+    "128:별빛천사:light|129:달빛천사:light|130:태양천사:light|" +
+    "131:꼬마별:light|132:은하수별:light|133:우주대스타:light|" +
+    "134:빛의사슴:light|135:영롱사슴:light|" +
+    "136:혜성새:light|137:유성새:light|" +
+    "138:반딧불이:light|139:섬광반딧불이:light|" +
+    "140:빛돌이요정:light|141:섬광요정:light|" +
+    "142:오로라여우:light|143:무지개여우:light|" +
+    "144:프리즘사슴벌레:light";
 
+const LOCAL_POKEMON_DB = (() => {
+    const db = {};
+    DB_STR.split('|').forEach(item => {
+        const parts = item.split(':');
+        if (parts.length === 3) db[parts[0]] = { name: parts[1], type: parts[2] };
+    });
+    return db;
+})();
 // ==========================================
 // ⭐ 11. 시험(테스트) 및 함정(감옥) 모드 로직
 // ==========================================
