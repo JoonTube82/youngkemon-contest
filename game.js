@@ -359,6 +359,7 @@ window.handleLogin = async () => {
             if(window.state.gameData.savedEncounters === undefined) window.state.gameData.savedEncounters = {};
             if(window.state.gameData.defenseLogs === undefined) window.state.gameData.defenseLogs = [];
             if(window.state.gameData.testScores === undefined) window.state.gameData.testScores = {};
+            if(!window.state.gameData.caughtWords) window.state.gameData.caughtWords = {};
             
             setStatus("접속 성공!"); enterGame(idInput);
         } else {
@@ -460,13 +461,12 @@ function startMagicRPG() {
     unsubscribeWords = onSnapshot(getWordListCollection(), (snapshot) => {
         window.state.quizzes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        // ⭐ 철저한 예외 처리 적용된 맵 생성
         window.state.monsterMap = {};
         const chapters = {};
         window.state.quizzes.forEach(q => {
             const ch = q.chapter || 1;
             const safeWord = (q.word || '').toString().toLowerCase().trim();
-            if(!safeWord) return; // 비어있는 단어 무시 (에러 방어)
+            if(!safeWord) return; 
             if(!chapters[ch]) chapters[ch] = [];
             if(!chapters[ch].includes(safeWord)) chapters[ch].push(safeWord);
         });
@@ -525,7 +525,7 @@ function startMagicRPG() {
                     const inputs = document.querySelectorAll('.test-answer-input');
                     let wrongWords = [];
                     inputs.forEach(input => {
-                        const correctWord = (input.getAttribute('data-word') || '').toString().toLowerCase().trim();
+                        const correctWord = (input.getAttribute('data-word') || '').toLowerCase().trim();
                         if (input.value.trim().toLowerCase() !== correctWord) wrongWords.push(correctWord);
                     });
                     if(window.submitTest) window.submitTest();
@@ -798,7 +798,7 @@ window.setPartner = (word) => {
     uniqueStages.forEach(stage => {
         const apiData = LOCAL_POKEMON_DB[stage.pInfo.id] || { name: "알 수 없음", type: "normal" };
         html += `
-        <div onclick="window.confirmPartner('${safeWord}', ${stage.tier})" class="cursor-pointer bg-slate-50 border-2 border-slate-200 hover:border-yellow-400 rounded-2xl p-4 flex flex-col items-center hover:scale-105 transition-all shadow-md w-28 sm:w-32">
+        <div onclick="window.confirmPartner('${safeWord.replace(/'/g, "\\'")}', ${stage.tier})" class="cursor-pointer bg-slate-50 border-2 border-slate-200 hover:border-yellow-400 rounded-2xl p-4 flex flex-col items-center hover:scale-105 transition-all shadow-md w-28 sm:w-32">
             <img src="${stage.pInfo.imgSrc}" crossorigin="anonymous" class="h-16 w-16 sm:h-20 sm:w-20 object-contain mb-2 drop-shadow-md" style="image-rendering:pixelated;">
             <span class="text-xs font-bold text-yellow-600 bg-yellow-100 px-2 py-0.5 rounded mb-1 border border-yellow-200">Lv.${stage.tier}</span>
             <span class="text-sm font-black text-slate-800 truncate w-full text-center">${apiData.name}</span>
@@ -943,7 +943,6 @@ window.showCheatSheet = () => {
 };
 window.closeCheatSheet = () => { document.getElementById('cheat-sheet-modal').style.display = 'none'; };
 
-
 // ==========================================
 // 6. 전투 및 사냥터 (풀숲) 로직
 // ==========================================
@@ -1054,96 +1053,17 @@ window.checkMagic = () => {
     if (fakeText) { fakeText.textContent = '영단어를 입력하세요'; fakeText.style.color = '#9ca3af'; }
 };
 
-function handleAttack() {
-    const word = (window.state.currentQuiz.word || '').toString();
-    if (!window.state.gameData.caughtWords) window.state.gameData.caughtWords = {};
-    window.state.gameData.caughtWords[word] = (window.state.gameData.caughtWords[word] || 0) + 1;
-    window.state.gameData.count++; window.state.monster.hp -= 100; window.state.monster.shake = 25;
-    for (let i = 0; i < 20; i++) window.state.particles.push({ x: 280, y: 220, vx: (Math.random()-0.5)*20, vy: (Math.random()-0.5)*20, life: 1.0, color: "#ef4444" });
-    
-    window.trainerAttackImg.src = window.state.gender === 'F' ? 'trainer2_attack.png' : 'trainer1_attack.png';
-    window.charImg = window.trainerAttackImg; 
-    window.trainerAttackOffset = 30; 
-    setTimeout(() => { window.charImg = window.trainerIdleImg; window.trainerAttackOffset = 0; }, 300);
-
-    const catchCount = window.state.gameData.caughtWords[word];
-    let defeatExp = catchCount > 10 ? 1 : 40;
-    let hitExp = catchCount > 10 ? 0 : 15;
-
-    if (window.state.monster.hp <= 0) { 
-        window.state.gameData.exp += defeatExp; window.state.monster.hp = 100; 
-        if (window.state.gameData.savedEncounters) delete window.state.gameData.savedEncounters[window.state.currentChapter];
-    } else { window.state.gameData.exp += hitExp; }
-
-    let reqExp = 100 + (window.state.gameData.level * 100);
-    if (window.state.gameData.exp >= reqExp) {
-        window.state.gameData.exp -= reqExp; window.state.gameData.level++;
-        document.getElementById('modal').style.display = 'flex';
-        document.getElementById('modal-desc').innerText = `레벨 ${window.state.gameData.level} 모험가가 되었습니다!`;
-    }
-    window.updateUI(); window.saveProgress();
-}
-
-// ==========================================
-// 7. UI 업데이트 (도감, 랭킹 등)
-// ==========================================
-const getTierInfo = (wins) => {
-    if (wins >= 200) return { name: '마스터', icon: '👑', color: 'text-purple-600', bgClass: 'tier-master', badgeClass: 'bg-purple-100 border-purple-300' };
-    if (wins >= 150) return { name: '다이아', icon: '💎', color: 'text-sky-500', bgClass: 'tier-diamond', badgeClass: 'bg-sky-50 border-sky-200' };
-    if (wins >= 100) return { name: '플래티넘', icon: '💠', color: 'text-emerald-500', bgClass: 'tier-platinum', badgeClass: 'bg-emerald-50 border-emerald-200' };
-    if (wins >= 60) return { name: '골드', icon: '🥇', color: 'text-yellow-600', bgClass: 'tier-gold', badgeClass: 'bg-yellow-50 border-yellow-300' };
-    if (wins >= 30) return { name: '실버', icon: '🥈', color: 'text-slate-500', bgClass: 'tier-silver', badgeClass: 'bg-slate-100 border-slate-300' };
-    if (wins >= 10) return { name: '브론즈', icon: '🥉', color: 'text-amber-700', bgClass: 'tier-bronze', badgeClass: 'bg-amber-100 border-amber-300' };
-    return { name: '아이언', icon: '⚙️', color: 'text-slate-600', bgClass: 'tier-iron', badgeClass: 'bg-slate-100 border-slate-200' };
-};
-
-window.updateUI = () => {
-    document.getElementById('lvl-txt').innerText = window.state.gameData.level;
-    document.getElementById('cnt-txt').innerText = window.state.gameData.count; 
-    
-    let reqExp = 100 + (window.state.gameData.level * 100);
-    let expPercent = Math.min(100, (window.state.gameData.exp / reqExp) * 100);
-    document.getElementById('exp-bar').style.width = expPercent + "%";
-    
-    const wins = window.state.gameData.wins || 0; const tier = getTierInfo(wins);
-    const winsTxt = document.getElementById('wins-txt');
-    if (winsTxt) {
-        winsTxt.innerText = `${tier.icon} ${wins}승`;
-        winsTxt.className = `text-base font-black ml-2 px-2 py-0.5 rounded-xl border ${tier.color} ${tier.badgeClass}`;
-    }
-
-    const profileCard = document.getElementById('profile-card');
-    const playerName = document.getElementById('player-name');
-    if (profileCard) {
-        profileCard.className = `rounded-3xl p-5 mb-4 shadow-lg flex justify-between items-start border-b-4 transition-all duration-500 ${tier.bgClass}`;
-        if (wins >= 200) playerName.classList.add('name-master');
-        else playerName.classList.remove('name-master');
-    }
-
-    const badge = document.getElementById('rank-badge');
-    const lvl = window.state.gameData.level;
-    if (lvl >= 50) { badge.innerText = "🪽 레전드"; badge.className = "text-[10px] px-2 py-0.5 rounded-full bg-gradient-to-r from-yellow-400 to-yellow-500 text-white font-black uppercase shadow-sm tracking-wider"; }
-    else if (lvl >= 40) { badge.innerText = "🟣 마스터"; badge.className = "text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-black uppercase tracking-wider"; }
-    else if (lvl >= 30) { badge.innerText = "✨ 엘리트"; badge.className = "text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-bold uppercase tracking-wider"; }
-    else if (lvl >= 20) { badge.innerText = "🛡️ 베테랑"; badge.className = "text-[10px] px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 font-bold uppercase tracking-wider"; }
-    else if (lvl >= 15) { badge.innerText = "🔵 에이스"; badge.className = "text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-600 font-bold uppercase tracking-wider"; }
-    else if (lvl >= 10) { badge.innerText = "🏕️ 캠퍼"; badge.className = "text-[10px] px-2 py-0.5 rounded-full bg-orange-100 text-orange-600 font-bold uppercase tracking-wider"; }
-    else if (lvl >= 5) { badge.innerText = "🟢 루키"; badge.className = "text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-bold uppercase tracking-wider"; }
-    else { badge.innerText = "🔴 비기너"; badge.className = "text-[10px] px-2 py-0.5 rounded-full bg-red-100 text-red-600 font-bold uppercase tracking-wider"; }
-};
-
 window.renderDex = async () => {
     const dexList = document.getElementById('dex-list');
-    const caughtWords = window.state.gameData.caughtWords || {};
+    if(!window.state.gameData.caughtWords) window.state.gameData.caughtWords = {};
+    const caughtWords = window.state.gameData.caughtWords;
     const keys = Object.keys(caughtWords);
     document.getElementById('dex-total').innerText = keys.length;
     
-    // ⭐ 예외 처리 1: 0마리일 때 명확히 처리
     if (keys.length === 0) {
         dexList.innerHTML = `<p class="text-center text-slate-500 py-10 text-sm font-bold">아직 포획한 영켓몬이 없습니다.<br>사냥터에서 영단어를 맞혀보세요!</p>`; return;
     }
     
-    // ⭐ 예외 처리 2: 데이터베이스에서 안전하게 단어 찾기
     const sortedKeys = keys.sort((a, b) => caughtWords[b] - caughtWords[a]);
     const cardDataList = sortedKeys.map(w => {
         const word = (w || '').toString();
@@ -1277,7 +1197,6 @@ window.renderRanking = async () => {
         listEl.innerHTML = html || '<p class="text-center py-10 col-span-full">랭킹 정보가 없습니다.</p>';
     } catch (e) { listEl.innerHTML = '<p class="text-center text-red-500 py-10 col-span-full">네트워크 오류</p>'; }
 };
-
 // ==========================================
 // 8. 아레나(배틀) 관련 로직
 // ==========================================
