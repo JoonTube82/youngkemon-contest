@@ -8,11 +8,11 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
-<body class="p-4 flex items-center justify-center min-h-screen">
+<body class="bg-slate-100 p-4 flex items-center justify-center min-h-screen text-slate-800">
     <div id="app-wrapper" class="w-full max-w-[480px] mx-auto transition-all duration-500">
         
         <!-- 로그인 화면 -->
-        <div id="login-view" class="login-view-container magic-card p-10 text-center border-red-500">
+        <div id="login-view" class="login-view-container magic-card p-10 text-center border-red-500 bg-white">
             <div class="text-6xl mb-4">🧢</div>
             <h1 class="text-4xl text-red-600 mb-2 font-black italic">보카몬(Vocamon)</h1>
             
@@ -21,38 +21,38 @@
                 <!-- 탭 버튼 -->
                 <div class="flex gap-2 mb-6">
                     <button onclick="window.switchLoginTab('join')" id="btn-tab-join" class="flex-1 bg-red-500 text-white font-bold py-3 rounded-xl border-2 border-red-600 shadow-sm transition-colors text-sm">모험가 접속</button>
-                    <button onclick="window.switchLoginTab('create')" id="btn-tab-create" class="flex-1 bg-slate-800 text-slate-400 font-bold py-3 rounded-xl border-2 border-slate-700 shadow-sm transition-colors hover:bg-slate-700 text-sm">선생님 (학급생성)</button>
+                    <button onclick="window.switchLoginTab('create')" id="btn-tab-create" class="flex-1 bg-slate-100 text-slate-500 font-bold py-3 rounded-xl border-2 border-slate-300 shadow-sm transition-colors hover:bg-slate-200 text-sm">선생님 (학급생성)</button>
                 </div>
 
                 <!-- 모험가 접속 모드 -->
                 <div id="mode-join" class="space-y-4">
-                    <p class="text-slate-400 mb-4 font-normal text-sm">선생님이 알려주신 학급 코드를 입력하세요</p>
-                    <input type="text" id="class-code-join" value="대회초 6-1" class="spell-input text-xl p-4 border-2" placeholder="학급 코드 (예: 대회초 6-1)" onkeyup="if(event.key==='Enter')window.checkClassCode()">
+                    <p class="text-slate-600 mb-4 font-bold text-sm">선생님이 알려주신 학급 코드를 입력하세요</p>
+                    <input type="text" id="class-code-join" value="대회초 6-1" class="spell-input text-xl p-4 border-2 bg-white text-slate-800" placeholder="학급 코드 (예: 대회초 6-1)" onkeyup="if(event.key==='Enter')window.checkClassCode()">
                     <button onclick="window.checkClassCode()" class="btn-magic mt-4">학급 접속하기</button>
                 </div>
 
                 <!-- 새 학급 만들기 모드 -->
                 <div id="mode-create" class="space-y-4 hidden">
-                    <p class="text-slate-400 mb-4 font-normal text-sm">새로운 학급을 개설하고 마스터 비번을 설정하세요</p>
-                    <input type="text" id="class-code-create" class="spell-input text-lg p-3 border-2" placeholder="새 학급 코드 (예: 한국초 6-2)">
-                    <input type="password" id="class-master-pw" class="spell-input text-lg p-3 border-2 mt-2" placeholder="마스터 비밀번호 설정" onkeyup="if(event.key==='Enter')window.createClass()">
+                    <p class="text-slate-600 mb-4 font-bold text-sm">새로운 학급을 개설하고 마스터 비번을 설정하세요</p>
+                    <input type="text" id="class-code-create" class="spell-input text-lg p-3 border-2 bg-white text-slate-800" placeholder="새 학급 코드 (예: 한국초 6-2)">
+                    <input type="password" id="class-master-pw" class="spell-input text-lg p-3 border-2 mt-2 bg-white text-slate-800" placeholder="마스터 비밀번호 설정" onkeyup="if(event.key==='Enter')window.createClass()">
                     <button onclick="window.createClass()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white border-none py-3 rounded-2xl font-black text-lg shadow-md transition-transform active:scale-95 mt-4">새 학급 개설하기</button>
                 </div>
             </div>
 
             <!-- Step 2: 모험가 선택 및 암호 입력 -->
             <div id="login-step-2" class="space-y-4 hidden">
-                <p id="class-title-display" class="text-emerald-400 font-bold mb-4 bg-emerald-900/30 py-2 rounded-xl border border-emerald-500/30">학급코드</p>
-                <p class="text-slate-400 mb-6 font-normal text-sm">모험가 이름을 선택하고 암호를 입력하세요</p>
-                <select id="user-id" class="spell-input text-xl p-4 border-2 bg-white cursor-pointer appearance-none text-center">
+                <p id="class-title-display" class="text-emerald-600 font-black mb-4 bg-emerald-100 py-2 rounded-xl border border-emerald-300">학급코드</p>
+                <p class="text-slate-600 mb-6 font-bold text-sm">모험가 이름을 선택하고 암호를 입력하세요</p>
+                <select id="user-id" class="spell-input text-xl p-4 border-2 bg-slate-50 cursor-pointer appearance-none text-center text-slate-800 font-bold focus:border-red-400">
                     <option value="" disabled selected>모험가 선택하기</option>
                 </select>
-                <input type="password" id="user-pw" class="spell-input text-xl p-4 border-2" placeholder="비밀번호" onkeyup="if(event.key==='Enter')window.handleLogin()">
+                <input type="password" id="user-pw" class="spell-input text-xl p-4 border-2 bg-white text-slate-800" placeholder="비밀번호" onkeyup="if(event.key==='Enter')window.handleLogin()">
                 <button id="login-btn" onclick="window.handleLogin()" class="btn-magic mt-4">영어 마스터 연구소 입장하기</button>
-                <button onclick="window.backToClassSelect()" class="text-slate-400 hover:text-white text-sm font-bold mt-4 transition-colors">◀ 다른 학급 접속하기</button>
+                <button onclick="window.backToClassSelect()" class="text-slate-500 hover:text-slate-800 text-sm font-black mt-4 transition-colors">◀ 다른 학급 접속하기</button>
             </div>
 
-            <p id="login-status" class="text-slate-300 text-xs mt-4 min-h-[1rem]">도감 서버와 연결 중...</p>
+            <p id="login-status" class="text-slate-500 font-bold text-xs mt-4 min-h-[1rem]">도감 서버와 연결 중...</p>
         </div>
 
         <div id="game-view" class="game-view-container">
@@ -60,7 +60,7 @@
                 <div>
                     <div class="flex items-center gap-2 mb-1">
                         <span id="rank-badge" class="text-[10px] px-2 py-0.5 rounded-full bg-red-100 text-red-600 font-bold uppercase tracking-wider">초보 모험가</span>
-                        <button id="admin-btn" onclick="window.toggleAdmin()" class="text-slate-300 text-xs hover:text-red-500 font-bold hidden">⚙️ 관리자</button>
+                        <button id="admin-btn" onclick="window.toggleAdmin()" class="text-slate-400 text-xs hover:text-red-600 font-bold hidden">⚙️ 관리자</button>
                     </div>
                     <h2 class="text-3xl font-bold text-slate-800 mt-1 flex items-center">
                         <span id="player-name">학생</span> 
@@ -71,15 +71,15 @@
                 <div class="text-right flex flex-col items-end">
                     <div class="flex items-center gap-3 mb-1">
                         <input type="range" min="0" max="1" step="0.1" value="0.5" oninput="window.AudioManager.setVolume(this.value)" class="w-16 sm:w-20 accent-slate-400 cursor-pointer" title="소리 조절">
-                        <button id="btn-mute" onclick="window.AudioManager.toggleMute()" class="text-slate-300 hover:text-indigo-400 transition-colors text-xl leading-none" title="BGM 끄기/켜기">🎵</button>
-                        <button onclick="window.handleLogout()" class="text-slate-300 hover:text-red-400 transition-colors" title="로그아웃">
+                        <button id="btn-mute" onclick="window.AudioManager.toggleMute()" class="text-slate-400 hover:text-indigo-600 transition-colors text-xl leading-none" title="BGM 끄기/켜기">🎵</button>
+                        <button onclick="window.handleLogout()" class="text-slate-400 hover:text-red-500 transition-colors" title="로그아웃">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
                             </svg>
                         </button>
                     </div>
-                    <span class="text-slate-400 text-[10px] font-bold uppercase leading-none block mt-1">포획한 보카몬</span>
-                    <p id="cnt-txt" class="text-2xl font-bold text-slate-700 leading-none mt-1">0</p>
+                    <span class="text-slate-500 text-[10px] font-bold uppercase leading-none block mt-1">포획한 보카몬</span>
+                    <p id="cnt-txt" class="text-2xl font-black text-slate-800 leading-none mt-1">0</p>
                 </div>
             </div>
 
@@ -94,34 +94,34 @@
             
             <!-- 학습 탭 내용 -->
             <div id="content-learn" class="tab-content">
-                <div id="learn-chapter-view" class="magic-card p-6 shadow-xl min-h-[400px]">
+                <div id="learn-chapter-view" class="magic-card bg-white p-6 shadow-xl min-h-[400px]">
                     <div class="text-center mb-6">
-                        <h3 class="text-2xl font-bold text-emerald-500 mb-1">📚 단어 학습장</h3>
-                        <p class="text-sm text-slate-500">학습하거나 테스트할 단원을 선택하세요!</p>
+                        <h3 class="text-2xl font-black text-emerald-600 mb-1">📚 단어 학습장</h3>
+                        <p class="text-sm text-slate-500 font-bold">학습하거나 테스트할 단원을 선택하세요!</p>
                     </div>
                     <div class="grid gap-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar pb-4">
                     </div>
                 </div>
 
-                <div id="learn-play-view" class="hidden magic-card p-6 shadow-xl min-h-[400px] flex-col items-center justify-center relative border-4 border-emerald-500">
-                    <button onclick="window.exitLearn()" class="absolute top-4 left-4 text-slate-400 hover:text-white font-bold text-sm bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-600">◀ 뒤로 가기</button>
-                    <div class="text-emerald-400 font-bold mb-8" id="learn-progress-txt">단어 로딩 중...</div>
+                <div id="learn-play-view" class="hidden magic-card bg-white p-6 shadow-xl min-h-[400px] flex-col items-center justify-center relative border-4 border-emerald-500">
+                    <button onclick="window.exitLearn()" class="absolute top-4 left-4 text-slate-500 hover:text-slate-800 font-black text-sm bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-300 shadow-sm">◀ 뒤로 가기</button>
+                    <div class="text-emerald-600 font-black mb-8" id="learn-progress-txt">단어 로딩 중...</div>
                     
-                    <div class="text-center h-40 flex flex-col justify-center items-center w-full bg-slate-800 rounded-3xl border-2 border-slate-600 shadow-inner mb-8 px-2">
-                        <h2 id="learn-en-word" class="text-4xl sm:text-5xl font-black text-white mb-4 tracking-wider drop-shadow-md break-all">WORD</h2>
-                        <h3 id="learn-kr-word" class="text-xl sm:text-2xl font-bold text-emerald-400 min-h-[2rem] break-keep"></h3>
+                    <div class="text-center h-40 flex flex-col justify-center items-center w-full bg-slate-100 rounded-3xl border-2 border-slate-300 shadow-inner mb-8 px-2">
+                        <h2 id="learn-en-word" class="text-4xl sm:text-5xl font-black text-slate-900 mb-4 tracking-wider drop-shadow-sm break-all">WORD</h2>
+                        <h3 id="learn-kr-word" class="text-xl sm:text-2xl font-bold text-emerald-600 min-h-[2rem] break-keep"></h3>
                     </div>
 
-                    <button id="btn-learn-pause" onclick="window.toggleLearnPlay()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-2xl font-black text-xl shadow-md transition-transform active:scale-95">⏸ 일시정지</button>
+                    <button id="btn-learn-pause" onclick="window.toggleLearnPlay()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-4 rounded-2xl font-black text-xl shadow-md transition-transform active:scale-95">⏸ 일시정지</button>
                 </div>
 
-                <div id="learn-quiz-view" class="hidden magic-card p-6 shadow-xl min-h-[400px] flex-col items-center justify-start relative border-4 border-blue-500">
-                    <button onclick="window.exitLearn()" class="absolute top-4 left-4 text-slate-400 hover:text-white font-bold text-sm bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-600">◀ 그만하기</button>
-                    <div class="text-blue-400 font-bold mb-4 mt-2" id="learn-quiz-progress">1 / 10</div>
+                <div id="learn-quiz-view" class="hidden magic-card bg-white p-6 shadow-xl min-h-[400px] flex-col items-center justify-start relative border-4 border-blue-500">
+                    <button onclick="window.exitLearn()" class="absolute top-4 left-4 text-slate-500 hover:text-slate-800 font-black text-sm bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-300 shadow-sm">◀ 그만하기</button>
+                    <div class="text-blue-600 font-black mb-4 mt-2" id="learn-quiz-progress">1 / 10</div>
                     
                     <div class="text-center w-full mb-6 px-2">
-                        <span class="text-xs font-bold text-slate-500 bg-slate-800 px-2 py-1 rounded-md mb-2 inline-block">다음 뜻을 가진 단어는?</span>
-                        <h2 id="learn-quiz-meaning" class="text-2xl sm:text-3xl font-black text-white drop-shadow-md break-keep leading-tight">뜻</h2>
+                        <span class="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded-md mb-2 inline-block border border-slate-200">다음 뜻을 가진 단어는?</span>
+                        <h2 id="learn-quiz-meaning" class="text-2xl sm:text-3xl font-black text-slate-900 drop-shadow-sm break-keep leading-tight">뜻</h2>
                     </div>
 
                     <div id="learn-quiz-options" class="grid grid-cols-2 gap-3 w-full mt-auto">
@@ -131,26 +131,26 @@
 
             <!-- 풀숲 탭 내용 -->
             <div id="content-hunt" class="tab-content">
-                <div id="hunt-map-view" class="magic-card p-6 shadow-xl min-h-[400px]">
+                <div id="hunt-map-view" class="magic-card bg-white p-6 shadow-xl min-h-[400px]">
                     <div class="text-center mb-6">
-                        <h3 class="text-2xl font-bold text-red-500 mb-1">🗺️ 보카몬 모험 지도</h3>
-                        <p class="text-sm text-slate-500">탐험할 교과서 단원을 선택하세요!</p>
+                        <h3 class="text-2xl font-black text-red-600 mb-1">🗺️ 보카몬 모험 지도</h3>
+                        <p class="text-sm text-slate-500 font-bold">탐험할 교과서 단원을 선택하세요!</p>
                     </div>
                     <div class="space-y-5 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar pb-4">
                         
                         <!-- ⭐ 지역 1 -->
                         <div class="bg-green-50 border-2 border-green-200 rounded-3xl p-4 shadow-sm relative overflow-hidden">
                             <div class="absolute -right-4 -top-2 text-6xl opacity-20">🌲</div>
-                            <h4 class="font-bold text-green-700 mb-3 text-sm"><span class="bg-green-500 text-white px-2 py-0.5 rounded-lg text-xs mr-1">지역 1</span> 초심자의 숲</h4>
+                            <h4 class="font-black text-green-700 mb-3 text-sm"><span class="bg-green-500 text-white px-2 py-0.5 rounded-lg text-xs mr-1">지역 1</span> 초심자의 숲</h4>
                             <div class="space-y-2">
-                                <button onclick="window.enterStage(1)" class="w-full bg-white border border-green-100 p-3 rounded-2xl flex items-center justify-between hover:border-green-400 hover:shadow-md transition-all text-left group">
-                                    <div class="w-full pr-2"><span class="text-xs font-bold text-green-400 block mb-0.5">01단원</span><span id="hunt-ch-title-1" class="text-base sm:text-lg font-black text-slate-800 group-hover:text-green-600 block transition-colors leading-tight">What Grade Are You In?</span><div id="dom-ch1" class="text-[10px] mt-1.5 min-h-[18px]"></div></div><span class="text-xl text-green-300 group-hover:text-green-500 shrink-0">▶</span>
+                                <button onclick="window.enterStage(1)" class="w-full bg-white border border-green-200 p-3 rounded-2xl flex items-center justify-between hover:border-green-500 hover:shadow-md transition-all text-left group">
+                                    <div class="w-full pr-2"><span class="text-xs font-bold text-green-500 block mb-0.5">01단원</span><span id="hunt-ch-title-1" class="text-base sm:text-lg font-black text-slate-800 group-hover:text-green-600 block transition-colors leading-tight">What Grade Are You In?</span><div id="dom-ch1" class="text-[10px] mt-1.5 min-h-[18px]"></div></div><span class="text-xl text-green-400 group-hover:text-green-600 shrink-0">▶</span>
                                 </button>
-                                <button onclick="window.enterStage(2)" class="w-full bg-white border border-green-100 p-3 rounded-2xl flex items-center justify-between hover:border-green-400 hover:shadow-md transition-all text-left group">
-                                    <div class="w-full pr-2"><span class="text-xs font-bold text-green-400 block mb-0.5">02단원</span><span id="hunt-ch-title-2" class="text-base sm:text-lg font-black text-slate-800 group-hover:text-green-600 block transition-colors leading-tight">What Do You Want to Be?</span><div id="dom-ch2" class="text-[10px] mt-1.5 min-h-[18px]"></div></div><span class="text-xl text-green-300 group-hover:text-green-500 shrink-0">▶</span>
+                                <button onclick="window.enterStage(2)" class="w-full bg-white border border-green-200 p-3 rounded-2xl flex items-center justify-between hover:border-green-500 hover:shadow-md transition-all text-left group">
+                                    <div class="w-full pr-2"><span class="text-xs font-bold text-green-500 block mb-0.5">02단원</span><span id="hunt-ch-title-2" class="text-base sm:text-lg font-black text-slate-800 group-hover:text-green-600 block transition-colors leading-tight">What Do You Want to Be?</span><div id="dom-ch2" class="text-[10px] mt-1.5 min-h-[18px]"></div></div><span class="text-xl text-green-400 group-hover:text-green-600 shrink-0">▶</span>
                                 </button>
-                                <button onclick="window.enterStage(3)" class="w-full bg-white border border-green-100 p-3 rounded-2xl flex items-center justify-between hover:border-green-400 hover:shadow-md transition-all text-left group">
-                                    <div class="w-full pr-2"><span class="text-xs font-bold text-green-400 block mb-0.5">03단원</span><span id="hunt-ch-title-3" class="text-base sm:text-lg font-black text-slate-800 group-hover:text-green-600 block transition-colors leading-tight">When Is the Field Trip?</span><div id="dom-ch3" class="text-[10px] mt-1.5 min-h-[18px]"></div></div><span class="text-xl text-green-300 group-hover:text-green-500 shrink-0">▶</span>
+                                <button onclick="window.enterStage(3)" class="w-full bg-white border border-green-200 p-3 rounded-2xl flex items-center justify-between hover:border-green-500 hover:shadow-md transition-all text-left group">
+                                    <div class="w-full pr-2"><span class="text-xs font-bold text-green-500 block mb-0.5">03단원</span><span id="hunt-ch-title-3" class="text-base sm:text-lg font-black text-slate-800 group-hover:text-green-600 block transition-colors leading-tight">When Is the Field Trip?</span><div id="dom-ch3" class="text-[10px] mt-1.5 min-h-[18px]"></div></div><span class="text-xl text-green-400 group-hover:text-green-600 shrink-0">▶</span>
                                 </button>
                             </div>
                         </div>
@@ -158,16 +158,16 @@
                         <!-- ⭐ 지역 2 -->
                         <div class="bg-blue-50 border-2 border-blue-200 rounded-3xl p-4 shadow-sm relative overflow-hidden">
                             <div class="absolute -right-4 -top-2 text-6xl opacity-20">🌊</div>
-                            <h4 class="font-bold text-blue-700 mb-3 text-sm"><span class="bg-blue-500 text-white px-2 py-0.5 rounded-lg text-xs mr-1">지역 2</span> 푸른 바다 해안</h4>
+                            <h4 class="font-black text-blue-700 mb-3 text-sm"><span class="bg-blue-500 text-white px-2 py-0.5 rounded-lg text-xs mr-1">지역 2</span> 푸른 바다 해안</h4>
                             <div class="space-y-2">
-                                <button onclick="window.enterStage(4)" class="w-full bg-white border border-blue-100 p-3 rounded-2xl flex items-center justify-between hover:border-blue-400 hover:shadow-md transition-all text-left group">
-                                    <div class="w-full pr-2"><span class="text-xs font-bold text-blue-400 block mb-0.5">04단원</span><span id="hunt-ch-title-4" class="text-base sm:text-lg font-black text-slate-800 group-hover:text-blue-600 block transition-colors leading-tight">He Has Short Curly Hair</span><div id="dom-ch4" class="text-[10px] mt-1.5 min-h-[18px]"></div></div><span class="text-xl text-blue-300 group-hover:text-blue-500 shrink-0">▶</span>
+                                <button onclick="window.enterStage(4)" class="w-full bg-white border border-blue-200 p-3 rounded-2xl flex items-center justify-between hover:border-blue-500 hover:shadow-md transition-all text-left group">
+                                    <div class="w-full pr-2"><span class="text-xs font-bold text-blue-500 block mb-0.5">04단원</span><span id="hunt-ch-title-4" class="text-base sm:text-lg font-black text-slate-800 group-hover:text-blue-600 block transition-colors leading-tight">He Has Short Curly Hair</span><div id="dom-ch4" class="text-[10px] mt-1.5 min-h-[18px]"></div></div><span class="text-xl text-blue-400 group-hover:text-blue-600 shrink-0">▶</span>
                                 </button>
-                                <button onclick="window.enterStage(5)" class="w-full bg-white border border-blue-100 p-3 rounded-2xl flex items-center justify-between hover:border-blue-400 hover:shadow-md transition-all text-left group">
-                                    <div class="w-full pr-2"><span class="text-xs font-bold text-blue-400 block mb-0.5">05단원</span><span id="hunt-ch-title-5" class="text-base sm:text-lg font-black text-slate-800 group-hover:text-blue-600 block transition-colors leading-tight">How Often Do You Exercise?</span><div id="dom-ch5" class="text-[10px] mt-1.5 min-h-[18px]"></div></div><span class="text-xl text-blue-300 group-hover:text-blue-500 shrink-0">▶</span>
+                                <button onclick="window.enterStage(5)" class="w-full bg-white border border-blue-200 p-3 rounded-2xl flex items-center justify-between hover:border-blue-500 hover:shadow-md transition-all text-left group">
+                                    <div class="w-full pr-2"><span class="text-xs font-bold text-blue-500 block mb-0.5">05단원</span><span id="hunt-ch-title-5" class="text-base sm:text-lg font-black text-slate-800 group-hover:text-blue-600 block transition-colors leading-tight">How Often Do You Exercise?</span><div id="dom-ch5" class="text-[10px] mt-1.5 min-h-[18px]"></div></div><span class="text-xl text-blue-400 group-hover:text-blue-600 shrink-0">▶</span>
                                 </button>
-                                <button onclick="window.enterStage(6)" class="w-full bg-white border border-blue-100 p-3 rounded-2xl flex items-center justify-between hover:border-blue-400 hover:shadow-md transition-all text-left group">
-                                    <div class="w-full pr-2"><span class="text-xs font-bold text-blue-400 block mb-0.5">06단원</span><span id="hunt-ch-title-6" class="text-base sm:text-lg font-black text-slate-800 group-hover:text-blue-600 block transition-colors leading-tight">I'm Going to Go on a Trip</span><div id="dom-ch6" class="text-[10px] mt-1.5 min-h-[18px]"></div></div><span class="text-xl text-blue-300 group-hover:text-blue-500 shrink-0">▶</span>
+                                <button onclick="window.enterStage(6)" class="w-full bg-white border border-blue-200 p-3 rounded-2xl flex items-center justify-between hover:border-blue-500 hover:shadow-md transition-all text-left group">
+                                    <div class="w-full pr-2"><span class="text-xs font-bold text-blue-500 block mb-0.5">06단원</span><span id="hunt-ch-title-6" class="text-base sm:text-lg font-black text-slate-800 group-hover:text-blue-600 block transition-colors leading-tight">I'm Going to Go on a Trip</span><div id="dom-ch6" class="text-[10px] mt-1.5 min-h-[18px]"></div></div><span class="text-xl text-blue-400 group-hover:text-blue-600 shrink-0">▶</span>
                                 </button>
                             </div>
                         </div>
@@ -175,16 +175,16 @@
                         <!-- ⭐ 지역 3 -->
                         <div class="bg-orange-50 border-2 border-orange-200 rounded-3xl p-4 shadow-sm relative overflow-hidden">
                             <div class="absolute -right-4 -top-2 text-6xl opacity-20">🌋</div>
-                            <h4 class="font-bold text-orange-700 mb-3 text-sm"><span class="bg-orange-500 text-white px-2 py-0.5 rounded-lg text-xs mr-1">지역 3</span> 뜨거운 화산 유적</h4>
+                            <h4 class="font-black text-orange-700 mb-3 text-sm"><span class="bg-orange-500 text-white px-2 py-0.5 rounded-lg text-xs mr-1">지역 3</span> 뜨거운 화산 유적</h4>
                             <div class="space-y-2">
-                                <button onclick="window.enterStage(7)" class="w-full bg-white border border-orange-100 p-3 rounded-2xl flex items-center justify-between hover:border-orange-400 hover:shadow-md transition-all text-left group">
-                                    <div class="w-full pr-2"><span class="text-xs font-bold text-orange-400 block mb-0.5">07단원</span><span id="hunt-ch-title-7" class="text-base sm:text-lg font-black text-slate-800 group-hover:text-orange-600 block transition-colors leading-tight">What Season Do You Like?</span><div id="dom-ch7" class="text-[10px] mt-1.5 min-h-[18px]"></div></div><span class="text-xl text-orange-300 group-hover:text-orange-500 shrink-0">▶</span>
+                                <button onclick="window.enterStage(7)" class="w-full bg-white border border-orange-200 p-3 rounded-2xl flex items-center justify-between hover:border-orange-500 hover:shadow-md transition-all text-left group">
+                                    <div class="w-full pr-2"><span class="text-xs font-bold text-orange-500 block mb-0.5">07단원</span><span id="hunt-ch-title-7" class="text-base sm:text-lg font-black text-slate-800 group-hover:text-orange-600 block transition-colors leading-tight">What Season Do You Like?</span><div id="dom-ch7" class="text-[10px] mt-1.5 min-h-[18px]"></div></div><span class="text-xl text-orange-400 group-hover:text-orange-600 shrink-0">▶</span>
                                 </button>
-                                <button onclick="window.enterStage(8)" class="w-full bg-white border border-orange-100 p-3 rounded-2xl flex items-center justify-between hover:border-orange-400 hover:shadow-md transition-all text-left group">
-                                    <div class="w-full pr-2"><span class="text-xs font-bold text-orange-400 block mb-0.5">08단원</span><span id="hunt-ch-title-8" class="text-base sm:text-lg font-black text-slate-800 group-hover:text-orange-600 block transition-colors leading-tight">I'm Faster Than You</span><div id="dom-ch8" class="text-[10px] mt-1.5 min-h-[18px]"></div></div><span class="text-xl text-orange-300 group-hover:text-orange-500 shrink-0">▶</span>
+                                <button onclick="window.enterStage(8)" class="w-full bg-white border border-orange-200 p-3 rounded-2xl flex items-center justify-between hover:border-orange-500 hover:shadow-md transition-all text-left group">
+                                    <div class="w-full pr-2"><span class="text-xs font-bold text-orange-500 block mb-0.5">08단원</span><span id="hunt-ch-title-8" class="text-base sm:text-lg font-black text-slate-800 group-hover:text-orange-600 block transition-colors leading-tight">I'm Faster Than You</span><div id="dom-ch8" class="text-[10px] mt-1.5 min-h-[18px]"></div></div><span class="text-xl text-orange-400 group-hover:text-orange-600 shrink-0">▶</span>
                                 </button>
-                                <button onclick="window.enterStage(9)" class="w-full bg-white border border-orange-100 p-3 rounded-2xl flex items-center justify-between hover:border-orange-400 hover:shadow-md transition-all text-left group">
-                                    <div class="w-full pr-2"><span class="text-xs font-bold text-orange-400 block mb-0.5">09단원</span><span id="hunt-ch-title-9" class="text-base sm:text-lg font-black text-slate-800 group-hover:text-orange-600 block transition-colors leading-tight">How Can I Get to the Museum?</span><div id="dom-ch9" class="text-[10px] mt-1.5 min-h-[18px]"></div></div><span class="text-xl text-orange-300 group-hover:text-orange-500 shrink-0">▶</span>
+                                <button onclick="window.enterStage(9)" class="w-full bg-white border border-orange-200 p-3 rounded-2xl flex items-center justify-between hover:border-orange-500 hover:shadow-md transition-all text-left group">
+                                    <div class="w-full pr-2"><span class="text-xs font-bold text-orange-500 block mb-0.5">09단원</span><span id="hunt-ch-title-9" class="text-base sm:text-lg font-black text-slate-800 group-hover:text-orange-600 block transition-colors leading-tight">How Can I Get to the Museum?</span><div id="dom-ch9" class="text-[10px] mt-1.5 min-h-[18px]"></div></div><span class="text-xl text-orange-400 group-hover:text-orange-600 shrink-0">▶</span>
                                 </button>
                             </div>
                         </div>
@@ -192,16 +192,16 @@
                         <!-- ⭐ 지역 4 -->
                         <div class="bg-purple-50 border-2 border-purple-200 rounded-3xl p-4 shadow-sm relative overflow-hidden">
                             <div class="absolute -right-4 -top-2 text-6xl opacity-20">🏙️</div>
-                            <h4 class="font-bold text-purple-700 mb-3 text-sm"><span class="bg-purple-500 text-white px-2 py-0.5 rounded-lg text-xs mr-1">지역 4</span> 보카몬 리그 대도시</h4>
+                            <h4 class="font-black text-purple-700 mb-3 text-sm"><span class="bg-purple-500 text-white px-2 py-0.5 rounded-lg text-xs mr-1">지역 4</span> 보카몬 리그 대도시</h4>
                             <div class="space-y-2">
-                                <button onclick="window.enterStage(10)" class="w-full bg-white border border-purple-100 p-3 rounded-2xl flex items-center justify-between hover:border-purple-400 hover:shadow-md transition-all text-left group">
-                                    <div class="w-full pr-2"><span class="text-xs font-bold text-purple-400 block mb-0.5">10단원</span><span id="hunt-ch-title-10" class="text-base sm:text-lg font-black text-slate-800 group-hover:text-purple-600 block transition-colors leading-tight">I'd Like to Have the Fruit Salad</span><div id="dom-ch10" class="text-[10px] mt-1.5 min-h-[18px]"></div></div><span class="text-xl text-purple-300 group-hover:text-purple-500 shrink-0">▶</span>
+                                <button onclick="window.enterStage(10)" class="w-full bg-white border border-purple-200 p-3 rounded-2xl flex items-center justify-between hover:border-purple-500 hover:shadow-md transition-all text-left group">
+                                    <div class="w-full pr-2"><span class="text-xs font-bold text-purple-500 block mb-0.5">10단원</span><span id="hunt-ch-title-10" class="text-base sm:text-lg font-black text-slate-800 group-hover:text-purple-600 block transition-colors leading-tight">I'd Like to Have the Fruit Salad</span><div id="dom-ch10" class="text-[10px] mt-1.5 min-h-[18px]"></div></div><span class="text-xl text-purple-400 group-hover:text-purple-600 shrink-0">▶</span>
                                 </button>
-                                <button onclick="window.enterStage(11)" class="w-full bg-white border border-purple-100 p-3 rounded-2xl flex items-center justify-between hover:border-purple-400 hover:shadow-md transition-all text-left group">
-                                    <div class="w-full pr-2"><span class="text-xs font-bold text-purple-400 block mb-0.5">11단원</span><span id="hunt-ch-title-11" class="text-base sm:text-lg font-black text-slate-800 group-hover:text-purple-600 block transition-colors leading-tight">Do You Know About Songpyeon?</span><div id="dom-ch11" class="text-[10px] mt-1.5 min-h-[18px]"></div></div><span class="text-xl text-purple-300 group-hover:text-purple-500 shrink-0">▶</span>
+                                <button onclick="window.enterStage(11)" class="w-full bg-white border border-purple-200 p-3 rounded-2xl flex items-center justify-between hover:border-purple-500 hover:shadow-md transition-all text-left group">
+                                    <div class="w-full pr-2"><span class="text-xs font-bold text-purple-500 block mb-0.5">11단원</span><span id="hunt-ch-title-11" class="text-base sm:text-lg font-black text-slate-800 group-hover:text-purple-600 block transition-colors leading-tight">Do You Know About Songpyeon?</span><div id="dom-ch11" class="text-[10px] mt-1.5 min-h-[18px]"></div></div><span class="text-xl text-purple-400 group-hover:text-purple-600 shrink-0">▶</span>
                                 </button>
-                                <button onclick="window.enterStage(12)" class="w-full bg-white border border-purple-100 p-3 rounded-2xl flex items-center justify-between hover:border-purple-400 hover:shadow-md transition-all text-left group">
-                                    <div class="w-full pr-2"><span class="text-xs font-bold text-purple-400 block mb-0.5">12단원</span><span id="hunt-ch-title-12" class="text-base sm:text-lg font-black text-slate-800 group-hover:text-purple-600 block transition-colors leading-tight">We Should Save the World</span><div id="dom-ch12" class="text-[10px] mt-1.5 min-h-[18px]"></div></div><span class="text-xl text-purple-300 group-hover:text-purple-500 shrink-0">▶</span>
+                                <button onclick="window.enterStage(12)" class="w-full bg-white border border-purple-200 p-3 rounded-2xl flex items-center justify-between hover:border-purple-500 hover:shadow-md transition-all text-left group">
+                                    <div class="w-full pr-2"><span class="text-xs font-bold text-purple-500 block mb-0.5">12단원</span><span id="hunt-ch-title-12" class="text-base sm:text-lg font-black text-slate-800 group-hover:text-purple-600 block transition-colors leading-tight">We Should Save the World</span><div id="dom-ch12" class="text-[10px] mt-1.5 min-h-[18px]"></div></div><span class="text-xl text-purple-400 group-hover:text-purple-600 shrink-0">▶</span>
                                 </button>
                             </div>
                         </div>
@@ -210,90 +210,90 @@
 
                 <div id="hunt-battle-view" translate="no" class="notranslate hidden flex-col md:flex-row gap-4 relative mt-10">
                     <div class="absolute -top-10 left-2 z-10 flex gap-2">
-                        <button onclick="window.exitStage()" class="text-sm font-bold text-slate-500 hover:text-red-500 bg-white border border-slate-200 px-4 py-1.5 rounded-full shadow-sm transition-colors">🏃 지도로 도망가기</button>
-                        <button onclick="window.showCheatSheet()" class="text-sm font-bold text-indigo-500 hover:text-indigo-600 bg-indigo-50 border border-indigo-200 px-4 py-1.5 rounded-full shadow-sm transition-colors">📜 족보 보기</button>
+                        <button onclick="window.exitStage()" class="text-sm font-bold text-slate-600 hover:text-red-600 bg-white border border-slate-300 px-4 py-1.5 rounded-full shadow-sm transition-colors">🏃 지도로 도망가기</button>
+                        <button onclick="window.showCheatSheet()" class="text-sm font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 border border-indigo-200 px-4 py-1.5 rounded-full shadow-sm transition-colors">📜 족보 보기</button>
                     </div>
 
-                    <div class="magic-card relative overflow-hidden shadow-xl flex-1 shrink-0 border-red-50">
+                    <div class="magic-card bg-white relative overflow-hidden shadow-xl flex-1 shrink-0 border border-slate-200">
                         <canvas id="gameCanvas" width="400" height="350"></canvas>
-                        <div class="absolute bottom-4 left-6 right-6 bg-slate-100 h-4 rounded-full overflow-hidden border-2 border-white shadow-inner">
+                        <div class="absolute bottom-4 left-6 right-6 bg-slate-200 h-4 rounded-full overflow-hidden border border-slate-300 shadow-inner">
                             <div id="exp-bar" class="h-full bg-gradient-to-r from-red-400 to-yellow-400 transition-all duration-500" style="width: 0%"></div>
                         </div>
                     </div>
                     
-                    <div class="bg-red-50 rounded-[2.5rem] p-8 shadow-inner border-2 border-red-100 text-center flex-1 flex flex-col justify-center">
-                        <span class="text-red-400 text-xs uppercase tracking-widest font-bold">단어 뜻(Meaning)</span>
+                    <div class="bg-red-50 rounded-[2.5rem] p-8 shadow-inner border border-red-200 text-center flex-1 flex flex-col justify-center">
+                        <span class="text-red-500 text-xs uppercase tracking-widest font-black">단어 뜻(Meaning)</span>
                         <div class="flex justify-center items-center gap-2 mt-1 mb-6">
-                            <h3 id="quiz-txt" class="text-3xl text-red-600 font-bold leading-tight break-keep">단어장을 불러오는 중...</h3>
-                            <button onclick="window.speakWord(event)" class="bg-red-100 hover:bg-red-200 text-red-500 rounded-full w-10 h-10 flex items-center justify-center text-xl transition-transform active:scale-90 shadow-sm" title="발음 듣기">🔊</button>
+                            <h3 id="quiz-txt" class="text-3xl text-red-600 font-black leading-tight break-keep">단어장을 불러오는 중...</h3>
+                            <button onclick="window.speakWord(event)" class="bg-red-100 hover:bg-red-200 text-red-600 rounded-full w-10 h-10 flex items-center justify-center text-xl transition-transform active:scale-90 shadow-sm border border-red-200" title="발음 듣기">🔊</button>
                         </div>
                         <div class="flex flex-col gap-3 relative">
                             <div class="relative w-full">
-                                <input type="text" id="spell-in" class="spell-input border-red-200 w-full relative z-0" style="color: transparent; caret-color: white;" autocomplete="off" autocorrect="off" spellcheck="false" autocapitalize="off" onkeyup="if(event.key==='Enter')window.checkMagic()" oninput="document.getElementById('fake-text').textContent = this.value || '영단어를 입력하세요'; document.getElementById('fake-text').style.color = this.value ? '#f9fafb' : '#9ca3af';" onpaste="return false;" ondrop="return false;">
+                                <input type="text" id="spell-in" class="spell-input bg-white border-slate-300 text-slate-800 w-full relative z-0" style="color: transparent; caret-color: #1e293b;" autocomplete="off" autocorrect="off" spellcheck="false" autocapitalize="off" onkeyup="if(event.key==='Enter')window.checkMagic()" oninput="document.getElementById('fake-text').textContent = this.value || '영단어를 입력하세요'; document.getElementById('fake-text').style.color = this.value ? '#1e293b' : '#94a3b8';" onpaste="return false;" ondrop="return false;">
                                 <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10 overflow-hidden px-4">
-                                    <span id="fake-text" class="text-slate-400 text-[1.8rem] whitespace-pre truncate">영단어를 입력하세요</span>
+                                    <span id="fake-text" class="text-slate-400 text-[1.8rem] font-bold whitespace-pre truncate">영단어를 입력하세요</span>
                                 </div>
                             </div>
-                            <button onclick="window.checkMagic()" class="btn-magic">🔴 보카몬 잡기!</button>
+                            <button onclick="window.checkMagic()" class="btn-magic bg-red-500 hover:bg-red-600 shadow-red-700">🔴 보카몬 잡기!</button>
                         </div>
-                        <p id="hint-msg" class="text-slate-400 text-lg mt-4 font-bold">정답 영단어를 입력하면 몬스터를 포획합니다!</p>
+                        <p id="hint-msg" class="text-slate-500 text-lg mt-4 font-bold">정답 영단어를 입력하면 몬스터를 포획합니다!</p>
                     </div>
                 </div>
             </div>
 
             <!-- [도감 탭] -->
             <div id="content-dex" class="tab-content">
-                <div class="magic-card p-6 shadow-xl min-h-[400px]">
-                    <h3 class="text-xl font-bold text-red-600 mb-4 flex justify-between items-center">
+                <div class="magic-card bg-white p-6 shadow-xl min-h-[400px]">
+                    <h3 class="text-xl font-black text-red-600 mb-4 flex justify-between items-center">
                         <span>내 보카몬 도감</span>
-                        <span class="text-sm bg-red-100 text-red-600 px-3 py-1 rounded-full"><span id="dex-total">0</span>마리 포획</span>
+                        <span class="text-sm bg-red-100 text-red-700 px-3 py-1 rounded-full border border-red-200"><span id="dex-total">0</span>마리 포획</span>
                     </h3>
                     <div id="dex-list" class="max-h-[70vh] overflow-y-auto pr-2 pb-4 custom-scrollbar">
-                        <p class="text-center text-slate-400 py-10 text-sm">아직 포획한 영켓몬이 없습니다.<br>사냥터에서 영단어를 맞혀보세요!</p>
+                        <p class="text-center text-slate-400 py-10 text-sm font-bold">아직 포획한 영켓몬이 없습니다.<br>사냥터에서 영단어를 맞혀보세요!</p>
                     </div>
                 </div>
             </div>
 
             <!-- [배틀 탭] -->
             <div id="content-arena" class="tab-content">
-                <div id="arena-list-view" class="magic-card p-6 shadow-xl min-h-[400px]">
+                <div id="arena-list-view" class="magic-card bg-white p-6 shadow-xl min-h-[400px]">
                     <div class="text-center mb-6">
-                        <h3 class="text-xl font-bold text-red-500 mb-1 flex items-center justify-center gap-2 flex-wrap">
+                        <h3 class="text-xl font-black text-red-600 mb-1 flex items-center justify-center gap-2 flex-wrap">
                             모험가 배틀
-                            <button onclick="window.showTipModal()" class="bg-indigo-500 hover:bg-indigo-400 text-white text-[10px] px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm transition-transform active:scale-95 border border-indigo-400">💡 Tip</button>
-                            <button onclick="window.showTierModal()" class="bg-amber-500 hover:bg-amber-400 text-white text-[10px] px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm transition-transform active:scale-95 border border-amber-400">🏆 티어표</button>
-                            <button onclick="window.openDefenseSetup()" class="bg-green-500 hover:bg-green-400 text-white text-[10px] px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm transition-transform active:scale-95 border border-green-400">🛡️ 방어 보카몬 설정</button>
-                            <button onclick="window.openDefenseLogs()" class="bg-pink-500 hover:bg-pink-400 text-white text-[10px] px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm transition-transform active:scale-95 border border-pink-400">📜 방어 기록</button>
+                            <button onclick="window.showTipModal()" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 text-[10px] px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm transition-transform active:scale-95 border border-indigo-300 font-bold">💡 Tip</button>
+                            <button onclick="window.showTierModal()" class="bg-amber-100 hover:bg-amber-200 text-amber-700 text-[10px] px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm transition-transform active:scale-95 border border-amber-300 font-bold">🏆 티어표</button>
+                            <button onclick="window.openDefenseSetup()" class="bg-green-100 hover:bg-green-200 text-green-700 text-[10px] px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm transition-transform active:scale-95 border border-green-300 font-bold">🛡️ 방어 보카몬 설정</button>
+                            <button onclick="window.openDefenseLogs()" class="bg-pink-100 hover:bg-pink-200 text-pink-700 text-[10px] px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm transition-transform active:scale-95 border border-pink-300 font-bold">📜 방어 기록</button>
                         </h3>
                     </div>
                     <div id="arena-list" class="space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
-                        <p class="text-center text-slate-400 py-10 text-sm">상대 모험가를 찾고 있습니다...</p>
+                        <p class="text-center text-slate-500 font-bold py-10 text-sm">상대 모험가를 찾고 있습니다...</p>
                     </div>
                 </div>
 
-                <div id="arena-team-view" class="hidden magic-card p-6 shadow-xl min-h-[400px] border-4 border-indigo-100 relative">
-                    <button onclick="window.cancelBattleSelect()" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 font-bold text-sm bg-slate-100 px-3 py-1 rounded-lg">돌아가기</button>
+                <div id="arena-team-view" class="hidden magic-card bg-white p-6 shadow-xl min-h-[400px] border-4 border-indigo-200 relative">
+                    <button onclick="window.cancelBattleSelect()" class="absolute top-4 right-4 text-slate-500 hover:text-red-600 font-black text-sm bg-slate-100 px-3 py-1 rounded-lg border border-slate-300">돌아가기</button>
                     <div class="text-center mb-4">
-                        <h3 class="text-xl font-bold text-indigo-600 mb-1" id="arena-team-title">출전할 보카몬 선택</h3>
-                        <p class="text-xs text-slate-500">배틀에 내보낼 보카몬을 최대 3마리 선택하세요. (현재 <span id="team-sel-cnt" class="text-indigo-600 font-bold text-sm">0</span>/3)</p>
+                        <h3 class="text-xl font-black text-indigo-600 mb-1" id="arena-team-title">출전할 보카몬 선택</h3>
+                        <p class="text-xs text-slate-600 font-bold">배틀에 내보낼 보카몬을 최대 3마리 선택하세요. (현재 <span id="team-sel-cnt" class="text-indigo-600 font-black text-sm">0</span>/3)</p>
                     </div>
                     <div id="arena-team-list" class="grid grid-cols-3 gap-2 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar mb-4"></div>
-                    <button id="btn-start-real-battle" onclick="window.startRealBattle()" class="w-full bg-slate-300 text-slate-500 py-3 rounded-2xl font-bold text-lg shadow-sm transition-all" disabled>선택 완료 (배틀 시작)</button>
+                    <button id="btn-start-real-battle" onclick="window.startRealBattle()" class="w-full bg-slate-200 text-slate-500 py-3 rounded-2xl font-black text-lg shadow-sm transition-all" disabled>선택 완료 (배틀 시작)</button>
                 </div>
 
                 <div id="arena-battle-view" class="hidden flex-col gap-2 relative">
-                    <button onclick="window.cancelBattleSelect()" class="absolute -top-10 left-2 text-sm font-bold text-slate-500 hover:text-red-500 bg-white border border-slate-200 px-4 py-1.5 rounded-full shadow-sm z-50">🏃 도망치기</button>
+                    <button onclick="window.cancelBattleSelect()" class="absolute -top-10 left-2 text-sm font-black text-slate-600 hover:text-red-600 bg-white border border-slate-300 px-4 py-1.5 rounded-full shadow-sm z-50">🏃 도망치기</button>
                     
-                    <div class="bg-red-50 rounded-3xl p-4 border-2 border-red-200 shadow-md relative overflow-hidden flex justify-between items-center h-32">
+                    <div class="bg-red-50 rounded-3xl p-4 border border-red-200 shadow-md relative overflow-hidden flex justify-between items-center h-32">
                         <div class="z-10 w-2/3">
                             <div class="flex items-center gap-2 mb-1">
-                                <span class="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded font-bold uppercase" id="opp-b-type">TYPE</span>
+                                <span class="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded font-black uppercase" id="opp-b-type">TYPE</span>
                                 <span class="font-black text-slate-800 text-lg" id="opp-b-name">Enemy</span>
                             </div>
                             <div class="w-full bg-slate-200 h-3 rounded-full overflow-hidden border border-slate-300 mb-1">
                                 <div id="opp-b-hp" class="h-full bg-red-500 transition-all duration-200" style="width: 100%"></div>
                             </div>
-                            <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden border border-slate-600 flex justify-end">
+                            <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden border border-slate-300 flex justify-end">
                                 <div id="opp-b-energy" class="h-full bg-sky-400 transition-all duration-200" style="width: 0%"></div>
                             </div>
                         </div>
@@ -302,11 +302,11 @@
                         </div>
                     </div>
 
-                    <div id="battle-log" class="text-center font-bold text-sm h-6 text-red-500 animate-pulse">상성을 파악하여 화면을 빠르게 탭하세요!</div>
+                    <div id="battle-log" class="text-center font-black text-sm h-6 text-red-600 animate-pulse">상성을 파악하여 화면을 빠르게 탭하세요!</div>
 
-                    <div onpointerdown="window.tapAttack()" class="bg-indigo-50 rounded-3xl p-4 border-4 border-indigo-300 shadow-lg relative overflow-hidden flex justify-between items-center h-48 cursor-pointer active:scale-[0.98] transition-transform select-none" style="touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none;">
-                        <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-10">
-                            <span class="text-4xl font-black tracking-widest">TAP TO ATTACK</span>
+                    <div onpointerdown="window.tapAttack()" class="bg-indigo-50 rounded-3xl p-4 border border-indigo-200 shadow-lg relative overflow-hidden flex justify-between items-center h-48 cursor-pointer active:scale-[0.98] transition-transform select-none" style="touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none;">
+                        <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
+                            <span class="text-4xl font-black tracking-widest text-slate-800">TAP TO ATTACK</span>
                         </div>
                         
                         <div class="relative w-28 h-28 sm:w-32 sm:h-32 flex items-center justify-center shrink-0">
@@ -322,39 +322,39 @@
                         <div class="z-10 w-[45%] text-right">
                             <div class="flex items-center justify-end gap-2 mb-1">
                                 <span class="font-black text-slate-800 text-lg sm:text-xl truncate" id="my-b-name">My Pokemon</span>
-                                <span class="bg-indigo-500 text-white text-[10px] px-2 py-0.5 rounded font-bold uppercase shrink-0" id="my-b-type">TYPE</span>
+                                <span class="bg-indigo-500 text-white text-[10px] px-2 py-0.5 rounded font-black uppercase shrink-0" id="my-b-type">TYPE</span>
                             </div>
                             <div class="w-full bg-slate-200 h-4 rounded-full overflow-hidden border border-slate-300 flex justify-end mb-1">
                                 <div id="my-b-hp" class="h-full bg-green-400 transition-all duration-200" style="width: 100%"></div>
                             </div>
-                            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden border border-slate-600 flex justify-end">
+                            <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-300 flex justify-end">
                                 <div id="my-b-energy" class="h-full bg-yellow-400 transition-all duration-200" style="width: 0%"></div>
                             </div>
-                            <p class="text-xs text-slate-500 mt-1 font-bold">내 남은 보카몬: <span id="my-b-remain">3</span></p>
+                            <p class="text-xs text-slate-600 mt-1 font-bold">내 남은 보카몬: <span id="my-b-remain">3</span></p>
                         </div>
                     </div>
                 </div>
 
-                <div id="arena-defense-view" class="hidden magic-card p-6 shadow-xl min-h-[400px] border-4 border-green-100 relative">
-                    <button onclick="window.cancelDefenseSelect()" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 font-bold text-sm bg-slate-100 px-3 py-1 rounded-lg">돌아가기</button>
+                <div id="arena-defense-view" class="hidden magic-card bg-white p-6 shadow-xl min-h-[400px] border-4 border-green-200 relative">
+                    <button onclick="window.cancelDefenseSelect()" class="absolute top-4 right-4 text-slate-500 hover:text-red-600 font-black text-sm bg-slate-100 px-3 py-1 rounded-lg border border-slate-300">돌아가기</button>
                     <div class="text-center mb-4">
-                        <h3 class="text-xl font-bold text-green-600 mb-1" id="arena-defense-title">방어 보카몬 설정</h3>
-                        <p class="text-xs text-slate-500">배틀에서 체육관을 방어할 보카몬을 최대 3마리 선택하세요.<br>(10회 이상 포획한 포켓몬만 선택 가능합니다. 현재 <span id="defense-sel-cnt" class="text-green-600 font-bold text-sm">0</span>/3)</p>
+                        <h3 class="text-xl font-black text-green-600 mb-1" id="arena-defense-title">방어 보카몬 설정</h3>
+                        <p class="text-xs text-slate-600 font-bold">배틀에서 체육관을 방어할 보카몬을 최대 3마리 선택하세요.<br>(10회 이상 포획한 포켓몬만 선택 가능합니다. 현재 <span id="defense-sel-cnt" class="text-green-600 font-black text-sm">0</span>/3)</p>
                     </div>
                     <div id="arena-defense-list" class="grid grid-cols-3 gap-2 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar mb-4"></div>
-                    <button id="btn-save-defense" onclick="window.saveDefenseTeam()" class="w-full bg-slate-300 text-slate-500 py-3 rounded-2xl font-bold text-lg shadow-sm transition-all" disabled>방어 팀 저장하기</button>
+                    <button id="btn-save-defense" onclick="window.saveDefenseTeam()" class="w-full bg-slate-200 text-slate-500 py-3 rounded-2xl font-black text-lg shadow-sm transition-all" disabled>방어 팀 저장하기</button>
                 </div>
             </div>
 
             <!-- [랭킹 탭] -->
             <div id="content-rank" class="tab-content active">
-                <div class="magic-card p-6 shadow-xl min-h-[400px]">
+                <div class="magic-card bg-white p-6 shadow-xl min-h-[400px]">
                     <div class="text-center mb-6">
-                        <h3 class="text-2xl font-bold text-yellow-500 mb-1">🏆 커뮤니티</h3>
-                        <p class="text-sm text-slate-500">다른 모험가들의 정보와 강력한 파트너를 확인해보세요.</p>
+                        <h3 class="text-2xl font-black text-yellow-600 mb-1">🏆 커뮤니티</h3>
+                        <p class="text-sm text-slate-600 font-bold">다른 모험가들의 정보와 강력한 파트너를 확인해보세요.</p>
                     </div>
                     <div id="rank-list" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar pb-4">
-                        <p class="text-center text-slate-400 py-10 text-sm animate-pulse col-span-full">랭킹 정보를 불러오는 중...</p>
+                        <p class="text-center text-slate-500 py-10 text-sm font-bold animate-pulse col-span-full">랭킹 정보를 불러오는 중...</p>
                     </div>
                 </div>
             </div>
@@ -364,188 +364,188 @@
         <!-- 관리자 모드 뷰 -->
         <!-- ===================================== -->
         <div id="admin-view" class="admin-view-container">
-            <div class="magic-card p-8 border-4 border-red-500 shadow-2xl">
+            <div class="magic-card bg-white p-8 border-4 border-red-500 shadow-2xl">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-xl font-bold text-red-600">🛠️ 관리자 대시보드</h2>
-                    <button onclick="window.toggleAdmin()" class="bg-slate-100 px-4 py-2 rounded-xl text-xs font-bold text-red-600 hover:bg-slate-200">닫기</button>
+                    <h2 class="text-xl font-black text-red-600">🛠️ 관리자 대시보드</h2>
+                    <button onclick="window.toggleAdmin()" class="bg-slate-100 px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200 border border-slate-300">닫기</button>
                 </div>
 
                 <div id="admin-main-menu" class="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    <button onclick="window.showAdminSection('admin-sec-dex')" class="bg-red-900/30 border-2 border-red-500/30 p-5 rounded-2xl flex flex-col items-center justify-center hover:bg-red-900/50 hover:border-red-400 transition-all shadow-md group">
-                        <span class="text-4xl mb-2 group-hover:scale-110 transition-transform drop-shadow-md">📖</span>
-                        <span class="font-black text-red-400 text-lg">도감 관리</span>
-                        <span class="text-[10px] text-red-300/70 mt-1 font-bold">엑셀 일괄 업/다운</span>
+                    <button onclick="window.showAdminSection('admin-sec-dex')" class="bg-red-50 border-2 border-red-200 p-5 rounded-2xl flex flex-col items-center justify-center hover:bg-red-100 hover:border-red-400 transition-all shadow-sm group">
+                        <span class="text-4xl mb-2 group-hover:scale-110 transition-transform drop-shadow-sm">📖</span>
+                        <span class="font-black text-red-600 text-lg">도감 관리</span>
+                        <span class="text-[10px] text-red-500 mt-1 font-bold">엑셀 일괄 업/다운</span>
                     </button>
-                    <!-- ⭐ 단원 제목 설정 버튼 추가 -->
-                    <button onclick="window.showAdminSection('admin-sec-title')" class="bg-yellow-900/30 border-2 border-yellow-500/30 p-5 rounded-2xl flex flex-col items-center justify-center hover:bg-yellow-900/50 hover:border-yellow-400 transition-all shadow-md group">
-                        <span class="text-4xl mb-2 group-hover:scale-110 transition-transform drop-shadow-md">🏷️</span>
-                        <span class="font-black text-yellow-400 text-lg">단원 설정</span>
-                        <span class="text-[10px] text-yellow-300/70 mt-1 font-bold">단원별 제목 변경</span>
+                    <!-- 단원 제목 설정 버튼 -->
+                    <button onclick="window.showAdminSection('admin-sec-title')" class="bg-yellow-50 border-2 border-yellow-200 p-5 rounded-2xl flex flex-col items-center justify-center hover:bg-yellow-100 hover:border-yellow-400 transition-all shadow-sm group">
+                        <span class="text-4xl mb-2 group-hover:scale-110 transition-transform drop-shadow-sm">🏷️</span>
+                        <span class="font-black text-yellow-600 text-lg">단원 설정</span>
+                        <span class="text-[10px] text-yellow-600 mt-1 font-bold">단원별 제목 변경</span>
                     </button>
-                    <button onclick="window.showAdminSection('admin-sec-student')" class="bg-blue-900/30 border-2 border-blue-500/30 p-5 rounded-2xl flex flex-col items-center justify-center hover:bg-blue-900/50 hover:border-blue-400 transition-all shadow-md group">
-                        <span class="text-4xl mb-2 group-hover:scale-110 transition-transform drop-shadow-md">👦</span>
-                        <span class="font-black text-blue-400 text-lg">학생 관리</span>
-                        <span class="text-[10px] text-blue-300/70 mt-1 font-bold">계정 관리/비번초기화</span>
+                    <button onclick="window.showAdminSection('admin-sec-student')" class="bg-blue-50 border-2 border-blue-200 p-5 rounded-2xl flex flex-col items-center justify-center hover:bg-blue-100 hover:border-blue-400 transition-all shadow-sm group">
+                        <span class="text-4xl mb-2 group-hover:scale-110 transition-transform drop-shadow-sm">👦</span>
+                        <span class="font-black text-blue-600 text-lg">학생 관리</span>
+                        <span class="text-[10px] text-blue-500 mt-1 font-bold">계정 관리/비번초기화</span>
                     </button>
-                    <button onclick="window.showAdminSection('admin-sec-server')" class="bg-purple-900/30 border-2 border-purple-500/30 p-5 rounded-2xl flex flex-col items-center justify-center hover:bg-purple-900/50 hover:border-purple-400 transition-all shadow-md group">
-                        <span class="text-4xl mb-2 group-hover:scale-110 transition-transform drop-shadow-md">⚙️</span>
-                        <span class="font-black text-purple-400 text-lg">서버 관리</span>
-                        <span class="text-[10px] text-purple-300/70 mt-1 font-bold">초기화/전원 로그아웃</span>
+                    <button onclick="window.showAdminSection('admin-sec-server')" class="bg-purple-50 border-2 border-purple-200 p-5 rounded-2xl flex flex-col items-center justify-center hover:bg-purple-100 hover:border-purple-400 transition-all shadow-sm group">
+                        <span class="text-4xl mb-2 group-hover:scale-110 transition-transform drop-shadow-sm">⚙️</span>
+                        <span class="font-black text-purple-600 text-lg">서버 관리</span>
+                        <span class="text-[10px] text-purple-500 mt-1 font-bold">초기화/전원 로그아웃</span>
                     </button>
-                    <button onclick="window.showAdminSection('admin-sec-test')" class="bg-emerald-900/30 border-2 border-emerald-500/30 p-5 rounded-2xl flex flex-col items-center justify-center hover:bg-emerald-900/50 hover:border-emerald-400 transition-all shadow-md group">
-                        <span class="text-4xl mb-2 group-hover:scale-110 transition-transform drop-shadow-md">📝</span>
-                        <span class="font-black text-emerald-400 text-lg">테스트 관리</span>
-                        <span class="text-[10px] text-emerald-300/70 mt-1 font-bold">시험 및 성적표</span>
+                    <button onclick="window.showAdminSection('admin-sec-test')" class="bg-emerald-50 border-2 border-emerald-200 p-5 rounded-2xl flex flex-col items-center justify-center hover:bg-emerald-100 hover:border-emerald-400 transition-all shadow-sm group">
+                        <span class="text-4xl mb-2 group-hover:scale-110 transition-transform drop-shadow-sm">📝</span>
+                        <span class="font-black text-emerald-600 text-lg">테스트 관리</span>
+                        <span class="text-[10px] text-emerald-500 mt-1 font-bold">시험 및 성적표</span>
                     </button>
                 </div>
 
-                <!-- ⭐ 관리자: 단원 제목 설정 모드 추가 -->
+                <!-- 관리자: 단원 제목 설정 모드 -->
                 <div id="admin-sec-title" class="hidden">
-                    <button onclick="window.showAdminMainMenu()" class="text-slate-400 hover:text-white text-sm font-bold mb-4 flex items-center gap-1 transition-colors">◀ 메인 메뉴로 돌아가기</button>
-                    <div class="bg-yellow-900/30 p-4 rounded-2xl border border-yellow-500/30 mb-6">
-                        <h3 class="text-sm font-bold text-yellow-400 mb-2">🏷️ 단원별 제목 설정</h3>
-                        <p class="text-xs text-slate-400 mb-4">현재 학급의 모험 지도(풀숲)와 학습장에 표시될 단원 제목을 직접 수정합니다.</p>
+                    <button onclick="window.showAdminMainMenu()" class="text-slate-500 hover:text-slate-800 text-sm font-black mb-4 flex items-center gap-1 transition-colors">◀ 메인 메뉴로 돌아가기</button>
+                    <div class="bg-yellow-50 p-4 rounded-2xl border border-yellow-200 mb-6">
+                        <h3 class="text-sm font-black text-yellow-700 mb-2">🏷️ 단원별 제목 설정</h3>
+                        <p class="text-xs text-slate-600 mb-4 font-bold">현재 학급의 모험 지도(풀숲)와 학습장에 표시될 단원 제목을 직접 수정합니다.</p>
                         <div id="admin-title-inputs" class="space-y-2 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar mb-4">
                             <!-- JS를 통해 1~12단원 입력칸이 렌더링됨 -->
                         </div>
-                        <button onclick="window.saveChapterTitles()" class="w-full bg-yellow-600 hover:bg-yellow-700 text-white py-3 rounded-xl font-black text-sm shadow-md transition-transform active:scale-95">저장 및 학급에 적용하기</button>
+                        <button onclick="window.saveChapterTitles()" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white py-3 rounded-xl font-black text-sm shadow-md transition-transform active:scale-95">저장 및 학급에 적용하기</button>
                     </div>
                 </div>
 
                 <!-- 관리자: 도감 관리 (엑셀) -->
                 <div id="admin-sec-dex" class="hidden">
-                    <button onclick="window.showAdminMainMenu()" class="text-slate-400 hover:text-white text-sm font-bold mb-4 flex items-center gap-1 transition-colors">◀ 메인 메뉴로 돌아가기</button>
+                    <button onclick="window.showAdminMainMenu()" class="text-slate-500 hover:text-slate-800 text-sm font-black mb-4 flex items-center gap-1 transition-colors">◀ 메인 메뉴로 돌아가기</button>
                     
-                    <div class="bg-indigo-900/30 p-4 rounded-2xl border border-indigo-500/30 mb-6">
-                        <h3 class="text-sm font-bold text-indigo-400 mb-2">📊 엑셀로 일괄 관리</h3>
-                        <p class="text-xs text-slate-400 mb-3">기존 단어장 백업 및 새 단어를 한 번에 추가/덮어쓰기 할 수 있습니다.</p>
+                    <div class="bg-indigo-50 p-4 rounded-2xl border border-indigo-200 mb-6">
+                        <h3 class="text-sm font-black text-indigo-700 mb-2">📊 엑셀로 일괄 관리</h3>
+                        <p class="text-xs text-slate-600 mb-3 font-bold">기존 단어장 백업 및 새 단어를 한 번에 추가/덮어쓰기 할 수 있습니다.</p>
                         <div class="flex gap-2 mb-3">
-                            <button onclick="window.downloadWordExcel()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-xl font-bold text-xs shadow-md transition-transform active:scale-95">📥 엑셀 다운로드</button>
-                            <button onclick="document.getElementById('excel-upload').click()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-xl font-bold text-xs shadow-md transition-transform active:scale-95">📤 엑셀 업로드</button>
+                            <button onclick="window.downloadWordExcel()" class="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white py-2 rounded-xl font-bold text-xs shadow-sm transition-transform active:scale-95">📥 엑셀 다운로드</button>
+                            <button onclick="document.getElementById('excel-upload').click()" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-2 rounded-xl font-bold text-xs shadow-sm transition-transform active:scale-95">📤 엑셀 업로드</button>
                             <input type="file" id="excel-upload" accept=".xlsx, .xls" class="hidden" onchange="window.handleExcelUpload(event)">
                         </div>
                         <div id="excel-preview-container" class="hidden mt-4">
-                            <h4 class="text-xs font-bold text-emerald-400 mb-2" id="excel-preview-title">업로드 미리보기 (총 0개)</h4>
-                            <div class="max-h-40 overflow-y-auto custom-scrollbar bg-slate-800 rounded-xl border border-slate-600 p-2 mb-3 text-xs text-slate-300" id="excel-preview-list"></div>
-                            <button onclick="window.applyExcelData()" class="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-black text-sm shadow-md transition-transform active:scale-95">🚨 도감 덮어쓰기 (적용)</button>
+                            <h4 class="text-xs font-black text-emerald-600 mb-2" id="excel-preview-title">업로드 미리보기 (총 0개)</h4>
+                            <div class="max-h-40 overflow-y-auto custom-scrollbar bg-white rounded-xl border border-slate-300 p-2 mb-3 text-xs text-slate-700 font-bold" id="excel-preview-list"></div>
+                            <button onclick="window.applyExcelData()" class="w-full bg-red-500 hover:bg-red-600 text-white py-3 rounded-xl font-black text-sm shadow-md transition-transform active:scale-95">🚨 도감 덮어쓰기 (적용)</button>
                         </div>
                     </div>
 
-                    <div class="space-y-3 mb-6 bg-red-900/30 p-4 rounded-2xl border border-red-500/30">
-                        <h3 class="text-sm font-bold text-red-400 mb-2">📖 단원별 단어 직접 추가</h3>
-                        <select id="new-c" onchange="window.updateAdminList()" class="w-full p-3 border rounded-xl outline-none text-sm font-bold text-slate-700 focus:border-red-400 bg-white mb-1 shadow-sm">
+                    <div class="space-y-3 mb-6 bg-red-50 p-4 rounded-2xl border border-red-200">
+                        <h3 class="text-sm font-black text-red-600 mb-2">📖 단원별 단어 직접 추가</h3>
+                        <select id="new-c" onchange="window.updateAdminList()" class="w-full p-3 border border-slate-300 rounded-xl outline-none text-sm font-bold text-slate-800 bg-white mb-1 shadow-sm focus:border-red-400">
                             <option value="1">01단원</option><option value="2">02단원</option><option value="3">03단원</option>
                             <option value="4">04단원</option><option value="5">05단원</option><option value="6">06단원</option>
                             <option value="7">07단원</option><option value="8">08단원</option><option value="9">09단원</option>
                             <option value="10">10단원</option><option value="11">11단원</option><option value="12">12단원</option>
                         </select>
                         <div class="grid grid-cols-2 gap-2">
-                            <input type="text" id="new-w" class="p-3 border rounded-xl outline-none text-sm focus:border-red-400 text-black" placeholder="영단어" autocomplete="off">
-                            <input type="text" id="new-m" class="p-3 border rounded-xl outline-none text-sm focus:border-red-400 text-black" placeholder="뜻" autocomplete="off" onkeyup="if(event.key==='Enter')window.addWord()">
+                            <input type="text" id="new-w" class="p-3 border border-slate-300 rounded-xl outline-none text-sm font-bold focus:border-red-400 text-slate-800 bg-white placeholder-slate-400" placeholder="영단어" autocomplete="off">
+                            <input type="text" id="new-m" class="p-3 border border-slate-300 rounded-xl outline-none text-sm font-bold focus:border-red-400 text-slate-800 bg-white placeholder-slate-400" placeholder="뜻" autocomplete="off" onkeyup="if(event.key==='Enter')window.addWord()">
                         </div>
-                        <button onclick="window.addWord()" class="w-full bg-red-600 text-white py-3 rounded-xl font-bold text-sm shadow-lg active:scale-95 transition-transform hover:bg-red-700">도감 데이터 직접 추가</button>
+                        <button onclick="window.addWord()" class="w-full bg-red-500 text-white py-3 rounded-xl font-black text-sm shadow-md active:scale-95 transition-transform hover:bg-red-600">도감 데이터 직접 추가</button>
                     </div>
                     <div class="max-h-[300px] overflow-y-auto pr-2 space-y-2 custom-scrollbar" id="admin-list"></div>
                 </div>
 
                 <!-- 관리자: 학생 관리 -->
                 <div id="admin-sec-student" class="hidden">
-                    <button onclick="window.showAdminMainMenu()" class="text-slate-400 hover:text-white text-sm font-bold mb-4 flex items-center gap-1 transition-colors">◀ 메인 메뉴로 돌아가기</button>
+                    <button onclick="window.showAdminMainMenu()" class="text-slate-500 hover:text-slate-800 text-sm font-black mb-4 flex items-center gap-1 transition-colors">◀ 메인 메뉴로 돌아가기</button>
                     
-                    <div class="bg-blue-900/30 p-4 rounded-2xl border border-blue-500/30 mb-6">
-                        <h3 class="text-sm font-bold text-blue-400 mb-2">👦 모험가 계정 추가</h3>
-                        <p class="text-xs text-slate-400 mb-3">새로운 모험가를 추가합니다. 초기 비밀번호는 <b>'0000'</b>으로 자동 설정됩니다.</p>
+                    <div class="bg-blue-50 p-4 rounded-2xl border border-blue-200 mb-6">
+                        <h3 class="text-sm font-black text-blue-700 mb-2">👦 모험가 계정 추가</h3>
+                        <p class="text-xs text-slate-600 mb-3 font-bold">새로운 모험가를 추가합니다. 초기 비밀번호는 <b>'0000'</b>으로 자동 설정됩니다.</p>
                         <div class="flex gap-2 mb-3">
-                            <input type="text" id="new-student-name" class="flex-1 p-3 border rounded-xl outline-none text-sm font-bold text-slate-700 focus:border-blue-400 bg-white shadow-sm" placeholder="이름 (예: 1.길동)" autocomplete="off">
-                            <button onclick="window.addStudentAccount()" class="bg-blue-600 text-white px-4 py-3 rounded-xl font-bold text-sm shadow-md active:scale-95 transition-transform hover:bg-blue-700 shrink-0">추가</button>
+                            <input type="text" id="new-student-name" class="flex-1 p-3 border border-slate-300 rounded-xl outline-none text-sm font-bold text-slate-800 focus:border-blue-400 bg-white shadow-sm placeholder-slate-400" placeholder="이름 (예: 1.길동)" autocomplete="off">
+                            <button onclick="window.addStudentAccount()" class="bg-blue-500 text-white px-4 py-3 rounded-xl font-black text-sm shadow-sm active:scale-95 transition-transform hover:bg-blue-600 shrink-0">추가</button>
                         </div>
                     </div>
 
-                    <div class="bg-red-900/30 p-4 rounded-2xl border border-red-500/30 mb-6">
-                        <h3 class="text-sm font-bold text-red-400 mb-2">🗑️ 계정 관리 및 삭제</h3>
+                    <div class="bg-red-50 p-4 rounded-2xl border border-red-200 mb-6">
+                        <h3 class="text-sm font-black text-red-600 mb-2">🗑️ 계정 관리 및 삭제</h3>
                         <div class="max-h-[250px] overflow-y-auto pr-2 custom-scrollbar space-y-2" id="admin-student-list"></div>
                     </div>
 
-                    <div class="bg-blue-900/30 p-4 rounded-2xl border border-blue-500/30">
-                        <h3 class="text-sm font-bold text-blue-400 mb-2">🔑 계정 비밀번호 초기화</h3>
-                        <p class="text-xs text-slate-400 mb-3">모험가 또는 마스터 계정의 비밀번호를 강제로 초기화합니다.</p>
+                    <div class="bg-blue-50 p-4 rounded-2xl border border-blue-200">
+                        <h3 class="text-sm font-black text-blue-700 mb-2">🔑 계정 비밀번호 초기화</h3>
+                        <p class="text-xs text-slate-600 mb-3 font-bold">모험가 또는 마스터 계정의 비밀번호를 강제로 초기화합니다.</p>
                         <div class="flex gap-2">
-                            <select id="reset-pw-student" class="flex-1 p-3 border rounded-xl outline-none text-sm font-bold text-slate-700 focus:border-blue-400 bg-white shadow-sm">
+                            <select id="reset-pw-student" class="flex-1 p-3 border border-slate-300 rounded-xl outline-none text-sm font-bold text-slate-800 focus:border-blue-400 bg-white shadow-sm">
                                 <option value="" disabled selected>계정 선택</option>
                             </select>
-                            <button onclick="window.resetStudentPassword()" class="bg-blue-600 text-white px-4 py-3 rounded-xl font-bold text-sm shadow-md active:scale-95 transition-transform hover:bg-blue-700 shrink-0">초기화</button>
+                            <button onclick="window.resetStudentPassword()" class="bg-blue-500 text-white px-4 py-3 rounded-xl font-black text-sm shadow-sm active:scale-95 transition-transform hover:bg-blue-600 shrink-0">초기화</button>
                         </div>
                     </div>
                 </div>
 
                 <!-- 관리자: 서버 관리 -->
                 <div id="admin-sec-server" class="hidden">
-                    <button onclick="window.showAdminMainMenu()" class="text-slate-400 hover:text-white text-sm font-bold mb-4 flex items-center gap-1 transition-colors">◀ 메인 메뉴로 돌아가기</button>
+                    <button onclick="window.showAdminMainMenu()" class="text-slate-500 hover:text-slate-800 text-sm font-black mb-4 flex items-center gap-1 transition-colors">◀ 메인 메뉴로 돌아가기</button>
                     <div class="space-y-4">
-                        <div class="bg-red-900/30 p-5 rounded-2xl border border-red-500/50 text-center">
-                            <h3 class="text-sm font-bold text-red-400 mb-2">⚠️ 새 시즌 시작 (전체 데이터 초기화)</h3>
-                            <p class="text-[10px] text-red-300 mb-4 font-bold">모든 학생의 진행 데이터가 0으로 리셋됩니다. (비밀번호 유지)</p>
-                            <button onclick="window.resetAllStudentsData()" class="w-full bg-red-600 text-white py-3 rounded-xl font-black text-sm shadow-md active:scale-95 transition-transform hover:bg-red-700">초기화 진행</button>
+                        <div class="bg-red-50 p-5 rounded-2xl border border-red-200 text-center">
+                            <h3 class="text-sm font-black text-red-600 mb-2">⚠️ 새 시즌 시작 (전체 데이터 초기화)</h3>
+                            <p class="text-[10px] text-slate-600 mb-4 font-bold">모든 학생의 진행 데이터가 0으로 리셋됩니다. (비밀번호 유지)</p>
+                            <button onclick="window.resetAllStudentsData()" class="w-full bg-red-500 text-white py-3 rounded-xl font-black text-sm shadow-md active:scale-95 transition-transform hover:bg-red-600">초기화 진행</button>
                         </div>
-                        <div class="bg-purple-900/30 p-5 rounded-2xl border border-purple-500/50 text-center">
-                            <h3 class="text-sm font-bold text-purple-400 mb-2">🔄 전원 강제 로그아웃 (업데이트 적용)</h3>
-                            <p class="text-[10px] text-purple-300 mb-4 font-bold">접속 중인 모든 학생을 강제로 로그아웃시켜 변경사항을 동기화합니다.</p>
-                            <button onclick="window.forceLogoutAll()" class="w-full bg-purple-600 text-white py-3 rounded-xl font-black text-sm shadow-md active:scale-95 transition-transform hover:bg-purple-700">전원 로그아웃</button>
+                        <div class="bg-purple-50 p-5 rounded-2xl border border-purple-200 text-center">
+                            <h3 class="text-sm font-black text-purple-600 mb-2">🔄 전원 강제 로그아웃 (업데이트 적용)</h3>
+                            <p class="text-[10px] text-slate-600 mb-4 font-bold">접속 중인 모든 학생을 강제로 로그아웃시켜 변경사항을 동기화합니다.</p>
+                            <button onclick="window.forceLogoutAll()" class="w-full bg-purple-500 text-white py-3 rounded-xl font-black text-sm shadow-md active:scale-95 transition-transform hover:bg-purple-600">전원 로그아웃</button>
                         </div>
                     </div>
                 </div>
 
                 <!-- 관리자: 기습 테스트 관리 -->
                 <div id="admin-sec-test" class="hidden">
-                    <button onclick="window.showAdminMainMenu()" class="text-slate-400 hover:text-white text-sm font-bold mb-4 flex items-center gap-1 transition-colors">◀ 메인 메뉴로 돌아가기</button>
-                    <div class="bg-emerald-900/30 p-4 rounded-2xl border border-emerald-500/30 mb-6">
-                        <h3 class="text-sm font-bold text-emerald-400 mb-2">📝 단원별 단어 시험 관리</h3>
+                    <button onclick="window.showAdminMainMenu()" class="text-slate-500 hover:text-slate-800 text-sm font-black mb-4 flex items-center gap-1 transition-colors">◀ 메인 메뉴로 돌아가기</button>
+                    <div class="bg-emerald-50 p-4 rounded-2xl border border-emerald-200 mb-6">
+                        <h3 class="text-sm font-black text-emerald-700 mb-2">📝 단원별 단어 시험 관리</h3>
                         
-                        <div class="bg-slate-800 p-3 rounded-xl border border-slate-600 mb-3 shadow-sm">
+                        <div class="bg-white p-3 rounded-xl border border-slate-300 mb-3 shadow-sm">
                             <div class="flex justify-between items-center mb-2">
-                                <span class="text-xs font-bold text-emerald-300">🎯 대상 학생 선택</span>
+                                <span class="text-xs font-black text-emerald-600">🎯 대상 학생 선택</span>
                                 <div class="flex gap-1">
-                                    <button onclick="window.toggleTestStudents(true)" class="text-[10px] bg-emerald-600 text-white px-2 py-1 rounded hover:bg-emerald-700 font-bold">전체 선택</button>
-                                    <button onclick="window.toggleTestStudents(false)" class="text-[10px] bg-slate-600 text-white px-2 py-1 rounded hover:bg-slate-700 font-bold">전체 해제</button>
+                                    <button onclick="window.toggleTestStudents(true)" class="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-1 rounded hover:bg-emerald-200 font-bold border border-emerald-300">전체 선택</button>
+                                    <button onclick="window.toggleTestStudents(false)" class="text-[10px] bg-slate-100 text-slate-600 px-2 py-1 rounded hover:bg-slate-200 font-bold border border-slate-300">전체 해제</button>
                                 </div>
                             </div>
                             <div id="test-student-checkboxes" class="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-32 overflow-y-auto custom-scrollbar p-1"></div>
                         </div>
 
                         <div class="flex gap-2 mb-3">
-                            <select id="test-chapter-select" class="flex-1 p-3 border rounded-xl outline-none text-sm font-bold text-slate-700 bg-white shadow-sm focus:border-emerald-400">
+                            <select id="test-chapter-select" class="flex-1 p-3 border border-slate-300 rounded-xl outline-none text-sm font-bold text-slate-800 bg-white shadow-sm focus:border-emerald-400">
                                 <option value="1">1단원</option><option value="2">2단원</option><option value="3">3단원</option>
                                 <option value="4">4단원</option><option value="5">5단원</option><option value="6">6단원</option>
                                 <option value="7">7단원</option><option value="8">8단원</option><option value="9">9단원</option>
                                 <option value="10">10단원</option><option value="11">11단원</option><option value="12">12단원</option>
                             </select>
-                            <button onclick="window.startTest()" class="bg-emerald-600 text-white px-4 py-3 rounded-xl font-bold text-sm shadow-md active:scale-95 transition-transform hover:bg-emerald-700 shrink-0">시험 시작</button>
-                            <button onclick="window.endTest()" class="bg-slate-500 text-white px-4 py-3 rounded-xl font-bold text-sm shadow-md active:scale-95 transition-transform hover:bg-slate-600 shrink-0">시험 종료</button>
+                            <button onclick="window.startTest()" class="bg-emerald-500 text-white px-4 py-3 rounded-xl font-black text-sm shadow-sm active:scale-95 transition-transform hover:bg-emerald-600 shrink-0">시험 시작</button>
+                            <button onclick="window.endTest()" class="bg-slate-400 text-white px-4 py-3 rounded-xl font-black text-sm shadow-sm active:scale-95 transition-transform hover:bg-slate-500 shrink-0">시험 종료</button>
                         </div>
-                        <h4 class="text-xs font-bold text-emerald-400 mb-2 mt-4">📊 학생별 시험 성적표</h4>
+                        <h4 class="text-xs font-black text-emerald-700 mb-2 mt-4">📊 학생별 시험 성적표</h4>
                         
-                        <button onclick="window.downloadTestScoresCSV()" class="w-full bg-green-600 text-white py-2.5 rounded-xl font-bold text-sm hover:bg-green-700 transition-colors mb-3 shadow-md flex justify-center items-center gap-2">
+                        <button onclick="window.downloadTestScoresCSV()" class="w-full bg-green-500 text-white py-2.5 rounded-xl font-black text-sm hover:bg-green-600 transition-colors mb-3 shadow-sm flex justify-center items-center gap-2">
                             <span>📥 엑셀로 성적표 다운로드</span>
                         </button>
 
-                        <div class="overflow-x-auto bg-slate-800 rounded-xl border border-slate-600 shadow-inner max-h-60 custom-scrollbar mb-4">
+                        <div class="overflow-x-auto bg-white rounded-xl border border-slate-300 shadow-inner max-h-60 custom-scrollbar mb-4">
                             <table class="w-full text-left text-sm whitespace-nowrap">
-                                <thead class="bg-slate-700 text-emerald-300 sticky top-0 z-10">
+                                <thead class="bg-slate-100 text-slate-700 sticky top-0 z-10">
                                     <tr>
-                                        <th class="p-3 font-bold bg-slate-700 border-b border-slate-600">모험가명</th>
-                                        <th class="p-3 font-bold bg-slate-700 border-b border-slate-600 text-center">단원</th>
-                                        <th class="p-3 font-bold bg-slate-700 border-b border-slate-600 text-center">성적</th>
-                                        <th class="p-3 font-bold bg-slate-700 border-b border-slate-600">틀린 단어</th>
+                                        <th class="p-3 font-black bg-slate-100 border-b border-slate-300">모험가명</th>
+                                        <th class="p-3 font-black bg-slate-100 border-b border-slate-300 text-center">단원</th>
+                                        <th class="p-3 font-black bg-slate-100 border-b border-slate-300 text-center">성적</th>
+                                        <th class="p-3 font-black bg-slate-100 border-b border-slate-300">틀린 단어</th>
                                     </tr>
                                 </thead>
-                                <tbody id="test-scores-tbody" class="text-slate-300"></tbody>
+                                <tbody id="test-scores-tbody" class="text-slate-700 font-bold"></tbody>
                             </table>
                         </div>
-                        <button onclick="window.renderTestScores()" class="w-full mb-6 bg-emerald-900/50 text-emerald-400 border border-emerald-500/30 py-2.5 rounded-xl font-bold text-xs hover:bg-emerald-800 transition-colors">🔄 성적표 새로고침</button>
+                        <button onclick="window.renderTestScores()" class="w-full mb-6 bg-emerald-100 text-emerald-700 border border-emerald-300 py-2.5 rounded-xl font-black text-xs hover:bg-emerald-200 transition-colors">🔄 성적표 새로고침</button>
 
-                        <h4 class="text-xs font-bold text-emerald-400 mb-2 mt-6">🚨 마스터의 함정 (오답 노트) 관리</h4>
-                        <div class="bg-slate-800 rounded-xl border border-slate-600 shadow-inner p-3 max-h-48 overflow-y-auto custom-scrollbar mb-2" id="prison-management-list"></div>
-                        <button onclick="window.renderPrisonList()" class="w-full bg-slate-700 text-slate-300 border border-slate-600 py-2.5 rounded-xl font-bold text-xs hover:bg-slate-600 transition-colors">🔄 함정 명단 새로고침</button>
+                        <h4 class="text-xs font-black text-emerald-700 mb-2 mt-6">🚨 마스터의 함정 (오답 노트) 관리</h4>
+                        <div class="bg-white rounded-xl border border-slate-300 shadow-inner p-3 max-h-48 overflow-y-auto custom-scrollbar mb-2" id="prison-management-list"></div>
+                        <button onclick="window.renderPrisonList()" class="w-full bg-slate-100 text-slate-600 border border-slate-300 py-2.5 rounded-xl font-black text-xs hover:bg-slate-200 transition-colors">🔄 함정 명단 새로고침</button>
                     </div>
                 </div>
             </div>
@@ -553,48 +553,48 @@
     </div>
 
     <!-- 각종 모달(Modal) 화면들 -->
-    <div id="test-mode-view" translate="no" class="notranslate fixed inset-0 bg-slate-900 z-[9999] hidden flex-col items-center justify-start p-4 sm:p-8 overflow-y-auto custom-scrollbar">
-        <div class="bg-white rounded-3xl p-6 sm:p-10 w-full max-w-2xl shadow-2xl relative my-auto">
+    <div id="test-mode-view" translate="no" class="notranslate fixed inset-0 bg-slate-200/90 hidden flex-col items-center justify-start p-4 sm:p-8 overflow-y-auto custom-scrollbar z-[9999]">
+        <div class="bg-white rounded-3xl p-6 sm:p-10 w-full max-w-2xl shadow-2xl relative my-auto border-8 border-red-500">
             <div class="text-center mb-8">
                 <div class="text-5xl mb-2 animate-bounce">🚨</div>
                 <h2 class="text-3xl font-black text-red-600 mb-2">마스터의 기습 테스트!</h2>
-                <p class="text-slate-500 font-bold text-sm sm:text-base" id="test-mode-desc">단원 단어 시험이 시작되었습니다.<br>빈칸에 알맞은 영어 스펠링을 입력하세요.</p>
+                <p class="text-slate-600 font-bold text-sm sm:text-base" id="test-mode-desc">단원 단어 시험이 시작되었습니다.<br>빈칸에 알맞은 영어 스펠링을 입력하세요.</p>
             </div>
             <div id="test-paper-list" class="space-y-4 mb-8"></div>
             <button id="btn-submit-test" onclick="window.submitTest()" class="w-full bg-red-600 hover:bg-red-700 text-white py-4 rounded-2xl font-black text-xl shadow-lg transition-transform active:scale-95">제출하기</button>
-            <div id="test-submit-msg" class="hidden text-center text-lg font-bold text-indigo-600 mt-4 p-4 bg-indigo-50 rounded-xl border border-indigo-200">
+            <div id="test-submit-msg" class="hidden text-center text-lg font-black text-indigo-600 mt-4 p-4 bg-indigo-50 rounded-xl border border-indigo-200">
                 ✅ 제출 완료! 마스터의 시험 종료를 기다리세요.
             </div>
         </div>
     </div>
 
-    <div id="prison-mode-view" class="fixed inset-0 bg-purple-900 z-[9998] hidden flex-col items-center justify-start p-4 sm:p-8 overflow-y-auto custom-scrollbar">
-        <div class="bg-slate-800 rounded-3xl p-6 sm:p-10 w-full max-w-2xl shadow-2xl relative my-auto border-8 border-purple-950">
+    <div id="prison-mode-view" class="fixed inset-0 bg-purple-100/90 z-[9998] hidden flex-col items-center justify-start p-4 sm:p-8 overflow-y-auto custom-scrollbar">
+        <div class="bg-white rounded-3xl p-6 sm:p-10 w-full max-w-2xl shadow-2xl relative my-auto border-8 border-purple-300">
             <div class="text-center mb-6">
                 <div class="text-6xl mb-2 drop-shadow-md">⛓️</div>
-                <h2 class="text-3xl font-black text-purple-400 mb-2">마스터의 함정</h2>
-                <p class="text-slate-300 font-bold text-sm sm:text-base">오답을 3번씩 올바르게 입력해야 탈출할 수 있습니다!</p>
+                <h2 class="text-3xl font-black text-purple-600 mb-2">마스터의 함정</h2>
+                <p class="text-slate-600 font-bold text-sm sm:text-base">오답을 3번씩 올바르게 입력해야 탈출할 수 있습니다!</p>
             </div>
             <div id="prison-paper-list" class="space-y-4 mb-6 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar"></div>
         </div>
     </div>
 
     <!-- 배틀 퀴즈 모달 -->
-    <div id="battle-quiz-modal" translate="no" class="notranslate fixed inset-0 bg-slate-900/90 hidden flex-col items-center justify-center p-4 z-[9999]">
+    <div id="battle-quiz-modal" translate="no" class="notranslate fixed inset-0 bg-slate-200/90 hidden flex-col items-center justify-center p-4 z-[9999]">
         <div class="bg-white rounded-3xl p-6 sm:p-10 w-full max-w-lg shadow-2xl relative border-8 border-indigo-500 text-center">
             <h2 id="b-quiz-title" class="text-3xl font-black text-indigo-600 mb-2">⚡ 스페셜 어택!</h2>
-            <p id="b-quiz-desc" class="text-slate-500 font-bold mb-6">제한 시간 15초! 정확한 영단어를 입력하세요!</p>
+            <p id="b-quiz-desc" class="text-slate-600 font-bold mb-6">제한 시간 15초! 정확한 영단어를 입력하세요!</p>
             
-            <div class="bg-slate-800 rounded-2xl p-6 mb-6">
-                <span class="text-xs font-bold text-slate-400 block mb-2">다음 뜻을 가진 단어는?</span>
+            <div class="bg-slate-100 rounded-2xl p-6 mb-6 border border-slate-300">
+                <span class="text-xs font-bold text-slate-500 block mb-2">다음 뜻을 가진 단어는?</span>
                 <div class="flex justify-center items-center gap-3">
-                    <h3 id="b-quiz-word" class="text-3xl font-black text-white break-keep">뜻</h3>
-                    <button onclick="window.speakText(window.battleState.expectedWord, 'en-US')" class="bg-indigo-500 hover:bg-indigo-400 text-white rounded-full w-10 h-10 flex items-center justify-center text-xl transition-transform active:scale-90 shadow-sm" title="발음 듣기">🔊</button>
+                    <h3 id="b-quiz-word" class="text-3xl font-black text-slate-800 break-keep">뜻</h3>
+                    <button onclick="window.speakText(window.battleState.expectedWord, 'en-US')" class="bg-indigo-500 hover:bg-indigo-600 text-white rounded-full w-10 h-10 flex items-center justify-center text-xl transition-transform active:scale-90 shadow-sm" title="발음 듣기">🔊</button>
                 </div>
             </div>
             
             <div class="relative w-full mb-6">
-                <input type="text" id="b-spell-in" class="spell-input border-indigo-200 w-full relative z-0" style="color: transparent; caret-color: white;" autocomplete="off" spellcheck="false" autocapitalize="off" onkeyup="if(event.key==='Enter')window.submitBattleQuiz()" oninput="document.getElementById('b-fake-text').textContent = this.value || '스펠링 입력'; document.getElementById('b-fake-text').style.color = this.value ? '#4f46e5' : '#9ca3af';">
+                <input type="text" id="b-spell-in" class="spell-input bg-white border-slate-300 text-slate-900 w-full relative z-0" style="color: transparent; caret-color: #1e293b;" autocomplete="off" spellcheck="false" autocapitalize="off" onkeyup="if(event.key==='Enter')window.submitBattleQuiz()" oninput="document.getElementById('b-fake-text').textContent = this.value || '스펠링 입력'; document.getElementById('b-fake-text').style.color = this.value ? '#4f46e5' : '#9ca3af';">
                 <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10 overflow-hidden px-4">
                     <span id="b-fake-text" class="text-slate-400 text-2xl font-black whitespace-pre truncate">스펠링 입력</span>
                 </div>
@@ -609,82 +609,82 @@
     </div>
 
     <div id="custom-alert" class="modal-overlay">
-        <div class="modal-box border-red-500">
-            <h2 class="text-2xl font-bold mb-4 text-red-600">📢 알림</h2>
-            <p id="alert-msg" class="text-slate-600 mb-8 whitespace-pre-line"></p>
-            <button onclick="window.closeCustomAlert()" class="btn-magic text-sm py-3">확인</button>
+        <div class="modal-box border-red-500 bg-white">
+            <h2 class="text-2xl font-black mb-4 text-red-600">📢 알림</h2>
+            <p id="alert-msg" class="text-slate-700 font-bold mb-8 whitespace-pre-line"></p>
+            <button onclick="window.closeCustomAlert()" class="btn-magic text-sm py-3 bg-red-500 shadow-red-700">확인</button>
         </div>
     </div>
 
     <div id="custom-confirm" class="modal-overlay">
-        <div class="modal-box border-blue-500">
-            <h2 class="text-2xl font-bold mb-4 text-blue-600">📝 확인</h2>
-            <p id="confirm-msg" class="text-slate-600 mb-8 font-bold whitespace-pre-line"></p>
+        <div class="modal-box border-blue-500 bg-white">
+            <h2 class="text-2xl font-black mb-4 text-blue-600">📝 확인</h2>
+            <p id="confirm-msg" class="text-slate-700 mb-8 font-bold whitespace-pre-line"></p>
             <div class="flex gap-2">
                 <button onclick="window.handleConfirmAction(true)" class="btn-magic text-sm py-3 flex-1 bg-blue-500 shadow-blue-700">네!</button>
-                <button onclick="window.handleConfirmAction(false)" class="bg-slate-100 text-slate-500 rounded-2xl flex-1 font-bold hover:bg-slate-200">아니요</button>
+                <button onclick="window.handleConfirmAction(false)" class="bg-slate-100 text-slate-600 rounded-2xl flex-1 font-bold hover:bg-slate-200 border border-slate-300">아니요</button>
             </div>
         </div>
     </div>
 
-    <div id="modal" class="fixed inset-0 bg-red-900/80 hidden items-center justify-center z-50 p-6 backdrop-blur-md">
-        <div class="bg-white rounded-[3rem] p-10 text-center shadow-2xl scale-110">
+    <div id="modal" class="fixed inset-0 bg-white/90 hidden items-center justify-center z-50 p-6 backdrop-blur-md">
+        <div class="bg-white rounded-[3rem] p-10 text-center shadow-2xl border-8 border-red-500 scale-110">
             <div class="text-7xl mb-4 animate-bounce">🎊</div>
-            <h2 class="text-4xl font-bold text-red-600 mb-2 font-black">LEVEL UP!</h2>
-            <p id="modal-desc" class="text-lg text-slate-500 mb-8 font-bold">성장했습니다!</p>
+            <h2 class="text-4xl text-red-600 mb-2 font-black">LEVEL UP!</h2>
+            <p id="modal-desc" class="text-lg text-slate-700 mb-8 font-bold">성장했습니다!</p>
             <button onclick="document.getElementById('modal').style.display='none';" class="bg-red-600 hover:bg-red-700 text-white px-12 py-4 rounded-2xl font-bold text-xl active:scale-95 shadow-lg transition-colors">계속하기</button>
         </div>
     </div>
 
     <div id="trainer-modal" class="modal-overlay">
-        <div class="modal-box border-indigo-500 relative !p-8 !max-w-[450px]">
-            <button onclick="window.closeAdventurerProfile()" class="absolute top-4 right-5 text-slate-400 hover:text-white font-bold text-3xl">&times;</button>
+        <div class="modal-box border-indigo-500 relative !p-8 !max-w-[450px] bg-white">
+            <button onclick="window.closeAdventurerProfile()" class="absolute top-4 right-5 text-slate-400 hover:text-slate-600 font-bold text-3xl">&times;</button>
             <div id="trainer-modal-content"></div>
         </div>
     </div>
 
     <div id="tip-modal" class="modal-overlay">
-        <div class="modal-box border-indigo-500 relative !p-6 sm:!p-8 !max-w-[700px] max-h-[85vh] overflow-y-auto custom-scrollbar bg-slate-800">
-            <button onclick="window.closeTipModal()" class="absolute top-4 right-5 text-slate-400 hover:text-white font-bold text-3xl">&times;</button>
+        <div class="modal-box border-indigo-500 relative !p-6 sm:!p-8 !max-w-[700px] max-h-[85vh] overflow-y-auto custom-scrollbar bg-white">
+            <button onclick="window.closeTipModal()" class="absolute top-4 right-5 text-slate-400 hover:text-slate-600 font-bold text-3xl">&times;</button>
             <div class="text-center mb-6">
                 <div class="text-5xl mb-3 drop-shadow-md">💡</div>
-                <h2 class="text-2xl font-black text-indigo-400 mb-2">전체 배틀 상성 가이드</h2>
-                <p class="text-xs sm:text-sm text-slate-400">유리한(2배) 속성으로 공격하면 데미지가 강력해집니다!</p>
+                <h2 class="text-2xl font-black text-indigo-600 mb-2">전체 배틀 상성 가이드</h2>
+                <p class="text-xs sm:text-sm text-slate-600 font-bold">유리한(2배) 속성으로 공격하면 데미지가 강력해집니다!</p>
             </div>
             
             <div class="space-y-4">
-                <div class="bg-slate-900/80 rounded-3xl p-5 border border-slate-700 shadow-inner text-left">
-                    <h4 class="text-base sm:text-lg font-bold text-indigo-400 mb-3 border-b border-slate-700 pb-2 flex items-center gap-2">⚔️ 모든 속성 상성표 (공격 기준)</h4>
-                    <p class="text-xs text-slate-400 mb-4 leading-relaxed">(* 2배 데미지를 주는 유리한 속성 목록입니다.)</p>
+                <div class="bg-slate-50 rounded-3xl p-5 border border-slate-200 shadow-sm text-left">
+                    <h4 class="text-base sm:text-lg font-black text-indigo-700 mb-3 border-b border-slate-300 pb-2 flex items-center gap-2">⚔️ 모든 속성 상성표 (공격 기준)</h4>
+                    <p class="text-xs text-slate-500 mb-4 leading-relaxed font-bold">(* 2배 데미지를 주는 유리한 속성 목록입니다.)</p>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] sm:text-xs font-bold">
-                        <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
-                            <span class="bg-[#A8A77A] text-white px-2 py-0.5 rounded drop-shadow-sm">노말</span> <span class="text-slate-500 mx-0.5">▶</span> <span class="text-slate-500 font-normal">(없음)</span>
+                        <div class="flex items-center flex-wrap gap-1.5 p-2 bg-white rounded-xl border border-slate-200 shadow-sm">
+                            <span class="bg-[#A8A77A] text-white px-2 py-0.5 rounded drop-shadow-sm">노말</span> <span class="text-slate-400 mx-0.5">▶</span> <span class="text-slate-400 font-normal">(없음)</span>
                         </div>
-                        <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
-                            <span class="bg-[#EE8130] text-white px-2 py-0.5 rounded drop-shadow-sm">불꽃</span> <span class="text-slate-500 mx-0.5">▶</span> 
+                        <div class="flex items-center flex-wrap gap-1.5 p-2 bg-white rounded-xl border border-slate-200 shadow-sm">
+                            <span class="bg-[#EE8130] text-white px-2 py-0.5 rounded drop-shadow-sm">불꽃</span> <span class="text-slate-400 mx-0.5">▶</span> 
                             <span class="bg-[#7AC74C] text-white px-1.5 py-0.5 rounded">풀</span>
                         </div>
-                        <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
-                            <span class="bg-[#6390F0] text-white px-2 py-0.5 rounded drop-shadow-sm">물</span> <span class="text-slate-500 mx-0.5">▶</span> 
+                        <div class="flex items-center flex-wrap gap-1.5 p-2 bg-white rounded-xl border border-slate-200 shadow-sm">
+                            <span class="bg-[#6390F0] text-white px-2 py-0.5 rounded drop-shadow-sm">물</span> <span class="text-slate-400 mx-0.5">▶</span> 
                             <span class="bg-[#EE8130] text-white px-1.5 py-0.5 rounded">불꽃</span>
                             <span class="bg-[#E2BF65] text-white px-1.5 py-0.5 rounded">땅</span>
                         </div>
-                        <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
-                            <span class="bg-[#7AC74C] text-white px-2 py-0.5 rounded drop-shadow-sm">풀</span> <span class="text-slate-500 mx-0.5">▶</span> 
+                        <div class="flex items-center flex-wrap gap-1.5 p-2 bg-white rounded-xl border border-slate-200 shadow-sm">
+                            <span class="bg-[#7AC74C] text-white px-2 py-0.5 rounded drop-shadow-sm">풀</span> <span class="text-slate-400 mx-0.5">▶</span> 
                             <span class="bg-[#6390F0] text-white px-1.5 py-0.5 rounded">물</span>
                             <span class="bg-[#E2BF65] text-white px-1.5 py-0.5 rounded">땅</span>
                         </div>
-                        <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
-                            <span class="bg-[#E2BF65] text-white px-2 py-0.5 rounded drop-shadow-sm">땅</span> <span class="text-slate-500 mx-0.5">▶</span> 
+                        <div class="flex items-center flex-wrap gap-1.5 p-2 bg-white rounded-xl border border-slate-200 shadow-sm">
+                            <span class="bg-[#E2BF65] text-white px-2 py-0.5 rounded drop-shadow-sm">땅</span> <span class="text-slate-400 mx-0.5">▶</span> 
                             <span class="bg-[#EE8130] text-white px-1.5 py-0.5 rounded">불꽃</span>
                         </div>
-                        <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
-                            <span class="bg-[#705746] text-white px-2 py-0.5 rounded drop-shadow-sm">어둠</span> <span class="text-slate-500 mx-0.5">▶</span> 
+                        <div class="flex items-center flex-wrap gap-1.5 p-2 bg-white rounded-xl border border-slate-200 shadow-sm">
+                            <span class="bg-[#705746] text-white px-2 py-0.5 rounded drop-shadow-sm">어둠</span> <span class="text-slate-400 mx-0.5">▶</span> 
                             <span class="bg-[#FEF08A] text-yellow-900 px-1.5 py-0.5 rounded font-black">빛</span>
                             <span class="bg-[#A8A77A] text-white px-1.5 py-0.5 rounded">노말</span>
                         </div>
-                        <div class="flex items-center flex-wrap gap-1.5 p-2 bg-slate-800 rounded-xl border border-slate-700">
-                            <span class="bg-[#FEF08A] text-yellow-900 px-2 py-0.5 rounded drop-shadow-sm font-black">빛</span> <span class="text-slate-500 mx-0.5">▶</span> 
+                        <div class="flex items-center flex-wrap gap-1.5 p-2 bg-white rounded-xl border border-slate-200 shadow-sm">
+                            <span class="bg-[#FEF08A] text-yellow-900 px-2 py-0.5 rounded drop-shadow-sm font-black">빛</span> <span class="text-slate-400 mx-0.5">▶</span> 
                             <span class="bg-[#705746] text-white px-1.5 py-0.5 rounded">어둠</span>
                         </div>
                     </div>
@@ -695,25 +695,25 @@
     </div>
 
     <div id="tier-modal" class="modal-overlay">
-        <div class="modal-box border-amber-500 relative !p-8 !max-w-[450px] max-h-[85vh] overflow-y-auto custom-scrollbar bg-slate-800">
-            <button onclick="window.closeTierModal()" class="absolute top-4 right-5 text-slate-400 hover:text-white font-bold text-3xl">&times;</button>
+        <div class="modal-box border-amber-500 relative !p-8 !max-w-[450px] max-h-[85vh] overflow-y-auto custom-scrollbar bg-white">
+            <button onclick="window.closeTierModal()" class="absolute top-4 right-5 text-slate-400 hover:text-slate-600 font-bold text-3xl">&times;</button>
             <div class="text-center mb-6">
                 <div class="text-5xl mb-3 drop-shadow-md">🏆</div>
-                <h2 class="text-2xl font-black text-amber-400 mb-2">티어 승급 가이드</h2>
-                <p class="text-xs sm:text-sm text-slate-400">배틀에서 승리하여 보카몬 마스터가 되세요!</p>
+                <h2 class="text-2xl font-black text-amber-600 mb-2">티어 승급 가이드</h2>
+                <p class="text-xs sm:text-sm text-slate-600 font-bold">배틀에서 승리하여 보카몬 마스터가 되세요!</p>
             </div>
             
             <div class="space-y-4">
-                <div class="bg-slate-900/80 rounded-3xl p-5 border border-slate-700 shadow-inner text-left">
-                    <h4 class="text-base sm:text-lg font-bold text-amber-400 mb-4 border-b border-slate-700 pb-2 flex items-center gap-2">🏆 승수별 티어 승급 기준</h4>
-                    <ul class="text-sm sm:text-base space-y-2 text-slate-300 font-bold">
-                        <li class="flex justify-between items-center p-2 hover:bg-slate-800 rounded-lg transition-colors"><span class="text-purple-400 drop-shadow-sm text-lg">👑 마스터</span> <span>200승 이상</span></li>
-                        <li class="flex justify-between items-center p-2 hover:bg-slate-800 rounded-lg transition-colors"><span class="text-sky-400 drop-shadow-sm">💎 다이아</span> <span>150승 이상</span></li>
-                        <li class="flex justify-between items-center p-2 hover:bg-slate-800 rounded-lg transition-colors"><span class="text-emerald-400 drop-shadow-sm">💠 플래티넘</span> <span>100승 이상</span></li>
-                        <li class="flex justify-between items-center p-2 hover:bg-slate-800 rounded-lg transition-colors"><span class="text-yellow-400 drop-shadow-sm">🥇 골드</span> <span>60승 이상</span></li>
-                        <li class="flex justify-between items-center p-2 hover:bg-slate-800 rounded-lg transition-colors"><span class="text-slate-300 drop-shadow-sm">🥈 실버</span> <span>30승 이상</span></li>
-                        <li class="flex justify-between items-center p-2 hover:bg-slate-800 rounded-lg transition-colors"><span class="text-amber-600 drop-shadow-sm">🥉 브론즈</span> <span>10승 이상</span></li>
-                        <li class="flex justify-between items-center p-2 hover:bg-slate-800 rounded-lg transition-colors"><span class="text-slate-500 drop-shadow-sm">⚙️ 아이언</span> <span>0 ~ 9승</span></li>
+                <div class="bg-slate-50 rounded-3xl p-5 border border-slate-200 shadow-sm text-left">
+                    <h4 class="text-base sm:text-lg font-black text-amber-600 mb-4 border-b border-slate-300 pb-2 flex items-center gap-2">🏆 승수별 티어 승급 기준</h4>
+                    <ul class="text-sm sm:text-base space-y-2 text-slate-700 font-bold">
+                        <li class="flex justify-between items-center p-2 hover:bg-slate-100 rounded-lg transition-colors"><span class="text-purple-600 drop-shadow-sm text-lg font-black">👑 마스터</span> <span>200승 이상</span></li>
+                        <li class="flex justify-between items-center p-2 hover:bg-slate-100 rounded-lg transition-colors"><span class="text-sky-500 drop-shadow-sm font-black">💎 다이아</span> <span>150승 이상</span></li>
+                        <li class="flex justify-between items-center p-2 hover:bg-slate-100 rounded-lg transition-colors"><span class="text-emerald-500 drop-shadow-sm font-black">💠 플래티넘</span> <span>100승 이상</span></li>
+                        <li class="flex justify-between items-center p-2 hover:bg-slate-100 rounded-lg transition-colors"><span class="text-yellow-600 drop-shadow-sm font-black">🥇 골드</span> <span>60승 이상</span></li>
+                        <li class="flex justify-between items-center p-2 hover:bg-slate-100 rounded-lg transition-colors"><span class="text-slate-500 drop-shadow-sm font-black">🥈 실버</span> <span>30승 이상</span></li>
+                        <li class="flex justify-between items-center p-2 hover:bg-slate-100 rounded-lg transition-colors"><span class="text-amber-700 drop-shadow-sm font-black">🥉 브론즈</span> <span>10승 이상</span></li>
+                        <li class="flex justify-between items-center p-2 hover:bg-slate-100 rounded-lg transition-colors"><span class="text-slate-400 drop-shadow-sm font-black">⚙️ 아이언</span> <span>0 ~ 9승</span></li>
                     </ul>
                 </div>
             </div>
@@ -722,12 +722,12 @@
     </div>
 
     <div id="cheat-sheet-modal" class="modal-overlay select-none" oncontextmenu="return false" onselectstart="return false" ondragstart="return false">
-        <div class="modal-box border-indigo-500 relative !p-6 !max-w-[360px] max-h-[85vh] flex flex-col bg-slate-800">
-            <button onclick="window.closeCheatSheet()" class="absolute top-4 right-4 text-slate-400 hover:text-white font-bold text-2xl">&times;</button>
+        <div class="modal-box border-indigo-500 relative !p-6 !max-w-[360px] max-h-[85vh] flex flex-col bg-white">
+            <button onclick="window.closeCheatSheet()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 font-bold text-2xl">&times;</button>
             <div class="text-center mb-4 shrink-0">
                 <div class="text-4xl mb-2 drop-shadow-md">📜</div>
-                <h2 class="text-xl font-black text-indigo-400 mb-1"><span id="cheat-sheet-title">0단원</span> 족보</h2>
-                <p class="text-[10px] text-slate-400">이번 단원에서 출몰하는 영단어입니다.</p>
+                <h2 class="text-xl font-black text-indigo-600 mb-1"><span id="cheat-sheet-title">0단원</span> 족보</h2>
+                <p class="text-[10px] text-slate-500 font-bold">이번 단원에서 출몰하는 영단어입니다.</p>
             </div>
             
             <div id="cheat-sheet-list" class="space-y-2 overflow-y-auto custom-scrollbar flex-1 mb-4 text-left pr-2"></div>
@@ -737,24 +737,24 @@
     </div>
 
     <div id="partner-stage-modal" class="modal-overlay">
-        <div class="modal-box border-yellow-500 relative !p-8 !max-w-[450px] bg-slate-800">
-            <button onclick="window.closePartnerStageModal()" class="absolute top-4 right-5 text-slate-400 hover:text-white font-bold text-3xl">&times;</button>
+        <div class="modal-box border-yellow-500 relative !p-8 !max-w-[450px] bg-white">
+            <button onclick="window.closePartnerStageModal()" class="absolute top-4 right-5 text-slate-400 hover:text-slate-600 font-bold text-3xl">&times;</button>
             <div class="text-center mb-6">
                 <div class="text-5xl mb-3 drop-shadow-md">👑</div>
-                <h2 class="text-2xl font-black text-yellow-400 mb-2">어떤 모습으로 전시할까요?</h2>
-                <p class="text-xs sm:text-sm text-slate-400">커뮤니티에 전시될 파트너의 진화 단계를 선택하세요.</p>
+                <h2 class="text-2xl font-black text-yellow-600 mb-2">어떤 모습으로 전시할까요?</h2>
+                <p class="text-xs sm:text-sm text-slate-600 font-bold">커뮤니티에 전시될 파트너의 진화 단계를 선택하세요.</p>
             </div>
             <div id="partner-stage-list" class="flex justify-center gap-3 mb-2"></div>
         </div>
     </div>
 
     <div id="defense-log-modal" class="modal-overlay">
-        <div class="modal-box border-pink-500 relative !p-6 sm:!p-8 !max-w-[500px] max-h-[85vh] flex flex-col bg-slate-800">
-            <button onclick="window.closeDefenseLogs()" class="absolute top-4 right-5 text-slate-400 hover:text-white font-bold text-3xl">&times;</button>
+        <div class="modal-box border-pink-500 relative !p-6 sm:!p-8 !max-w-[500px] max-h-[85vh] flex flex-col bg-white">
+            <button onclick="window.closeDefenseLogs()" class="absolute top-4 right-5 text-slate-400 hover:text-slate-600 font-bold text-3xl">&times;</button>
             <div class="text-center mb-6 shrink-0">
                 <div class="text-5xl mb-3 drop-shadow-md">🛡️</div>
-                <h2 class="text-2xl font-black text-pink-400 mb-2">체육관 방어 기록</h2>
-                <p class="text-xs sm:text-sm text-slate-400">다른 모험가들의 도전 결과를 확인하세요.</p>
+                <h2 class="text-2xl font-black text-pink-600 mb-2">체육관 방어 기록</h2>
+                <p class="text-xs sm:text-sm text-slate-600 font-bold">다른 모험가들의 도전 결과를 확인하세요.</p>
             </div>
             <div id="defense-log-list" class="space-y-3 text-left overflow-y-auto custom-scrollbar flex-1 pr-2"></div>
         </div>
@@ -769,24 +769,20 @@
     <script>
         window.switchLoginTab = function(mode) {
             if(mode === 'join') {
-                document.getElementById('btn-tab-join').classList.replace('bg-slate-800', 'bg-red-500');
-                document.getElementById('btn-tab-join').classList.replace('text-slate-400', 'text-white');
-                document.getElementById('btn-tab-join').classList.replace('border-slate-700', 'border-red-600');
+                document.getElementById('btn-tab-join').classList.remove('bg-slate-100', 'text-slate-500', 'border-slate-300', 'hover:bg-slate-200');
+                document.getElementById('btn-tab-join').classList.add('bg-red-500', 'text-white', 'border-red-600');
                 
-                document.getElementById('btn-tab-create').classList.replace('bg-red-500', 'bg-slate-800');
-                document.getElementById('btn-tab-create').classList.replace('text-white', 'text-slate-400');
-                document.getElementById('btn-tab-create').classList.replace('border-red-600', 'border-slate-700');
+                document.getElementById('btn-tab-create').classList.remove('bg-red-500', 'text-white', 'border-red-600');
+                document.getElementById('btn-tab-create').classList.add('bg-slate-100', 'text-slate-500', 'border-slate-300', 'hover:bg-slate-200');
                 
                 document.getElementById('mode-join').style.display = 'block';
                 document.getElementById('mode-create').style.display = 'none';
             } else {
-                document.getElementById('btn-tab-create').classList.replace('bg-slate-800', 'bg-red-500');
-                document.getElementById('btn-tab-create').classList.replace('text-slate-400', 'text-white');
-                document.getElementById('btn-tab-create').classList.replace('border-slate-700', 'border-red-600');
+                document.getElementById('btn-tab-create').classList.remove('bg-slate-100', 'text-slate-500', 'border-slate-300', 'hover:bg-slate-200');
+                document.getElementById('btn-tab-create').classList.add('bg-red-500', 'text-white', 'border-red-600');
                 
-                document.getElementById('btn-tab-join').classList.replace('bg-red-500', 'bg-slate-800');
-                document.getElementById('btn-tab-join').classList.replace('text-white', 'text-slate-400');
-                document.getElementById('btn-tab-join').classList.replace('border-red-600', 'border-slate-700');
+                document.getElementById('btn-tab-join').classList.remove('bg-red-500', 'text-white', 'border-red-600');
+                document.getElementById('btn-tab-join').classList.add('bg-slate-100', 'text-slate-500', 'border-slate-300', 'hover:bg-slate-200');
                 
                 document.getElementById('mode-join').style.display = 'none';
                 document.getElementById('mode-create').style.display = 'block';
