@@ -1511,7 +1511,7 @@ window.prepareBattle = async (oppId) => {
     
     const oppStats = docSnap.data().gameStats || {};
     const oppWords = Object.keys(oppStats.caughtWords || {});
-    if(oppWords.length === 0) return window.showCustomAlert("상대방이 아직 포켓몬을 잡지 않았습니다!");
+    if(oppWords.length === 0) return window.showCustomAlert("상대방이 아직 보카몬을 잡지 않았습니다!");
 
     window.battleState.oppId = oppId; 
     window.battleState.oppStats = oppStats; 
