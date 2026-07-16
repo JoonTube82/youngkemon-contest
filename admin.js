@@ -624,7 +624,7 @@ window.downloadTestScoresCSV = async () => {
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
         link.setAttribute("href", url);
-        link.setAttribute("download", "영켓몬_시험성적표.csv");
+        link.setAttribute("download", "보카몬_시험성적표.csv");
         link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
