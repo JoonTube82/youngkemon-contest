@@ -875,7 +875,7 @@ window.showAdventurerProfile = async (studentId) => {
 
         const sortedWords = Object.keys(caughtWords).sort((a,b)=>caughtWords[b]-caughtWords[a]).slice(0, 3);
         let top3Html = '';
-        if (sortedWords.length === 0) top3Html = '<p class="text-slate-500 text-sm font-bold text-center py-6">포획한 영켓몬이 없습니다.</p>';
+        if (sortedWords.length === 0) top3Html = '<p class="text-slate-500 text-sm font-bold text-center py-6">포획한 보카몬이 없습니다.</p>';
         else {
             top3Html = '<div class="flex justify-center gap-3">';
             sortedWords.forEach(w => {
@@ -1144,7 +1144,7 @@ window.renderDex = async () => {
     document.getElementById('dex-total').innerText = keys.length;
     
     if (keys.length === 0) {
-        dexList.innerHTML = `<p class="text-center text-slate-500 py-10 text-sm font-bold">아직 포획한 영켓몬이 없습니다.<br>사냥터에서 영단어를 맞혀보세요!</p>`; return;
+        dexList.innerHTML = `<p class="text-center text-slate-500 py-10 text-sm font-bold">아직 포획한 보카몬이 없습니다.<br>사냥터에서 영단어를 맞혀보세요!</p>`; return;
     }
     
     const sortedKeys = keys.sort((a, b) => caughtWords[b] - caughtWords[a]);
@@ -1326,7 +1326,7 @@ window.loadArena = async () => {
     }
 
     if (checkDailyLimit()) {
-        listEl.innerHTML = `<div class="text-center py-10"><div class="text-5xl mb-4">💤</div><h3 class="text-xl font-bold text-indigo-600 mb-2">영어 마스터님의 휴식 권고</h3><p class="text-sm text-slate-500 font-bold">오늘의 배틀 에너지를 모두 소모했습니다! (학생 3승 + 관장 2승 달성)<br>던전에서 영단어를 더 포획하며 내일을 준비하세요!</p></div>`; 
+        listEl.innerHTML = `<div class="text-center py-10"><div class="text-5xl mb-4">💤</div><h3 class="text-xl font-bold text-indigo-600 mb-2">영어 마스터님의 휴식 권고</h3><p class="text-sm text-slate-500 font-bold">오늘의 배틀 에너지를 모두 소모했습니다! (학생 3승 + 마스터 2승 달성)<br>던전에서 영단어를 더 포획하며 내일을 준비하세요!</p></div>`; 
         return;
     }
 
@@ -1412,7 +1412,7 @@ window.loadArena = async () => {
                 <div class="flex items-center gap-3 sm:gap-4 overflow-hidden">
                     <div class="text-3xl sm:text-4xl shrink-0 drop-shadow-md">${isBoss?'👑':oppGender}</div>
                     <div class="flex flex-col sm:flex-row sm:items-center shrink-0 min-w-0">
-                        <div class="min-w-[70px] truncate"><div class="font-bold text-slate-800 truncate text-base sm:text-lg">${oppId}</div><div class="text-xs sm:text-sm ${isBoss?'text-yellow-600':'text-slate-500'} font-bold mt-0.5">${isBoss?'체육관 관장':'모험가'}</div></div>
+                        <div class="min-w-[70px] truncate"><div class="font-bold text-slate-800 truncate text-base sm:text-lg">${oppId}</div><div class="text-xs sm:text-sm ${isBoss?'text-yellow-600':'text-slate-500'} font-bold mt-0.5">${isBoss?'기지 마스터':'모험가'}</div></div>
                         ${top3Html}
                     </div>
                 </div>
@@ -1965,7 +1965,7 @@ window.openDefenseLogs = () => {
     const logs = window.state.gameData.defenseLogs || [];
     
     if (logs.length === 0) {
-        listEl.innerHTML = '<p class="text-center text-slate-500 font-bold py-10 text-sm">아직 체육관 방어 기록이 없습니다.</p>'; 
+        listEl.innerHTML = '<p class="text-center text-slate-500 font-bold py-10 text-sm">아직 기지 방어 기록이 없습니다.</p>'; 
         return;
     }
 
@@ -1993,7 +1993,7 @@ window.openDefenseLogs = () => {
             html += `
             <div class="bg-red-50 border border-red-200 rounded-xl p-3 sm:p-4 shadow-sm mb-2">
                 <div class="text-[10px] text-red-500 font-black mb-1">${timeStr}</div>
-                <div class="text-sm sm:text-base font-black text-red-700">💔 ${log.attacker}에게 체육관이 돌파당했습니다...</div>
+                <div class="text-sm sm:text-base font-black text-red-700">💔 ${log.attacker}에게 기지가 돌파당했습니다...</div>
                 <div class="text-xs text-slate-600 font-bold mt-1">하지만 파트너 보카몬이 끝까지 맞서 싸운 덕분에 위로 경험치를 얻었습니다!</div>
                 ${rewardHtml}
             </div>`;
